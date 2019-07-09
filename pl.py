@@ -33,11 +33,10 @@ def remove_from_pl(path, pl_table, curs, conn):
     
 def add_to_pl_from_file(pl_table, file_path, conn, curs):
     locale.setlocale(locale.LC_ALL, '')
-    code = locale.getpreferredencoding()
 
     with open(file_path, "r") as fp:
         for path in fp:
-            path = path.rstrip().encode(code);
+            path = path.rstrip();
             add_to_pl(path, pl_table, conn, curs);
 
 
@@ -80,11 +79,14 @@ if __name__ == "__main__":
     file_path = sys.argv[1];
     music_db_dir = sys.argv[2];
 
-    pl_table = os.path.splitext(os.path.basename(pl_path))[0];
+    pl_table = os.path.splitext(os.path.basename(file_path))[0];
     conn = sqlite3.connect(music_db_dir);
     curs = conn.cursor();
-    init_pl(pl_table, conn, curs);
-
+    
+    sqlstr = f"SELECT plname FROM playlists WHERE plname='{pl_table}' LIMIT 1;";
+    curs.execute(sqlstr);
+    if not curs.fetchone():
+        init_pl(pl_table, conn, curs);
 
     add_to_pl_from_file(pl_table, file_path, conn, curs);
     conn.close();
