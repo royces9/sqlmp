@@ -49,8 +49,6 @@ def init_pl(pl_table, conn, curs):
     curs.execute(f"INSERT INTO playlists VALUES ('{pl_table}');");
     conn.commit();
 
-    conn.close();
-    
 
 def del_pl(pl, conn, curs):
     sqlstr = f"DELETE FROM playlists WHERE plname='{pl}';";
