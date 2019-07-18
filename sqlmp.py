@@ -2,87 +2,20 @@
 
 import curses
 import sqlite3
-import pl
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+import pygame.mixer as pgm
+import sys
+
 import libdb
+import menu
+import music
+import pl
 
-
-class Coord:
-    x = 0;
-    y = 0;
-
-    def __init__(self, x = 0, y = 0):
-        self.x = x;
-        self.y = y;
-
-
-class Window:
-    loc = Coord(0, 0);
-    size = Coord(0, 0);
-    data = [];
-
-
-    def __init__(self, x, y, w, h, data = []):
-        self.loc = Coord(x, y);
-        self.size = Coord(w, h);
-        self.win = curses.newwin(h, w, y, x);
-
-        self.data = data;
-
-        #index of the list member at y=0
-        self.pos = 0;
-
-        #y location of cursor
-        self.cursor = 0;
-        self.blank = " " * self.size.x;
-        
-    def refresh(self):
-        self.win.refresh();
-        
-    def print_list(self):
-        for ii, item in enumerate(self.data[self.pos:]):
-            if ii > (self.size.y - 2):
-                break;
-            self.print_line(0, ii, item);
-
-        self.win.refresh();
-
-    def scroll_up(self):
-        at_top = self.cursor < 0;
-
-        if self.cursor > 0:
-            self.cursor -= 1;
-
-        if self.pos > 0:
-            self.pos -= 1;
-
-        self.win.chgat(self.cursor + 1, 0, curses.A_NORMAL);
-        self.win.chgat(self.cursor, 0, curses.A_STANDOUT);
-
-        self.print_list();
-
-    def scroll_down(self):
-        if self.cursor >= (self.size.y - 1):
-            if self.pos < len(self.data):
-                self.pos += 1;
-        else:
-            self.cursor += 1;
-
-
-        self.win.chgat(self.cursor - 1, 0, curses.A_NORMAL);
-        self.win.chgat(self.cursor, 0, curses.A_STANDOUT);
-            
-        self.print_list();
-
-    def print_line(self, x, y, line):
-        self.win.addnstr(y, x, self.blank, self.size.x);
-        self.win.addstr(y, x, line);
-        self.win.refresh();
-
-    def curr_highlighted(self):
-        return self.pos + self.cursor;
-        
+import keys
 
 class Disp:
+    cur = 0;
     wins = [];
 
     def __init__(self, *argv):
@@ -97,6 +30,9 @@ class Disp:
     def refresh(self):
         for win in self.wins:
             win.refresh();
+
+    def curwin(self):
+        return self.wins[self.cur];
 
 
 def exec_inp(inp):
@@ -118,11 +54,74 @@ def get_songs_playlist(playlist, win, curs):
     out = [];
     for i, song in enumerate(songs):
         song = song.replace("'", r"''");
-        for songstr in curs.execute(f"SELECT title, artist FROM library WHERE path='{song}';"):
-            out.append(songstr[0] + ' -  ' + songstr[1]);
+        for songstr in curs.execute(f"SELECT title, artist, path FROM library WHERE path='{song}';"):
+            out.append([songstr[0], songstr[1], songstr[2]]);
             
     return out;
+
+def scroll_up(disp, curs):
+    curwin = disp.curwin();
+    curwin.up();
+    disp.wins[2].print_line(0, 2, curwin.form(curwin.selected()));
+    if disp.cur == 0:
+        listwin = disp.wins[0];
+        plwin = disp.wins[1];
+        plwin.cursor = 0;
+        plwin.offset = 0;
+        plwin.data = get_songs_playlist(listwin.selected(), disp.wins[1], curs);
+        plwin.disp()
+
+def scroll_down(disp, curs):
+    curwin = disp.curwin();
+    curwin.down();
+    disp.wins[2].print_line(0, 2, curwin.form(curwin.selected()));
+    if disp.cur == 0:
+        listwin = disp.wins[0];
+        plwin = disp.wins[1];
+        plwin.cursor = 0;
+        plwin.offset = 0;
+        plwin.data = get_songs_playlist(listwin.selected(), disp.wins[1], curs);
+        plwin.disp()
+
+
+
+def exec_command(disp, curs):
+    disp.wins[2].win.addstr(2, 0, disp.wins[2].blank);
+    disp.wins[2].win.addstr(2, 0, ":");
+    disp.wins[2].refresh();
+    inp = grab_input(disp.wins[2].win);
+    exec_inp(inp);
+
+def switch_view(disp, curs):
+    if disp.cur == 1:
+        disp.cur = 0;
+    else:
+        disp.cur = 1;
         
+
+def select(disp, curs):
+    curpl = disp.wins[1];
+    disp.wins[2].print_line(0, 2, "Play: " + curpl.form(curpl.selected()));
+    music.play(curpl.selected());
+
+
+def exitpl(disp, curs):
+    sys.exit();
+
+def init_dict():
+    out = dict();
+    out.update(dict.fromkeys(keys.UP, scroll_up));
+    out.update(dict.fromkeys(keys.DOWN, scroll_down));
+    out.update(dict.fromkeys(keys.VOLUP, music.vol_up));
+    out.update(dict.fromkeys(keys.VOLDOWN, music.vol_down));
+    out.update(dict.fromkeys(keys.PLAYPAUSE, music.play_pause));
+    out.update(dict.fromkeys(keys.QUIT, exitpl));
+    out.update(dict.fromkeys(keys.SWITCH, switch_view));
+    out.update(dict.fromkeys(keys.COMMAND, exec_command));
+    out.update(dict.fromkeys(keys.SELECT, select));
+
+    return out;
+
 
 def run(conn, curs, disp):
     playlists = libdb.list_playlists(curs);
@@ -132,74 +131,43 @@ def run(conn, curs, disp):
     if playlists:
         disp.wins[0].data = playlists;
         disp.wins[1].data = get_songs_playlist(playlists[0], disp.wins[1], curs);
-        disp.wins[1].print_list();
+        disp.wins[1].disp();
 
     disp.wins[0].win.chgat(0, 0, curses.A_STANDOUT);
     disp.wins[1].win.chgat(0, 0, curses.A_STANDOUT);
     
-    pos = [0, 0];
-    win = 0;
-
-    prev = -1;
+    action = init_dict();
 
     while(True):
         disp.refresh()
 
-        key = disp.wins[win].win.getkey();
-
-        if key == '\t':
-            if win == 1:
-                win = 0;
-            else:
-                win = 1;
-        elif key == ':':
-            disp.wins[2].win.addstr(2, 0, ":");
-            disp.wins[2].refresh();
-            inp = grab_input(disp.wins[2].win);
-            exec_inp(inp);
+        key = disp.curwin().win.getkey();
+        if key in action:
+            action[key](disp, curs);
             
-        elif key == 'KEY_UP':
-            disp.wins[win].scroll_up();
-            disp.wins[2].print_line(0, 2, disp.wins[win].data[disp.wins[win].curr_highlighted()]);
-            if win == 0:
-                disp.wins[1].cursor = 0;
-                disp.wins[1].pos = 0;
-                disp.wins[1].win.clear();
-                disp.wins[1].data = get_songs_playlist(disp.wins[0].data[disp.wins[0].curr_highlighted()], disp.wins[1], curs);
-                disp.wins[1].win.chgat(0, 0, curses.A_STANDOUT);
-                disp.wins[1].print_list()
-
-        elif key == 'KEY_DOWN':
-            disp.wins[win].scroll_down();
-            disp.wins[2].print_line(0, 2, disp.wins[win].data[disp.wins[win].curr_highlighted()]);
-            if win == 0:
-                disp.wins[1].cursor = 0;
-                disp.wins[1].pos = 0;
-                disp.wins[1].data = get_songs_playlist(disp.wins[0].data[disp.wins[0].curr_highlighted()], disp.wins[1], curs);
-                disp.wins[1].print_list()
  
 def init_windows():
     bottom_bar = 4;
     hh = curses.LINES - bottom_bar;
     ww = curses.COLS // 6;
 
-    leftwin = Window(0, 0, ww, hh);
-    rightwin = Window(ww, 0, curses.COLS - ww, hh);
-    botwin = Window(0, hh, curses.COLS, bottom_bar);
+    
+    leftwin = menu.Menu(0, 0, ww, hh);
 
+    songname = lambda ll: str(ll[0] + ' - ' + ll[1]);
+    rightwin = menu.Menu(ww, 0, curses.COLS - ww, hh, form=songname);
+    botwin = menu.Window(0, hh, curses.COLS, bottom_bar);
+    
     return leftwin, rightwin, botwin;
 
 def main(stdscr):
     curses.curs_set(False);
-
+    
     stdscr.clear();
 
     leftwin, rightwin, botwin = init_windows();
+    music.init_music();
 
-    leftwin.win.keypad(True);
-    rightwin.win.keypad(True);
-    botwin.win.keypad(True);
- 
     disp = Disp(leftwin, rightwin, botwin);    
     disp.refresh();
     

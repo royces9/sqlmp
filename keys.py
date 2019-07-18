@@ -1,0 +1,13 @@
+UP={'KEY_UP', 'l'}
+DOWN={'KEY_DOWN', 'k'}
+VOLUP={']'}
+VOLDOWN={'['}
+PLAYPAUSE={'c'}
+QUIT={'q'}
+SWITCH={'\t'}
+COMMAND={':'}
+SELECT={'\n'}
+
+
+DEFAULT_VOLUME=60
+VOL_STEP=5

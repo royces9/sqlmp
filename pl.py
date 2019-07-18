@@ -62,7 +62,18 @@ def del_pl(pl, conn, curs):
     
     conn.commit();
 
+
+def rename_pl(pl, newname, conn, curs):
+    sqlstr = f"UPDATE TABLE pl_song SET plname='{newname}' WHERE plname='{pl}';"
+    curs.execute(sqlstr);
     
+    sqlstr = f"ALTER TABLE {pl} RENAME TO {newname}";
+    curs.execute(sqlstr);
+
+    sqlstr = f"ALTER TABLE playlists SET plname='{newname}' WHERE plname='{pl}';"
+    curs.execute(sqlstr);
+    
+        
 def list_pl_songs(pl, curs):
     songs =[];
     for song in curs.execute(f"SELECT path FROM '{pl}';"):
