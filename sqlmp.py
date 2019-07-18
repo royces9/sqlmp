@@ -2,9 +2,6 @@
 
 import curses
 import sqlite3
-import os
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import pygame.mixer as pgm
 import sys
 
 import libdb

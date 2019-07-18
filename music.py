@@ -1,9 +1,11 @@
-import pygame.mixer as pgm
+from pydub import AudioSegment as AS
+import pydub.playback as pb
 
 import keys
 
+
 def init_music():
-    pgm.init();
+    
     pgm.music.set_volume(keys.DEFAULT_VOLUME / 100);
 
 def play(data):
