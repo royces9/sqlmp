@@ -1,5 +1,7 @@
 UP={'KEY_UP', 'l'}
 DOWN={'KEY_DOWN', 'k'}
+LEFT={'KEY_LEFT', 'j'}
+RIGHT={'KEY_RIGHT', ';'}
 VOLUP={']'}
 VOLDOWN={'['}
 PLAYPAUSE={'c'}
@@ -10,4 +12,5 @@ SELECT={'\n'}
 
 
 DEFAULT_VOLUME=60
-VOL_STEP=5
+VOL_STEP=1
+PIPE='~/.config/sqlmppipe'
