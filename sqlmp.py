@@ -104,23 +104,23 @@ def switch_view(*args):
 
 def select(*args):
     disp = args[0];
-    mpv = args[2];
+    player = args[2];
 
     curpl = disp.wins[1];
     disp.wins[2].print_line(0, 2, "Play: " + curpl.form(curpl.selected()));
-    mpv.play(curpl.selected());
+    player.play(curpl.selected());
 
 
 def exitpl(*args):
     sys.exit();
 
-def init_dict(disp, mpv):
+def init_dict(disp, player):
     out = dict();
     out.update(dict.fromkeys(keys.UP, scroll_up));
     out.update(dict.fromkeys(keys.DOWN, scroll_down));
-    out.update(dict.fromkeys(keys.VOLUP, mpv.vol_up));
-    out.update(dict.fromkeys(keys.VOLDOWN, mpv.vol_down));
-    out.update(dict.fromkeys(keys.PLAYPAUSE, mpv.play_pause));
+    out.update(dict.fromkeys(keys.VOLUP, player.vol_up));
+    out.update(dict.fromkeys(keys.VOLDOWN, player.vol_down));
+    out.update(dict.fromkeys(keys.PLAYPAUSE, player.play_pause));
     out.update(dict.fromkeys(keys.QUIT, exitpl));
     out.update(dict.fromkeys(keys.SWITCH, switch_view));
     out.update(dict.fromkeys(keys.COMMAND, exec_command));
@@ -129,7 +129,7 @@ def init_dict(disp, mpv):
     return out;
 
 
-def run(conn, curs, disp, mpv):
+def run(conn, curs, disp, player):
     playlists = libdb.list_playlists(curs);
     for i, playlist in enumerate(playlists):
         disp.wins[0].win.addstr(i, 0, playlist);
@@ -142,14 +142,14 @@ def run(conn, curs, disp, mpv):
     disp.wins[0].win.chgat(0, 0, curses.A_STANDOUT);
     disp.wins[1].win.chgat(0, 0, curses.A_STANDOUT);
     
-    action = init_dict(disp, mpv);
+    action = init_dict(disp, player);
 
     while(True):
         disp.refresh()
 
         key = disp.curwin().win.getkey();
         if key in action:
-            action[key](disp, curs, mpv);
+            action[key](disp, curs, player);
             
  
 def init_windows():
@@ -173,7 +173,7 @@ def main(stdscr):
     stdscr.clear();
 
     leftwin, rightwin, botwin = init_windows();
-    mpv = music.init_music();
+    player = music.init_music();
 
     disp = Disp(leftwin, rightwin, botwin);    
     disp.refresh();
@@ -182,7 +182,7 @@ def main(stdscr):
     conn = sqlite3.connect(db);
     curs = conn.cursor();
 
-    run(conn, curs, disp, mpv);
+    run(conn, curs, disp, player);
 
 if __name__ == "__main__":
     curses.wrapper(main);

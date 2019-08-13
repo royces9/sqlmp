@@ -1,55 +1,52 @@
 from pydub import AudioSegment
 
 import atexit
+import ffmpeg
 import json
 import subprocess as sp
 import threading
-import mpv
 import os
+import pyaudio
+import queue
 
 import keys
 
-global mpv_proc
+def debug_file(line):
+    with open("test.txt", "w+") as fp:
+        fp.write(line);
 
-class my_mpv:
+class Player:
     def __init__(self):
-        self.mpv = mpv.MPV(__no_video=True);
+        self.pyaudio = pyaudio.PyAudio();
         self.vol = keys.DEFAULT_VOLUME;
-        @self.mpv.property_observer()
-        self.set_prop(['"volume"', str(self.vol)]);
+        self.eventq = queue.Queue(0);
+        self.stream = self.pyaudio.open(
+            format=self.pyaudio.get_format_from_width(2, unsigned=False),
+            channels=2,
+            rate=44100,
+            output=True)
 
-        self.thread = threading.Thread(target = self.checkq);
+        self.state = 0;
+        self.playq = queue.Queue(0);
+        self.thread = threading.Thread(target=self.__play_loop)
+        self.thread.start();        
 
     def checkq(self):
-        p=sp.Popen(['socat ' + self.pipe + ' -'], shell=True, stdout=sp.PIPE);
-        ap = p.communicate();
-        if not ap:
-            event = json.loads(ap[0]);
-            if event['event'] == 'end-file':
-                sys.exit();
-            
+        pass
 
     def ex(self, args):
-        joined = ','.join(args);
-        cmd = '{"command":[' + joined + ']}';
-        inp = 'echo \'' + cmd + '\' | socat - ' + self.pipe;
-
-        p = sp.Popen(inp, shell=True, stdout = sp.PIPE);
-        return p.communicate();
-
+        pass
     def set_prop(self, args):
-            return self.ex(['"set_property"'] + args);
+        pass
 
     def get_prop(self, arg):
-            return self.ex(['"get_property"'] + [arg]);
+        pass
 
     def vol_up(self, *args):
             newvol = self.vol + keys.VOL_STEP;
             if newvol > 100:
                 newvol = 100;
             self.vol = newvol;
-
-            self.set_prop(['"volume"', str(newvol)]);
     
     def vol_down(self, *args):
             newvol = self.vol - keys.VOL_STEP;
@@ -57,32 +54,72 @@ class my_mpv:
                 newvol = 0;
             self.vol = newvol;
 
-            self.set_prop(['"volume"', str(newvol)]);
 
     def play(self, *args):
-        self.ex(['"loadfile"', '"' + args[0][2] + '"']);
-        self.set_prop(['"pause"', 'false']);
-        self.thread.start();
+        fp = str(args[0][2])
+        self.state = 1;
+        self.eventq.put_nowait('q');
+        self.playq.put_nowait(fp);
+
+
+    def __play_loop(self):
+        self.eventq.get(block=True, timeout=None);
+        while True:
+            fn = self.playq.get(block=True, timeout=None);
+            md, _ = (ffmpeg
+                     .input(fn)
+                     .output('-', format='s16le', acodec='pcm_s16le')
+                     .overwrite_output()
+                     .run(capture_stdout=True, capture_stderr=True)
+            )
+
+            frame = 4096;
+            chunk = len(md) // frame + 1;
+            data = [None] * chunk;
+            i = 0;
+            j = 0;
+            
+            while j < chunk:
+                data[j] = md[i:i + frame];
+                i += frame;
+                j += 1;
+            ev = 'a';
+            for dd in data:
+                if not self.eventq.empty():
+                    while True:
+                        ev = self.eventq.get(block=True, timeout=None);
+                        self.eventq.task_done();
+                        if ev == 'pp':
+                            if self.state == 0:
+                                break;
+                        elif ev == 'q':
+                            break;
+                elif ev == 'q':
+                    break;
+                self.stream.write(dd);
+        
         
     def play_pause(self, *args):
-        a = self.get_prop('"pause"');
-        out = json.loads(a[0]);
-        flag = 'false' if out['data'] else 'true';
-        self.set_prop(['"pause"', flag]);
+        self.eventq.put_nowait('pp');
+        if self.state == 0:
+            self.state = 1;
+        else:
+            self.state = 0;
         
     def pause(self, *args):
-        self.set_prop(['"pause"', 'true']);
+        self.eventq.put_nowait('p');
 
     def unpause(self, *args):
-        self.set_prop(['"pause"', 'false']);
+        pass
 
     def seek_forward(self, *args):
-        pass;
+        pass
     
     def __del__(self):
-        self.p.kill()
+        self.eventq.put_nowait('q');
+        self.pyaudio.terminate();
 
 def init_music():
-    mpv_proc = my_mpv(__no_video=True);
-    atexit.register(mpv_proc.__del__);
-    return mpv_proc;
+    player = Player();
+    atexit.register(player.__del__);
+    return player;
