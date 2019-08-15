@@ -15,7 +15,6 @@ import playlist
 
 import keys
 
-
 def exec_inp(inp):
     return inp;
 

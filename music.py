@@ -1,17 +1,17 @@
-import atexit
 import enum
 import threading
 import os
+
 import signal
 import queue
 
 import pyaudio
 from pydub import AudioSegment
 from pydub.playback import make_chunks
-
-import sqlmp
+import sounddevice #this seems to stop alsa errors from showing up when using pyaudio/portaudio
 
 import keys
+
 
 def debug_file(line):
     with open("test.txt", "w+") as fp:
@@ -66,7 +66,7 @@ class Player:
         while self.state != Play_state.end:
             fn = self.playq.get(block=True, timeout=None);
             self.state = Play_state.playing;
-            ev = '\0';
+
             md = AudioSegment.from_file(fn);
             stream = self.pyaudio.open(
                 format=self.pyaudio.get_format_from_width(md.sample_width),
@@ -108,12 +108,8 @@ class Player:
 
     def seek_backward(self, *args):
         pass
-    
-    def __del__(self):
-        self.state = Play_state.end;
-        #self.pyaudio.terminate();
+
 
 def init_music():
     player = Player();
-    atexit.register(player.__del__);
     return player;

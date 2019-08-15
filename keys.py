@@ -23,23 +23,14 @@ def song_format(ll):
     album = ll['album']
     artist = ll['artist']
 
-    title_len = len(title)
-    album_len = len(album)
-    artist_len = len(artist)
-
     names = [title, artist, album]
     max_name = [40, 20, 30]
-    names_len = [len(name) for name in names]
     
     out = [None] * len(names)
     i = 0
-
-    for name, _max, _len in zip(names, max_name, names_len):
-        if _len > _max:
-            out[i] = name[0:_max]
-        else:
-            out[i] = name + (_max - _len) * ' '
-
+    import string
+    for name, _max in zip(names, max_name):
+        out[i] = name.ljust(_max)
         i += 1
     
     return ''.join(out)
