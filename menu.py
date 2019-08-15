@@ -10,12 +10,16 @@ class Menu:
         self.win.keypad(True);
         self.data = data;
         self.form = form;
-        
+
         self.blank = " " * self.w;
 
         self.cursor = 0;
         self.offset = 0;
         self.win.chgat(self.cursor, 0, curses.A_STANDOUT);
+
+
+    def __getitem__(self, ind):
+        return self.data[ind]
 
 
     def selected(self):

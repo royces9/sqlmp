@@ -1,35 +1,19 @@
 #!/usr/bin/python
 
 import curses
+import signal
 import sqlite3
 import sys
 
+import db_pl
+import display
 import libdb
 import menu
 import music
-import pl
+import playlist
+
 
 import keys
-
-class Disp:
-    cur = 0;
-    wins = [];
-    
-    def __init__(self, *argv):
-        for arg in argv:
-            self.wins.append(arg);
-    def append(self, arg):
-        self.wins.append(arg);
-    
-    def len(self):
-        return len(self.wins);
-
-    def refresh(self):
-        for win in self.wins:
-            win.refresh();
-
-    def curwin(self):
-        return self.wins[self.cur];
 
 
 def exec_inp(inp):
@@ -46,15 +30,24 @@ def grab_input(win):
 
     return out;
 
-def get_songs_playlist(playlist, win, curs):
-    songs = pl.list_pl_songs(playlist, curs);
-    out = [];
+def get_songs_playlist(pl, curs):
+    songs = db_pl.list_pl_songs(pl, curs)
+    out = []
+
+    tags = ['path', 'title', 'artist', 'album', 'length', 'bitrate', 'playcount']
+    joined_tag = ", ".join(tags);
+        
     for i, song in enumerate(songs):
         song = song.replace("'", r"''");
-        for songstr in curs.execute(f"SELECT title, artist, path FROM library WHERE path='{song}';"):
-            out.append([songstr[0], songstr[1], songstr[2]]);
+        for queries in curs.execute(f"SELECT {joined_tag} FROM library WHERE path='{song}';"):
+            newd = dict()
+            for tag, query in zip(tags, queries):
+                newd[tag] = query
+            
+            out.append(newd);
             
     return out;
+
 
 def scroll_up(*args):
     disp = args[0]
@@ -64,12 +57,11 @@ def scroll_up(*args):
     curwin.up();
     disp.wins[2].print_line(0, 2, curwin.form(curwin.selected()));
     if disp.cur == 0:
-        listwin = disp.wins[0];
-        plwin = disp.wins[1];
-        plwin.cursor = 0;
-        plwin.offset = 0;
-        plwin.data = get_songs_playlist(listwin.selected(), disp.wins[1], curs);
-        plwin.disp()
+        disp.wins[1].data = disp.wins[0].selected();
+        disp.wins[1].cursor = 0;
+        disp.wins[1].offset = 0;
+        disp.wins[1].disp()
+
 
 def scroll_down(*args):
     disp = args[0]
@@ -79,21 +71,20 @@ def scroll_down(*args):
     curwin.down();
     disp.wins[2].print_line(0, 2, curwin.form(curwin.selected()));
     if disp.cur == 0:
-        listwin = disp.wins[0];
-        plwin = disp.wins[1];
-        plwin.cursor = 0;
-        plwin.offset = 0;
-        plwin.data = get_songs_playlist(listwin.selected(), disp.wins[1], curs);
-        plwin.disp()
+        disp.wins[1].data = disp.wins[0].selected();
+        disp.wins[1].cursor = 0;
+        disp.wins[1].offset = 0;
+        disp.wins[1].disp()
 
 
-def exec_command(disp, curs):
+def exec_command(disp, curs, player):
     disp.wins[2].win.addstr(2, 0, disp.wins[2].blank);
     disp.wins[2].win.addstr(2, 0, ":");
     disp.wins[2].refresh();
     inp = grab_input(disp.wins[2].win);
     exec_inp(inp);
 
+    
 def switch_view(*args):
     disp = args[0]
     if disp.cur == 1:
@@ -107,13 +98,20 @@ def select(*args):
     player = args[2];
 
     curpl = disp.wins[1];
+
     disp.wins[2].print_line(0, 2, "Play: " + curpl.form(curpl.selected()));
     player.play(curpl.selected());
 
+    for i in range(len(curpl.data)):
+        newsong = disp.wins[0].data[disp.wins[0].cursor]._next()
+        player.append(newsong)
+
+       
 
 def exitpl(*args):
     sys.exit();
 
+    
 def init_dict(disp, player):
     out = dict();
     out.update(dict.fromkeys(keys.UP, scroll_up));
@@ -130,40 +128,43 @@ def init_dict(disp, player):
 
 
 def run(conn, curs, disp, player):
-    playlists = libdb.list_playlists(curs);
-    for i, playlist in enumerate(playlists):
-        disp.wins[0].win.addstr(i, 0, playlist);
-
-    if playlists:
-        disp.wins[0].data = playlists;
-        disp.wins[1].data = get_songs_playlist(playlists[0], disp.wins[1], curs);
-        disp.wins[1].disp();
-
-    disp.wins[0].win.chgat(0, 0, curses.A_STANDOUT);
-    disp.wins[1].win.chgat(0, 0, curses.A_STANDOUT);
-    
     action = init_dict(disp, player);
 
     while(True):
         disp.refresh()
-
-        key = disp.curwin().win.getkey();
+        key = disp.curwin().win.getkey()
+        
         if key in action:
             action[key](disp, curs, player);
             
  
-def init_windows():
+def init_windows(curs):
     bottom_bar = 4;
     hh = curses.LINES - bottom_bar;
     ww = curses.COLS // 6;
     
-    leftwin = menu.Menu(0, 0, ww, hh);
-
-    songname = lambda ll: str(ll[0] + ' - ' + ll[1]);
-    rightwin = menu.Menu(ww, 0, curses.COLS - ww, hh, form=songname);
-    botwin = menu.Window(0, hh, curses.COLS, bottom_bar);
+    leftwin = menu.Menu(0, 0, ww, hh, form=lambda x: x.name);
+    rightwin = menu.Menu(ww, 0, curses.COLS - ww, hh, form=keys.SONG_DISP)
+    botwin = menu.Window(0, hh, curses.COLS, bottom_bar)
     
-    return leftwin, rightwin, botwin;
+    str_pl = libdb.list_playlists(curs)
+    playlists = []
+
+    for i, pl in enumerate(str_pl):
+        leftwin.win.addstr(i, 0, pl);
+        playlists.append(playlist.Playlist(
+            name=pl, data=get_songs_playlist(pl, curs),)
+        )
+
+    leftwin.data = playlists;
+    rightwin.data = leftwin.data[0].data
+    rightwin.disp();
+
+    leftwin.win.chgat(0, 0, curses.A_STANDOUT);
+    rightwin.win.chgat(0, 0, curses.A_STANDOUT);
+    
+    return display.Disp(leftwin, rightwin, botwin);
+
 
 def main(stdscr):
     curses.use_default_colors()
@@ -172,16 +173,17 @@ def main(stdscr):
     
     stdscr.clear();
 
-    leftwin, rightwin, botwin = init_windows();
-    player = music.init_music();
-
-    disp = Disp(leftwin, rightwin, botwin);    
-    disp.refresh();
-    
     db = "lib.db";
     conn = sqlite3.connect(db);
     curs = conn.cursor();
 
+    global disp
+    disp = init_windows(curs);
+
+    global player
+    player = music.init_music();
+
+    disp.refresh();
     run(conn, curs, disp, player);
 
 if __name__ == "__main__":

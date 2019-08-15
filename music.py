@@ -1,13 +1,15 @@
-from pydub import AudioSegment
-
 import atexit
-import ffmpeg
-import json
-import subprocess as sp
+import enum
 import threading
 import os
-import pyaudio
+import signal
 import queue
+
+import pyaudio
+from pydub import AudioSegment
+from pydub.playback import make_chunks
+
+import sqlmp
 
 import keys
 
@@ -15,32 +17,27 @@ def debug_file(line):
     with open("test.txt", "w+") as fp:
         fp.write(line);
 
+class Play_state(enum.Enum):
+    init = 0
+    not_playing = 1
+    playing = 2
+    paused = 3
+    new = 4
+    end = 5
+
+    
 class Player:
     def __init__(self):
         self.pyaudio = pyaudio.PyAudio();
         self.vol = keys.DEFAULT_VOLUME;
-        self.eventq = queue.Queue(0);
-        self.stream = self.pyaudio.open(
-            format=self.pyaudio.get_format_from_width(2, unsigned=False),
-            channels=2,
-            rate=44100,
-            output=True)
 
-        self.state = 0;
+        self.state = Play_state.init;
         self.playq = queue.Queue(0);
+
         self.thread = threading.Thread(target=self.__play_loop)
+        self.thread.daemon = True;
         self.thread.start();        
-
-    def checkq(self):
-        pass
-
-    def ex(self, args):
-        pass
-    def set_prop(self, args):
-        pass
-
-    def get_prop(self, arg):
-        pass
+        
 
     def vol_up(self, *args):
             newvol = self.vol + keys.VOL_STEP;
@@ -55,69 +52,66 @@ class Player:
             self.vol = newvol;
 
 
+    def append(self, *args):
+        fp = args[0]['path']
+        self.playq.put_nowait(fp)
+
+
     def play(self, *args):
-        fp = str(args[0][2])
-        self.state = 1;
-        self.eventq.put_nowait('q');
-        self.playq.put_nowait(fp);
+        self.append(*args);
+        self.state = Play_state.new;
 
-
+        
     def __play_loop(self):
-        self.eventq.get(block=True, timeout=None);
-        while True:
+        while self.state != Play_state.end:
             fn = self.playq.get(block=True, timeout=None);
-            md, _ = (ffmpeg
-                     .input(fn)
-                     .output('-', format='s16le', acodec='pcm_s16le')
-                     .overwrite_output()
-                     .run(capture_stdout=True, capture_stderr=True)
+            self.state = Play_state.playing;
+            ev = '\0';
+            md = AudioSegment.from_file(fn);
+            stream = self.pyaudio.open(
+                format=self.pyaudio.get_format_from_width(md.sample_width),
+                channels=md.channels,
+                rate=md.frame_rate,
+                output=True,
             )
 
-            frame = 4096;
-            chunk = len(md) // frame + 1;
-            data = [None] * chunk;
-            i = 0;
-            j = 0;
-            
-            while j < chunk:
-                data[j] = md[i:i + frame];
-                i += frame;
-                j += 1;
-            ev = 'a';
-            for dd in data:
-                if not self.eventq.empty():
-                    while True:
-                        ev = self.eventq.get(block=True, timeout=None);
-                        self.eventq.task_done();
-                        if ev == 'pp':
-                            if self.state == 0:
-                                break;
-                        elif ev == 'q':
-                            break;
-                elif ev == 'q':
+            for dd in make_chunks(md, 250):
+                if self.state == Play_state.paused:
+                    while self.state == Play_state.paused:
+                        pass
+                elif self.state in {Play_state.new, Play_state.end}:
                     break;
-                self.stream.write(dd);
-        
+                
+                adjust = dd - (100 - self.vol);
+                stream.write(adjust._data);
+
+            stream.stop_stream()
+            stream.close()
+
+            self.state = Play_state.not_playing
+                
         
     def play_pause(self, *args):
-        self.eventq.put_nowait('pp');
-        if self.state == 0:
-            self.state = 1;
-        else:
-            self.state = 0;
-        
+        if self.state == Play_state.playing:
+            self.state = Play_state.paused;
+        elif self.state == Play_state.paused:
+            self.state = Play_state.playing;
+            
     def pause(self, *args):
-        self.eventq.put_nowait('p');
+        self.state = Play_state.paused
 
     def unpause(self, *args):
-        pass
+        self.state = Play_state.playing
 
     def seek_forward(self, *args):
         pass
+
+    def seek_backward(self, *args):
+        pass
     
     def __del__(self):
-        self.eventq.put_nowait('q');
-        self.pyaudio.terminate();
+        self.state = Play_state.end;
+        #self.pyaudio.terminate();
 
 def init_music():
     player = Player();

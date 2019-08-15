@@ -1,10 +1,12 @@
 #!/usr/bin/python
 
+import os
+import sys
+
 import mutagen
 import mutagen.mp3
-import os
 import sqlite3
-import sys
+
 
 def err_file(err, message):
     with open(err, "a") as fp:
