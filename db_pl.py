@@ -6,6 +6,8 @@ import sqlite3
 import sys
 import locale
 
+
+
 def add_to_pl(path, pl_table, conn, curs):
     #add file to library table if it's not already
     libdb.add_to_lib(path, conn, curs);

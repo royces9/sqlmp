@@ -33,6 +33,7 @@ class Player:
 
         self.state = Play_state.init;
         self.playq = queue.Queue(0);
+        self.curplay = queue.Queue(0);
 
         self.thread = threading.Thread(target=self.__play_loop)
         self.thread.daemon = True;
@@ -53,7 +54,7 @@ class Player:
 
 
     def append(self, *args):
-        fp = args[0]['path']
+        fp = args[0]
         self.playq.put_nowait(fp)
 
 
@@ -66,7 +67,8 @@ class Player:
         while self.state != Play_state.end:
             fn = self.playq.get(block=True, timeout=None);
             self.state = Play_state.playing;
-
+            self.curplay.put_nowait(fn);
+            fn = fn['path']
             md = AudioSegment.from_file(fn);
             stream = self.pyaudio.open(
                 format=self.pyaudio.get_format_from_width(md.sample_width),

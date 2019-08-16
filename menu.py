@@ -2,35 +2,35 @@ import curses
 
 class Menu:
     def __init__(self, x = 0, y = 0, w = 0, h = 0, data = [], form = lambda ll: str(ll)):
-        self.x = x;
-        self.y = y;
-        self.w = w;
-        self.h = h;
-        self.win = curses.newwin(h, w, y, x);
-        self.win.keypad(True);
-        self.data = data;
-        self.form = form;
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.win = curses.newwin(h, w, y, x)
+        self.win.keypad(True)
+        self.data = data
+        self.form = form
 
-        self.blank = " " * self.w;
+        self.blank = " " * self.w
 
-        self.cursor = 0;
-        self.offset = 0;
-        self.win.chgat(self.cursor, 0, curses.A_STANDOUT);
+        self.cursor = 0
+        self.offset = 0
+        self.win.chgat(self.cursor, 0, curses.A_STANDOUT)
 
 
     def __getitem__(self, ind):
         return self.data[ind]
 
 
-    def selected(self):
-        return self.data[self.selected_ind()];
+    def highlighted(self):
+        return self.data[self.highlighted_ind()];
 
-    def selected_ind(self):
+    def highlighted_ind(self):
         return self.cursor + self.offset;
 
     def up(self):
         self.win.chgat(self.cursor, 0, curses.A_NORMAL);
-
+        
         at_top = self.cursor < 1;
 
         if not at_top:

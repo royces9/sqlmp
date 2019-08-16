@@ -13,7 +13,6 @@ SELECT={'\n'}
 
 DEFAULT_VOLUME=90
 VOL_STEP=1
-PIPE='~/.config/sqlmppipe'
 
 SONG_DISP=lambda ll: song_format(ll)
 
