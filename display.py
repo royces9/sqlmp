@@ -81,15 +81,17 @@ class Player_disp(Disp):
 
     def select(self, *args):
         player = args[2]
-        curpl = self[1]
+
+        with player.playq.mutex:
+            player.playq.queue.clear()
 
         song = self[1].highlighted()
         song_str = ' - '.join([song['title'], song['artist'], song['album']])
         self[2].print_line(0, 2, "Play: " + song_str)
-        #self[2].print_line(0, 2, "Play: " + self[1].form(self[1].highlighted()));
         player.play(self[1].highlighted());
 
+        
         for i in range(len(self[1].data)):
-            newsong = self[0].data[self[0].cursor]._next()
+            newsong = self[0].highlighted()._next()
             player.append(newsong)
-                                            
+

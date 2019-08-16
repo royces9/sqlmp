@@ -1,4 +1,3 @@
-import ctypes
 import enum
 import sys
 import threading
@@ -29,8 +28,6 @@ class Play_state(enum.Enum):
     
 class Player:
     def pyaudio_init(self):
-        clib = ctypes.CDLL(None)
-
         og_err = sys.stderr.fileno()
         cp_err = os.dup(og_err)
 
@@ -39,7 +36,7 @@ class Player:
         
         self.pyaudio = pyaudio.PyAudio();
 
-        os.dup2(og_err, cp_err)
+        os.dup2(cp_err, og_err)
 
 
     def __init__(self):
@@ -69,8 +66,7 @@ class Player:
 
 
     def append(self, *args):
-        fp = args[0]
-        self.playq.put_nowait(fp)
+        self.playq.put_nowait(args[0])
 
 
     def play(self, *args):
