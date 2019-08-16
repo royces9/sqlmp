@@ -1,4 +1,6 @@
+import ctypes
 import enum
+import sys
 import threading
 import os
 
@@ -8,7 +10,6 @@ import queue
 import pyaudio
 from pydub import AudioSegment
 from pydub.playback import make_chunks
-import sounddevice #this seems to stop alsa errors from showing up when using pyaudio/portaudio
 
 import keys
 
@@ -27,8 +28,22 @@ class Play_state(enum.Enum):
 
     
 class Player:
-    def __init__(self):
+    def pyaudio_init(self):
+        clib = ctypes.CDLL(None)
+
+        og_err = sys.stderr.fileno()
+        cp_err = os.dup(og_err)
+
+        with open(os.devnull, 'w') as devnull:
+            os.dup2(devnull.fileno(), og_err)
+        
         self.pyaudio = pyaudio.PyAudio();
+
+        os.dup2(og_err, cp_err)
+
+
+    def __init__(self):
+        self.pyaudio_init()
         self.vol = keys.DEFAULT_VOLUME;
 
         self.state = Play_state.init;
