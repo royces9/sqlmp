@@ -9,7 +9,7 @@ QUIT={'q'}
 SWITCH={'\t'}
 COMMAND={':'}
 SELECT={'\n'}
-
+LIBPATH='lib.db'
 
 DEFAULT_VOLUME=90
 VOL_STEP=1

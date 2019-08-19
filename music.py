@@ -6,6 +6,7 @@ import os
 import signal
 import queue
 
+import ffmpeg
 import pyaudio
 from pydub import AudioSegment
 from pydub.playback import make_chunks
@@ -43,6 +44,9 @@ class Player:
         self.pyaudio_init()
         self.vol = keys.DEFAULT_VOLUME;
 
+        #ms chunks to playback
+        self.step = 250
+
         self.state = Play_state.init;
         self.playq = queue.Queue(0);
         self.curplay = queue.Queue(0);
@@ -75,12 +79,33 @@ class Player:
 
         
     def __play_loop(self):
+        #always loop unless we quit
         while self.state != Play_state.end:
+            #this call blocks until something is pushed onto the queue
             fn = self.playq.get(block=True, timeout=None);
+
+            #change state to playing
             self.state = Play_state.playing;
+            
+            #push onto play queue
             self.curplay.put_nowait(fn);
-            fn = fn['path']
-            md = AudioSegment.from_file(fn);
+
+            #grab path
+            fp = fn['path']
+
+            #convert input file to wav and put it into wav variable
+            wav, _ = (ffmpeg
+                     .input(fp)
+                     .output('-', format='wav', acodec='pcm_s16le')
+                     .overwrite_output()
+                    .run(capture_stdout=True, capture_stderr=True)
+            )
+
+            #convert wav to pydub AudioSegment
+            #we do this to allow for easy volume changes
+            md = AudioSegment(wav)
+
+            #open a pyaudio stream
             stream = self.pyaudio.open(
                 format=self.pyaudio.get_format_from_width(md.sample_width),
                 channels=md.channels,
@@ -88,7 +113,8 @@ class Player:
                 output=True,
             )
 
-            for dd in make_chunks(md, 250):
+            #iterate through the AudioSegment
+            for dd in make_chunks(md, self.step):
                 if self.state == Play_state.paused:
                     while self.state == Play_state.paused:
                         pass
@@ -98,9 +124,11 @@ class Player:
                 adjust = dd - (100 - self.vol);
                 stream.write(adjust._data);
 
+            #resource clean up
             stream.stop_stream()
             stream.close()
 
+            #set stream to not playing after playback ends
             self.state = Play_state.not_playing
                 
         

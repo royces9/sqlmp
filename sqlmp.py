@@ -20,15 +20,34 @@ def exitpl(*args):
     
 def init_dict(disp, player):
     out = dict();
-    out.update(dict.fromkeys(keys.UP, disp.up));
-    out.update(dict.fromkeys(keys.DOWN, disp.down));
-    out.update(dict.fromkeys(keys.VOLUP, player.vol_up));
-    out.update(dict.fromkeys(keys.VOLDOWN, player.vol_down));
-    out.update(dict.fromkeys(keys.PLAYPAUSE, player.play_pause));
-    out.update(dict.fromkeys(keys.QUIT, exitpl));
-    out.update(dict.fromkeys(keys.SWITCH, disp.switch_view));
-    out.update(dict.fromkeys(keys.COMMAND, disp.grab_input));
-    out.update(dict.fromkeys(keys.SELECT, disp.select));
+    _keys = [
+        keys.UP,
+        keys.DOWN,
+        keys.VOLUP,
+        keys.VOLDOWN,
+        keys.PLAYPAUSE,
+        keys.QUIT,
+        keys.SWITCH,
+        keys.COMMAND,
+        keys.SELECT,
+    ]
+
+    vals = [
+        disp.up,
+        disp.down,
+        player.vol_up,
+        player.vol_down,
+        player.play_pause,
+        exitpl,
+        disp.switch_view,
+        disp.grab_input,
+        disp.select,
+    ]
+
+    assert len(_keys) == len(vals)
+
+    for key, val in zip(_keys, vals):
+        out.update(dict.fromkeys(key, val))
 
     return out;
 
@@ -77,8 +96,7 @@ def main(stdscr):
     
     stdscr.clear();
 
-    db = "lib.db";
-    conn = sqlite3.connect(db);
+    conn = sqlite3.connect(keys.LIBPATH);
     curs = conn.cursor();
 
     disp = init_windows(curs);

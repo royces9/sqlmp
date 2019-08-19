@@ -1,3 +1,5 @@
+import curses
+
 class Disp:
     def __init__(self, *argv):
         self.cur = 0
@@ -78,7 +80,9 @@ class Player_disp(Disp):
 
         self.exec_inp(inp, *args);
         
-
+    def exec_inp(inp, *args):
+        pass
+    
     def select(self, *args):
         player = args[2]
 
