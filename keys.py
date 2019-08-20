@@ -16,20 +16,20 @@ VOL_STEP=1
 
 SONG_DISP=lambda ll: song_format(ll)
 
-
 def song_format(ll):
+    title_max = 50
+    artist_max = 50
+    album_max = 50
+
+    
     title = ll['title']
     album = ll['album']
     artist = ll['artist']
-
-    names = [title, artist, album]
-    max_name = [40, 20, 30]
+    bitrate = str(int(ll['bitrate']/1000))
     
-    out = [None] * len(names)
-    i = 0
-    import string
-    for name, _max in zip(names, max_name):
-        out[i] = name.ljust(_max)
-        i += 1
-    
-    return ''.join(out)
+    return (
+        (title, 1/4),
+        (artist, 1/4),
+        (album, 1/4),
+        (bitrate, 1/4)
+    ), 1

@@ -44,12 +44,13 @@ class Player:
         self.pyaudio_init()
         self.vol = keys.DEFAULT_VOLUME;
 
-        #ms chunks to playback
+        #size of chunks in ms to playback
         self.step = 250
 
-        self.state = Play_state.init;
-        self.playq = queue.Queue(0);
-        self.curplay = queue.Queue(0);
+        self.state = Play_state.init
+        self.playq = queue.Queue(0)
+        self.curq = queue.Queue(0)
+        self.cur = None
 
         self.thread = threading.Thread(target=self.__play_loop)
         self.thread.daemon = True;
@@ -73,6 +74,9 @@ class Player:
         self.playq.put_nowait(args[0])
 
 
+    def curplay(self):
+        return self.curq.get(block=True, timeout = None)
+
     def play(self, *args):
         self.append(*args);
         self.state = Play_state.new;
@@ -85,14 +89,15 @@ class Player:
             fn = self.playq.get(block=True, timeout=None);
 
             #change state to playing
-            self.state = Play_state.playing;
+            self.state = Play_state.playing
             
             #push onto play queue
-            self.curplay.put_nowait(fn);
+            #self.cur = fn
+            self.curq.put_nowait(fn);
 
             #grab path
             fp = fn['path']
-
+            
             #convert input file to wav and put it into wav variable
             wav, _ = (ffmpeg
                      .input(fp)

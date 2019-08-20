@@ -4,6 +4,7 @@ import curses
 import signal
 import sqlite3
 import sys
+import threading
 
 import db_pl
 import display
@@ -15,11 +16,11 @@ import playlist
 import keys
 
 def exitpl(*args):
-    sys.exit();
+    sys.exit()
 
     
 def init_dict(disp, player):
-    out = dict();
+    out = dict()
     _keys = [
         keys.UP,
         keys.DOWN,
@@ -51,16 +52,32 @@ def init_dict(disp, player):
 
     return out;
 
+def info_print():
+    while True:
+        fn = player.curplay()
+        disp[2].print_line(0, 0, disp[2].blank)
+        if fn:
+            line = fn['title'] + ' - ' + fn['artist'] + ' - ' + fn['album']
+            disp[2].print_line(0, 0, line)
+
+        disp[2].refresh()
 
 def run(conn, curs, disp, player):
-    action = init_dict(disp, player);
+    action = init_dict(disp, player)
 
-    while(True):
+    yolothread = threading.Thread(target=info_print)
+    yolothread.daemon = True
+    yolothread.start()
+
+    while True:
         disp.refresh()
-        key = disp.getkey()
-        
+        try:
+            key = disp.getkey()
+        except:
+            key = None
+            pass
         if key in action:
-            action[key](disp, curs, player);
+            action[key](disp, curs, player)
             
  
 def init_windows(curs):
@@ -68,7 +85,7 @@ def init_windows(curs):
     hh = curses.LINES - bottom_bar + 1;
     ww = curses.COLS // 6;
     
-    leftwin = menu.Menu(0, 0, ww, hh, form=lambda x: x.name);
+    leftwin = menu.Menu(0, 0, ww, hh, form=lambda x: (x.name, 0));
     rightwin = menu.Menu(ww, 0, curses.COLS - ww, hh, form=keys.SONG_DISP)
     botwin = menu.Window(0, hh - 1, curses.COLS, bottom_bar)
     
@@ -79,12 +96,17 @@ def init_windows(curs):
         leftwin.win.addstr(i, 0, pl);
         playlists.append(playlist.Playlist(name=pl, curs=curs))
 
+
     leftwin.data = playlists
     rightwin.data = leftwin.data[0].data
     rightwin.disp()
 
     leftwin.win.chgat(0, 0, curses.A_STANDOUT)
     rightwin.win.chgat(0, 0, curses.A_STANDOUT)
+
+    leftwin.win.syncok(True)
+    rightwin.win.syncok(True)
+    botwin.win.syncok(True)
     
     return display.Player_disp(leftwin, rightwin, botwin)
 
@@ -98,9 +120,9 @@ def main(stdscr):
 
     conn = sqlite3.connect(keys.LIBPATH);
     curs = conn.cursor();
-
+    global disp
     disp = init_windows(curs);
-
+    global player
     player = music.init_music();
 
     disp.refresh();

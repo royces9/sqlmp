@@ -40,7 +40,7 @@ class Player_disp(Disp):
          self[2].print_line(0, 1, disp_song)
 
          if self.cur == 0:
-             self[1].data = self[0].highlighted()
+             self[1].data = self[0].highlighted().data
              self[1].cursor = 0
              self[1].offset = 0
              self[1].disp()
@@ -54,9 +54,9 @@ class Player_disp(Disp):
         self[2].print_line(0, 1, disp_song)
 
         if self.cur == 0:
-            self[1].data = self[0].highlighted();
-            self[1].cursor = 0;
-            self[1].offset = 0;
+            self[1].data = self[0].highlighted().data
+            self[1].cursor = 0
+            self[1].offset = 0
             self[1].disp()
                                                             
     def switch_view(self, *args):
@@ -74,14 +74,33 @@ class Player_disp(Disp):
         curses.echo();
         inp = self[2].win.getstr(3, 1, curses.COLS - 2);
         curses.noecho()
-
         self[2].win.addnstr(3, 0, " " * curses.COLS, curses.COLS);
         self[2].win.refresh();
+        
+        
+        self.exec_inp(inp.decode('utf-8'))
+
+        """
+        a = self[2].win.subwin(1, self[2].w, 3, 1)
+        import curses.textpad as tp
+        tb = tp.Textbox(a, insert_mode=True)
+        def valid(c):
+            if c == 10:
+                return 1
+        inp = tb.edit(valid)
 
         self.exec_inp(inp, *args);
+        """        
+
+
+    def exec_inp(self, inp):
+        spl = inp.split()
+        if len(spl) < 1:
+            return
         
-    def exec_inp(inp, *args):
-        pass
+        if spl[0] == 'sort':
+            self.sort_pl(spl[1])
+    
     
     def select(self, *args):
         player = args[2]
@@ -89,13 +108,15 @@ class Player_disp(Disp):
         with player.playq.mutex:
             player.playq.queue.clear()
 
-        song = self[1].highlighted()
-        song_str = ' - '.join([song['title'], song['artist'], song['album']])
-        self[2].print_line(0, 2, "Play: " + song_str)
         player.play(self[1].highlighted());
-
         
         for i in range(len(self[1].data)):
             newsong = self[0].highlighted()._next()
             player.append(newsong)
 
+
+    def sort_pl(self, _key):
+        if _key in self[1].data[0]:
+            self[1].data.sort(key=lambda x: x[_key])
+            self[1].disp()
+                                                    
