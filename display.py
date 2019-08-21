@@ -1,12 +1,10 @@
 import curses
+import keys
 
 class Disp:
-    def __init__(self, *argv):
+    def __init__(self, wins):
         self.cur = 0
-        self.wins = []
-        for arg in argv:
-            self.wins.append(arg)
-        
+        self.wins = wins
             
     def __len__(self):
         return len(self.wins)
@@ -31,6 +29,15 @@ class Disp:
                                                                                     
 
 class Player_disp(Disp):
+    def __init__(self, wins, curs):
+        Disp.__init__(self, wins)
+        self.ex_dict = {
+            'sort': self.sort_pl,
+            'newpl': self.new_pl,
+        }
+
+        self.curs = curs
+
     def up(self, *args):
          curwin = self.curwin();
          curwin.up();
@@ -62,10 +69,16 @@ class Player_disp(Disp):
     def switch_view(self, *args):
         if self.cur == 1:
             self.cur = 0
+            self.wins[0].highlight_colour = keys.FOCUSED
+            self.wins[1].highlight_colour = keys.HIGHLIGHTED
         else:
             self.cur = 1
-
+            self.wins[1].highlight_colour = keys.FOCUSED
+            self.wins[0].highlight_colour = keys.HIGHLIGHTED
             
+        self.wins[0].disp()
+        self.wins[1].disp()
+        
     def grab_input(self, *args):
         self[2].win.addstr(3, 0, self[2].blank);
         self[2].win.addstr(3, 0, ":");
@@ -95,11 +108,9 @@ class Player_disp(Disp):
 
     def exec_inp(self, inp):
         spl = inp.split()
-        if len(spl) < 1:
-            return
         
-        if spl[0] == 'sort':
-            self.sort_pl(spl[1])
+        if spl[0] in self.ex_dict:
+            self.ex_dict[spl[0]](spl[1:])
     
     
     def select(self, *args):
@@ -115,8 +126,17 @@ class Player_disp(Disp):
             player.append(newsong)
 
 
-    def sort_pl(self, _key):
+    def sort_pl(self, args):
+        if len(args) < 1:
+            return
+
+        _key = args[0]
         if _key in self[1].data[0]:
             self[1].data.sort(key=lambda x: x[_key])
             self[1].disp()
                                                     
+    def new_pl(self, args):
+        if len(args) < 1:
+            return
+
+        plfile = args[1]

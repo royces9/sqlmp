@@ -1,7 +1,10 @@
 import curses
+import wchar
 
 class Menu:
-    def __init__(self, x = 0, y = 0, w = 0, h = 0, data = [], form = lambda ll: (str(ll), 0)):
+    def __init__(self, x = 0, y = 0, w = 0, h = 0, data = [],
+                 form = lambda ll: (str(ll), 0),
+                 highlight_colour=curses.A_STANDOUT, normal_colour=curses.A_NORMAL):
         self.x = x
         self.y = y
         self.w = w
@@ -10,12 +13,14 @@ class Menu:
         self.win.keypad(True)
         self.data = data
         self.form = form
-        
+        self.highlight_colour = highlight_colour
+        self.normal_colour = normal_colour
         self.blank = " " * self.w
+
 
         self.cursor = 0
         self.offset = 0
-        self.win.chgat(self.cursor, 0, curses.A_STANDOUT)
+        self.win.chgat(self.cursor, 0, self.highlight_colour)
 
 
     def __getitem__(self, ind):
@@ -23,23 +28,23 @@ class Menu:
 
 
     def highlighted(self):
-        return self.data[self.highlighted_ind()];
+        return self.data[self.highlighted_ind()]
 
 
     def highlighted_ind(self):
-        return self.cursor + self.offset;
+        return self.cursor + self.offset
 
 
     def up(self):
-        self.win.chgat(self.cursor, 0, curses.A_NORMAL);
+        self.win.chgat(self.cursor, 0, self.normal_colour)
         
         at_top = self.cursor < 1;
 
         if not at_top:
-            self.cursor -= 1;
+            self.cursor -= 1
         else:
             if self.offset > 0:
-                self.offset -= 1;
+                self.offset -= 1
 
         self.disp();
 
@@ -74,7 +79,7 @@ class Menu:
                 else:
                     self.print_line(0, ii, formatted_list)
 
-        self.win.chgat(self.cursor, 0, curses.A_STANDOUT);
+        self.win.chgat(self.cursor, 0, self.highlight_colour);
 
         
     def print_line(self, x, y, line):
@@ -86,8 +91,9 @@ class Menu:
         previous = 0
         for string, fraction in datas:
             ind = previous
-            previous += int(self.w * fraction)
-            self.win.addstr(y, ind, string)
+            width = int(self.w * fraction)
+            previous += width
+            self.win.addstr(y, ind, wchar.set_width(string, width))
 
     def refresh(self):
         self.win.refresh();
@@ -96,30 +102,30 @@ class Menu:
 
 class Window:
     def __init__(self, x = 0, y = 0, w = 0, h = 0):
-        self.x = x;
-        self.y = y;
-        self.w = w;
-        self.h = h;
-        self.win = curses.newwin(h, w, y, x);
-        self.win.keypad(True);
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.win = curses.newwin(h, w, y, x)
+        self.win.keypad(True)
 
-        self.blank = " " * self.w;
+        self.blank = " " * self.w
 
-        self.cursor = 0;
-        self.offset = 0;
+        self.cursor = 0
+        self.offset = 0
 
     def disp(self):
         for ii in range(0, self.h - 1):
             if (ii + self.offset) > (len(self.data) - 1):
-                self.print_line(0, ii, self.blank);
+                self.print_line(0, ii, self.blank)
             else:
-                self.print_line(0, ii, self.data[ii + self.offset]);
+                self.print_line(0, ii, self.data[ii + self.offset])
 
         disp.refresh()
         
     def print_line(self, x, y, line):
-        self.win.addnstr(y, x, self.blank, self.w);
-        self.win.addstr(y, x, line);
+        self.win.addnstr(y, x, self.blank, self.w)
+        self.win.addstr(y, x, line)
 
     def refresh(self):
-        self.win.refresh();
+        self.win.refresh()
