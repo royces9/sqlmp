@@ -1,47 +1,54 @@
-import db_pl
-import menu
+import enum
 import random
 
-def get_songs_playlist(pl, curs):
-    songs = db_pl.list_pl_songs(pl, curs)
-    out = []
-
-    tags = ['path', 'title', 'artist', 'album', 'length', 'bitrate', 'playcount']
-    joined_tag = ", ".join(tags);
-
-    for i, song in enumerate(songs):
-        song = song.replace("'", r"''");
-        for queries in curs.execute(f"SELECT {joined_tag} FROM library WHERE path='{song}';"):
-            newd = dict()
-            for tag, query in zip(tags, queries):
-                newd[tag] = query
-
-            out.append(newd);
-            
-    return out;
-                                                                                    
+import db_pl
+import menu
 
 class Playlist:
     def __init__(self, name, curs):
         self.name = name
-        self.data = get_songs_playlist(name, curs)
+        self.data = db_pl.get_songs_playlist(name, curs)
         self.order = list(range(len(self.data)))
-        self.new_order()
-        
+        self.ind = 0
+        self.cur = 0
+
+        """
+        playback type:
+        0 - shuffle
+        1 - inorder
+        2 - single
+        """
+        self.playback = 1
+        self.play_order_list = [self.shuffle,
+                                self.inorder,
+                                self.single]
+        self.set_order()
+
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, ind):
         return self.data[ind]
             
-    def new_order(self):
+    def shuffle(self):
+        self.order = list(range(len(self.data)))
         random.shuffle(self.order)
-        self.ind = 0
+
+    def inorder(self):
+        self.order = list(range(len(self.data)))
+
+    def single(self):
+        self.order = [self.cur] * len(self.data)
+
+
+    def set_order(self):
+        self.play_order_list[self.playback]()
 
     def _next(self):
         self.ind += 1
 
         if self.ind >= len(self.data):
-            self.new_order()
+            self.set_order()
+            self.ind = 0
 
         return self.data[self.order[self.ind]]

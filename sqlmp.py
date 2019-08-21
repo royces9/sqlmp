@@ -1,17 +1,13 @@
 #!/usr/bin/python
 
 import curses
-import signal
 import sqlite3
 import sys
 import threading
 
-import db_pl
-import display
-import libdb
 import menu
 import music
-import playlist
+import player_disp
 
 import keys
 
@@ -77,7 +73,7 @@ def run(conn, curs, disp, player):
             action[key](disp, curs, player)
             
  
-def init_windows(curs):
+def init_windows(conn, curs):
     bottom_bar = 5
     hh = curses.LINES - bottom_bar + 1;
     ww = curses.COLS // 6;
@@ -86,27 +82,7 @@ def init_windows(curs):
     rightwin = menu.Menu(ww, 0, curses.COLS - ww, hh, form=keys.SONG_DISP, highlight_colour=keys.HIGHLIGHTED, normal_colour=keys.NORMAL)
     botwin = menu.Window(0, hh - 1, curses.COLS, bottom_bar)
     
-    str_pl = libdb.list_playlists(curs)
-    playlists = []
-
-    for i, pl in enumerate(str_pl):
-        leftwin.win.addstr(i, 0, pl);
-        playlists.append(playlist.Playlist(name=pl, curs=curs))
-
-
-    leftwin.data = playlists
-    rightwin.data = leftwin.data[0].data
-    rightwin.disp()
-
-    leftwin.win.chgat(0, 0, keys.FOCUSED)
-    rightwin.win.chgat(0, 0, keys.HIGHLIGHTED)
-
-    
-    leftwin.win.syncok(True)
-    rightwin.win.syncok(True)
-    botwin.win.syncok(True)
-    
-    return display.Player_disp([leftwin, rightwin, botwin], curs)
+    return player_disp.Player_disp([leftwin, rightwin, botwin], conn, curs)
 
 
 def init_colours():
@@ -135,12 +111,10 @@ def main(stdscr):
 
     conn = sqlite3.connect(keys.LIBPATH);
     curs = conn.cursor();
-    #global disp
-    disp = init_windows(curs);
-    #global player
+
+    disp = init_windows(conn, curs);
     player = music.init_music();
 
-    disp.refresh();
     run(conn, curs, disp, player);
 
 if __name__ == "__main__":

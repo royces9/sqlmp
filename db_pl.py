@@ -4,8 +4,24 @@ import libdb
 import os
 import sqlite3
 import sys
-import locale
 
+def get_songs_playlist(pl, curs):
+    songs = list_pl_songs(pl, curs)
+    out = []
+
+    tags = ['path', 'title', 'artist', 'album', 'length', 'bitrate', 'playcount']
+    joined_tag = ", ".join(tags);
+
+    for song in songs:
+        song = song.replace("'", r"''");
+        for queries in curs.execute(f"SELECT {joined_tag} FROM library WHERE path='{song}';"):
+            newd = dict()
+            for tag, query in zip(tags, queries):
+                newd[tag] = query
+                
+            out.append(newd);
+                
+    return out;
 
 
 def add_to_pl(path, pl_table, conn, curs):
@@ -34,8 +50,6 @@ def remove_from_pl(path, pl_table, curs, conn):
 
     
 def add_to_pl_from_file(pl_table, file_path, conn, curs):
-    locale.setlocale(locale.LC_ALL, '')
-
     with open(file_path, "r") as fp:
         for path in fp:
             path = path.rstrip();
