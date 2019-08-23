@@ -5,48 +5,70 @@ import os
 import sqlite3
 import sys
 
+
 def get_songs_playlist(pl, curs):
     songs = list_pl_songs(pl, curs)
     out = []
 
     tags = ['path', 'title', 'artist', 'album', 'length', 'bitrate', 'playcount']
-    joined_tag = ", ".join(tags);
+    joined_tag = ", ".join(tags)
 
     for song in songs:
-        song = song.replace("'", r"''");
+        song = song.replace("'", r"''")
         for queries in curs.execute(f"SELECT {joined_tag} FROM library WHERE path='{song}';"):
             newd = dict()
             for tag, query in zip(tags, queries):
                 newd[tag] = query
                 
-            out.append(newd);
+            out.append(newd)
                 
-    return out;
+    return out
+
+def get_val(plname, val, curs):
+    sqlstr = f"SELECT {val} FROM playlists WHERE plname='{plname}';"
+    curs.execute(sqlstr)
+    out = curs.fetchone()
+    if out:
+        return out[0]
+
+    return None
 
 
+def change_sort(sort, pl_table, conn, curs):
+    sqlstr = f"UPDATE playlists SET sort='{sort}' WHERE plname='{pl_table}';"
+    curs.execute(sqlstr)
+    conn.commit()
+
+
+def change_playtype(play, pl_table, conn, curs):
+    sqlstr = f"UPDATE playlists SET playorder='{play}' WHERE plname='{pl_table}';"
+    curs.execute(sqlstr)
+    conn.commit()
+
+    
 def add_to_pl(path, pl_table, conn, curs):
     #add file to library table if it's not already
-    libdb.add_to_lib(path, conn, curs);
-    path = path.replace("'", "''");
+    libdb.add_to_lib(path, conn, curs)
+    path = path.replace("'", "''")
 
     #add file into playlist table
-    sqlstr = f"INSERT INTO {pl_table} VALUES ('{path}');";
-    curs.execute(sqlstr);
+    sqlstr = f"INSERT INTO {pl_table} VALUES ('{path}');"
+    curs.execute(sqlstr)
 
-    sqlstr = f"INSERT INTO pl_song VALUES ('{path}', '{pl_table}');";
-    curs.execute(sqlstr);
+    sqlstr = f"INSERT INTO pl_song VALUES ('{path}', '{pl_table}');"
+    curs.execute(sqlstr)
 
-    conn.commit();
+    conn.commit()
 
 
 def remove_from_pl(path, pl_table, curs, conn):
-    sqlstr = f"DELETE FROM {pl_table} WHERE path='{path}';";
-    curs.execute(sqlstr);
+    sqlstr = f"DELETE FROM {pl_table} WHERE path='{path}';"
+    curs.execute(sqlstr)
 
-    sqlstr = f"DELETE FROM pl_song WHERE path='{path}' AND plname='{pl_table}';";
-    curs.execute(sqlstr);
+    sqlstr = f"DELETE FROM pl_song WHERE path='{path}' AND plname='{pl_table}';"
+    curs.execute(sqlstr)
     
-    conn.commit();
+    conn.commit()
 
     
 def add_to_pl_from_file(pl_table, file_path, conn, curs):
@@ -62,7 +84,7 @@ def init_pl(pl_table, conn, curs):
         return;
 
     curs.execute(f"CREATE TABLE '{pl_table}' (path);");
-    curs.execute(f"INSERT INTO playlists VALUES ('{pl_table}');");
+    curs.execute(f"INSERT INTO playlists VALUES ('{pl_table}', 'artist', 'shuffle');");
     conn.commit();
 
 
@@ -86,7 +108,7 @@ def rename_pl(pl, newname, conn, curs):
     sqlstr = f"ALTER TABLE {pl} RENAME TO {newname}";
     curs.execute(sqlstr);
 
-    sqlstr = f"ALTER TABLE playlists SET plname='{newname}' WHERE plname='{pl}';"
+    sqlstr = f"UPDATE TABLE playlists SET plname='{newname}' WHERE plname='{pl}';"
     curs.execute(sqlstr);
     
         

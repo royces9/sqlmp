@@ -1,25 +1,39 @@
 import curses
 import wchar
 
-class Menu:
-    def __init__(self, x = 0, y = 0, w = 0, h = 0, data = [],
-                 form = lambda ll: (str(ll), 0),
-                 highlight_colour=curses.A_STANDOUT, normal_colour=curses.A_NORMAL):
+
+class Window:
+    def __init__(self, x = 0, y = 0, w = 0, h = 0):
         self.x = x
         self.y = y
         self.w = w
         self.h = h
         self.win = curses.newwin(h, w, y, x)
         self.win.keypad(True)
+
+        self.blank = " " * self.w
+
+        self.cursor = 0
+        self.offset = 0
+        
+    def print_line(self, x, y, line):
+        self.win.addnstr(y, x, self.blank, self.w)
+        self.win.addstr(y, x, line)
+
+    def refresh(self):
+        self.win.refresh()
+
+
+class Menu(Window):
+    def __init__(self, x = 0, y = 0, w = 0, h = 0, data = [],
+                 form = lambda ll: (str(ll), 0),
+                 highlight_colour=curses.A_STANDOUT, normal_colour=curses.A_NORMAL):
+        super().__init__(x, y, w, h)
         self.data = data
         self.form = form
         self.highlight_colour = highlight_colour
         self.normal_colour = normal_colour
-        self.blank = " " * self.w
 
-
-        self.cursor = 0
-        self.offset = 0
         self.win.chgat(self.cursor, 0, self.highlight_colour)
 
 
@@ -97,35 +111,3 @@ class Menu:
 
     def refresh(self):
         self.win.refresh();
-
-
-
-class Window:
-    def __init__(self, x = 0, y = 0, w = 0, h = 0):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
-        self.win = curses.newwin(h, w, y, x)
-        self.win.keypad(True)
-
-        self.blank = " " * self.w
-
-        self.cursor = 0
-        self.offset = 0
-
-    def disp(self):
-        for ii in range(0, self.h - 1):
-            if (ii + self.offset) > (len(self.data) - 1):
-                self.print_line(0, ii, self.blank)
-            else:
-                self.print_line(0, ii, self.data[ii + self.offset])
-
-        disp.refresh()
-        
-    def print_line(self, x, y, line):
-        self.win.addnstr(y, x, self.blank, self.w)
-        self.win.addstr(y, x, line)
-
-    def refresh(self):
-        self.win.refresh()

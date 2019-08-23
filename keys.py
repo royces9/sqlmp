@@ -1,5 +1,6 @@
 import curses
 
+#key bindings
 UP={'KEY_UP', 'l'}
 DOWN={'KEY_DOWN', 'k'}
 LEFT={'KEY_LEFT', 'j'}
@@ -13,11 +14,12 @@ COMMAND={':'}
 SELECT={'\n'}
 LIBPATH='lib.db'
 
+#volume
 DEFAULT_VOLUME=90
 VOL_STEP=1
 
+#display
 SONG_DISP=lambda ll: song_format(ll)
-
 
 FOCUSED_BG=9
 FOCUSED_FG=219

@@ -2,8 +2,6 @@ import enum
 import sys
 import threading
 import os
-
-import signal
 import queue
 
 import ffmpeg

@@ -7,6 +7,7 @@ import threading
 
 import menu
 import music
+import musicdb
 import player_disp
 
 import keys
@@ -49,6 +50,7 @@ def init_dict(disp, player):
     return out;
 
 def info_print(disp, player):
+    disp[2].print_line(0, 0, "Nothing currently playing")
     while True:
         fn = player.curplay()
         disp[2].print_line(0, 0, disp[2].blank)
@@ -58,7 +60,7 @@ def info_print(disp, player):
 
         disp[2].refresh()
 
-def run(conn, curs, disp, player):
+def run(conn, curs, disp, player, stdscr):
     action = init_dict(disp, player)
 
     yolothread = threading.Thread(target=info_print, args=(disp,player,))
@@ -71,12 +73,13 @@ def run(conn, curs, disp, player):
         key = disp.getkey()
         if key in action:
             action[key](disp, curs, player)
-            
+        elif key == 'KEY_RESIZE':
+            disp.resize(stdscr)
  
 def init_windows(conn, curs):
     bottom_bar = 5
-    hh = curses.LINES - bottom_bar + 1;
-    ww = curses.COLS // 6;
+    hh = curses.LINES - bottom_bar + 1
+    ww = curses.COLS // 6
     
     leftwin = menu.Menu(0, 0, ww, hh, form=lambda x: (x.name, 0), highlight_colour=keys.FOCUSED, normal_colour=keys.NORMAL)
     rightwin = menu.Menu(ww, 0, curses.COLS - ww, hh, form=keys.SONG_DISP, highlight_colour=keys.HIGHLIGHTED, normal_colour=keys.NORMAL)
@@ -104,7 +107,6 @@ def init_colours():
 
 def main(stdscr):
     curses.curs_set(False);
-    
     stdscr.clear();
     
     init_colours()
@@ -115,7 +117,7 @@ def main(stdscr):
     disp = init_windows(conn, curs);
     player = music.init_music();
 
-    run(conn, curs, disp, player);
+    run(conn, curs, disp, player, stdscr);
 
 if __name__ == "__main__":
     curses.wrapper(main);

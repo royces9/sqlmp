@@ -9,9 +9,10 @@ import sqlite3
 
 
 def err_file(err, message):
-    with open(err, "a") as fp:
+    with open(err, "a+") as fp:
         print(message, file=fp);
 
+        
 def extract_metadata(path, key_list, attr_list):
     ext = os.path.splitext(path)[1];
     ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'};
@@ -102,7 +103,7 @@ def remove_from_lib(path, conn, curs):
     sqlstr = f"DELETE FROM pl_song WHERE path = '{path}';";
     curs.execute(sqlstr);
 
-    curs.commit();
+    conn.commit();
 
     
 def add_dir_to_lib(di, conn, curs):
@@ -120,9 +121,9 @@ def init_lib(lib_dir, db_dir):
         conn = sqlite3.connect(db_dir);
         curs = conn.cursor();
         curs.execute(f'''CREATE TABLE library
-        (key INT PRIMARY KEY, path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, bitrate INT, playcount INT);''');
-        curs.execute(f"CREATE TABLE playlists (plname);");
-        curs.execute(f"CREATE TABLE pl_song (path, plname);");
+        (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, bitrate INT, playcount INT);''');
+        curs.execute(f"CREATE TABLE playlists (plname TEXT, sort TEXT, playorder TEXT);");
+        curs.execute(f"CREATE TABLE pl_song (path TEXT, plname TEXT);");
         conn.commit();
     else:
         conn = sqlite3.connect(db_dir);
@@ -133,11 +134,7 @@ def init_lib(lib_dir, db_dir):
     
 
 def list_playlists(curs):
-    plout = [];
-    for pl in curs.execute("SELECT plname FROM playlists;"):
-        plout.append(pl[0]);
-
-    return plout;
+    return [pl[0] for pl in curs.execute("SELECT plname FROM playlists;")]
 
     
 if __name__ == "__main__":

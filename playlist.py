@@ -1,27 +1,23 @@
-import enum
 import random
 
-import db_pl
-import menu
+import pldb
 
 class Playlist:
     def __init__(self, name, curs):
         self.name = name
-        self.data = db_pl.get_songs_playlist(name, curs)
+        self.data = pldb.get_songs_playlist(name, curs)
         self.order = list(range(len(self.data)))
         self.ind = 0
         self.cur = 0
 
-        """
-        playback type:
-        0 - shuffle
-        1 - inorder
-        2 - single
-        """
-        self.playback = 1
-        self.play_order_list = [self.shuffle,
-                                self.inorder,
-                                self.single]
+        self.sort_key = pldb.get_val(self.name, 'sort', curs)
+        self.sort()
+
+        self.playback = pldb.get_val(self.name, 'playorder', curs)
+        self.play_order_list = {'shuffle': self.shuffle,
+                                'inorder': self.inorder,
+                                'single': self.single}
+
         self.set_order()
 
     def __len__(self):
@@ -40,6 +36,8 @@ class Playlist:
     def single(self):
         self.order = [self.cur] * len(self.data)
 
+    def sort(self):
+        self.data.sort(key=lambda x: x[self.sort_key])
 
     def set_order(self):
         self.play_order_list[self.playback]()
