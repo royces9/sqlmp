@@ -12,9 +12,6 @@ import player_disp
 
 import keys
 
-from time import time
-
-
 def info_print(disp, player):
     disp[2].print_line(0, 0, "Nothing currently playing")
     while True:
