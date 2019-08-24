@@ -1,4 +1,4 @@
-class Disp:
+class Display:
     def __init__(self, wins):
         self.cur = 0
         self.wins = wins

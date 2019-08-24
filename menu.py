@@ -1,7 +1,6 @@
 import curses
 import wchar
 
-
 class Window:
     def __init__(self, x = 0, y = 0, w = 0, h = 0):
         self.x = x
@@ -18,7 +17,7 @@ class Window:
         
     def print_line(self, x, y, line):
         self.win.addnstr(y, x, self.blank, self.w)
-        self.win.addstr(y, x, line)
+        self.win.addnstr(y, x, line, self.w)
 
     def refresh(self):
         self.win.refresh()
@@ -36,18 +35,14 @@ class Menu(Window):
 
         self.win.chgat(self.cursor, 0, self.highlight_colour)
 
-
     def __getitem__(self, ind):
         return self.data[ind]
-
 
     def highlighted(self):
         return self.data[self.highlighted_ind()]
 
-
     def highlighted_ind(self):
         return self.cursor + self.offset
-
 
     def up(self):
         self.win.chgat(self.cursor, 0, self.normal_colour)
@@ -77,11 +72,6 @@ class Menu(Window):
 
         self.disp();
 
-        
-    def exe(self):
-        arg = self.highlighted();
-
-
     def disp(self):
         for ii in range(0, self.h - 1):
             self.print_line(0, ii, self.blank)
@@ -108,6 +98,3 @@ class Menu(Window):
             width = int(self.w * fraction)
             previous += width
             self.win.addstr(y, ind, wchar.set_width(string, width))
-
-    def refresh(self):
-        self.win.refresh();

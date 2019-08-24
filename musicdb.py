@@ -2,7 +2,6 @@ import os
 
 import sqlite3
 import mutagen
-import mutagen.mp3
 
 
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
@@ -21,7 +20,7 @@ class Musicdb:
         self.path = path
 
         self.conn = sqlite3.connect(self.path)
-        self.curs = conn.cursor()
+        self.curs = self.conn.cursor()
 
 
     #only check library, not anything else like playlists
@@ -30,9 +29,12 @@ class Musicdb:
         self.exe(f"SELECT path FROM library WHERE path='{path}' LIMIT 1;")
         return True if self.curs.fetchone() else False
 
+    def __def__(self):
+        self.conn.close()
 
-    def exe(query):
+    def exe(self, query):
         return self.curs.execute(query)
+
 
     def commit(self):
         self.conn.commit()
@@ -58,11 +60,12 @@ class Musicdb:
 
         song_dict = {}
         for key in key_list:
-            song_dict[key] = "";
             if key in out.keys():
-                song_dict[key] = out[key][0].replace("'", r"''");
+                song_dict[key] = out[key][0].replace("'", "''")
+            else:
+                song_dict[key] = ""
 
-        attr_out = {};
+        attr_out = {}
         if hasattr(out, 'info'):
             for attr in attr_list:
                 attr_out[attr] = getattr(out.info, attr) if hasattr(out.info, attr) else 0
@@ -73,44 +76,50 @@ class Musicdb:
         return (song_dict.values(), attr_out.values());
 
 
-
-    def add_to_lib(path):
+    def add_to_lib(self, path):
         if path in self:
             return
-
 
         out = self.extract_metadata(path)
         if not out:
             return
-
-        path = path.replace("'", "''")
         ((title, artist, album), (length, bitrate)) = out
+        
+        path = path.replace("'", "''")
 
-        sqlstr =
-        self.exe(f"INSERT INTO library VALUES ('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0);")
+        self.exe(f"INSERT INTO library VALUES ('{path}','{title}','{artist}','{album}',{length},{bitrate},0);")
         self.commit();
 
+        
     def remove_from_lib(path):
-        if not in self:
+        if path not in self:
             return
 
         self.exe(f"DELETE FROM library WHERE path='{path}';")
-        pl_list = [];
-        for qq in self.exe(f"SELECT plname FROM pl_song WHERE path = '{path}';"):
-            pl_list.append(qq[0]);
+        pl_all = "','".join([qq[0] for qq in self.exe(f"SELECT plname FROM pl_song WHERE path='{path}';")])
 
-        pl_all = "','".join(pl_list);
         self.exe(f"DELETE FROM {pl_all} WHERE path='{path}';")
-        self.exe(f"DELETE FROM pl_song WHERE path = '{path}';")
+        self.exe(f"DELETE FROM pl_song WHERE path='{path}';")
         self.commit()
         
 
-    def add_dir(di):
+    def add_dir(self, di):
+        list_all = []
         for root, subdirs, files in os.walk(di):
             for ff in files:
                 path = os.path.join(root, ff);
-                self.add_to_lib(path);
-                                                
+                path = path.replace("'", "''")
+                if path not in self:
+                    out = self.extract_metadata(path)
+                    if out:
+                        ((title, artist, album), (length, bitrate)) = out
+                        list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
+                
+
+        joined = ",".join(list_all)
+        self.exe(f"INSERT INTO library VALUES {joined}")
+        self.commit()
+
+                                
     def list_pl(self):
         return [pl[0] for pl in self.exe("SELECT plname FROM playlists;")]
-

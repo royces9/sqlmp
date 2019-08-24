@@ -12,10 +12,12 @@ QUIT={'q'}
 SWITCH={'\t'}
 COMMAND={':'}
 SELECT={'\n'}
+
+#database path
 LIBPATH='lib.db'
 
 #volume
-DEFAULT_VOLUME=90
+DEFAULT_VOLUME=80
 VOL_STEP=1
 
 #display
@@ -47,3 +49,9 @@ def song_format(ll):
         (album, 1/4),
         (bitrate, 1/8)
     ), 1
+
+def debug_file(err):
+    with open('test.txt', 'a+') as fp:
+        for e in err:
+            print(str(e), file=fp)
+                    

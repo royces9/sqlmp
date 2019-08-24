@@ -12,10 +12,6 @@ from pydub.playback import make_chunks
 import keys
 
 
-def debug_file(line):
-    with open("test.txt", "w+") as fp:
-        fp.write(line);
-
 class Play_state(enum.Enum):
     init = 0
     not_playing = 1
@@ -26,16 +22,6 @@ class Play_state(enum.Enum):
 
     
 class Player:
-    def pyaudio_init(self):
-        og_err = sys.stderr.fileno()
-        cp_err = os.dup(og_err)
-
-        with open(os.devnull, 'w') as devnull:
-            os.dup2(devnull.fileno(), og_err)
-        
-        self.pyaudio = pyaudio.PyAudio();
-
-        os.dup2(cp_err, og_err)
 
 
     def __init__(self):
@@ -60,6 +46,7 @@ class Player:
             if newvol > 100:
                 newvol = 100;
             self.vol = newvol;
+
     
     def vol_down(self, *args):
             newvol = self.vol - keys.VOL_STEP;
@@ -74,6 +61,7 @@ class Player:
 
     def curplay(self):
         return self.curq.get(block=True, timeout = None)
+
 
     def play(self, *args):
         self.append(*args);
@@ -90,7 +78,6 @@ class Player:
             self.state = Play_state.playing
             
             #push onto play queue
-            #self.cur = fn
             self.curq.put_nowait(fn);
 
             #grab path
@@ -140,20 +127,35 @@ class Player:
             self.state = Play_state.paused;
         elif self.state == Play_state.paused:
             self.state = Play_state.playing;
+
             
     def pause(self, *args):
         self.state = Play_state.paused
 
+
     def unpause(self, *args):
         self.state = Play_state.playing
 
+
     def seek_forward(self, *args):
         pass
+
 
     def seek_backward(self, *args):
         pass
 
 
+    def pyaudio_init(self):
+        og_err = sys.stderr.fileno()
+        cp_err = os.dup(og_err)
+
+        with open(os.devnull, 'w') as devnull:
+            os.dup2(devnull.fileno(), og_err)
+        
+        self.pyaudio = pyaudio.PyAudio();
+
+        os.dup2(cp_err, og_err)
+
+
 def init_music():
-    player = Player();
-    return player;
+    return Player()
