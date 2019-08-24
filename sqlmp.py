@@ -6,16 +6,15 @@ import sys
 import threading
 
 import menu
-import music
 import musicdb
+import player
 import player_disp
 
 import keys
 
-def info_print(disp, player):
-    disp[2].print_line(0, 0, "Nothing currently playing")
+def info_print(disp):
     while True:
-        fn = player.curplay()
+        fn = disp.player.curplay()
         disp[2].print_line(0, 0, disp[2].blank)
         if fn:
             line = fn['title'] + ' - ' + fn['artist'] + ' - ' + fn['album']
@@ -24,22 +23,22 @@ def info_print(disp, player):
         disp[2].refresh()
 
         
-def run(db, disp, player, stdscr):
-    action = init_dict(disp, player)
+def run(disp, stdscr):
+    action = init_dict(disp)
 
-    infothread = threading.Thread(target=info_print, args=(disp, player,))
-    infothread.daemon = True
+    infothread = threading.Thread(target=info_print, args=(disp,), daemon=True)
     infothread.start()
 
     while True:
         disp.refresh()
 
         key = disp.getkey()
+
         if key in action:
-            action[key](disp, db.curs, player)
+            action[key](disp)
+
         elif key == 'KEY_RESIZE':
             disp.resize(stdscr)
-
 
 def init_colours():
     curses.start_color()
@@ -58,7 +57,7 @@ def init_colours():
         keys.NORMAL=curses.color_pair(3)
 
         
-def init_dict(disp, player):
+def init_dict(disp):
     out = dict()
 
     def exitpl(*args):
@@ -79,9 +78,9 @@ def init_dict(disp, player):
     vals = [
         disp.up,
         disp.down,
-        player.vol_up,
-        player.vol_down,
-        player.play_pause,
+        disp.player.vol_up,
+        disp.player.vol_down,
+        disp.player.play_pause,
         exitpl,
         disp.switch_view,
         disp.grab_input,
@@ -97,7 +96,7 @@ def init_dict(disp, player):
     return out;
 
 
-def init_windows(db):
+def init_windows(db, play):
     bottom_bar = 5
     hh = curses.LINES - bottom_bar + 1
     ww = curses.COLS // 6
@@ -106,7 +105,7 @@ def init_windows(db):
     rightwin = menu.Menu(ww, 0, curses.COLS - ww, hh, form=keys.SONG_DISP, highlight_colour=keys.HIGHLIGHTED, normal_colour=keys.NORMAL)
     botwin = menu.Window(0, hh - 1, curses.COLS, bottom_bar)
 
-    return player_disp.Player_disp([leftwin, rightwin, botwin], db)
+    return player_disp.Player_disp([leftwin, rightwin, botwin], db, play)
 
 
 def main(stdscr):
@@ -116,10 +115,11 @@ def main(stdscr):
     
     db = musicdb.Musicdb(keys.LIBPATH)
 
-    disp = init_windows(db);
-    player = music.init_music();
+    play = player.Player();
+    disp = init_windows(db, play);
+    disp[2].print_line(0, 0, "Nothing currently playing")
 
-    run(db, disp, player, stdscr);
+    run(disp, stdscr);
 
 if __name__ == "__main__":
     curses.wrapper(main);

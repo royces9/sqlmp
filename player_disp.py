@@ -9,7 +9,7 @@ import playlist
 import keys
 
 class Player_disp(display.Display):
-    def __init__(self, wins, db):
+    def __init__(self, wins, db, player):
         super().__init__(wins)
         self.ex_dict = {
             'sort': self.sort_pl,
@@ -22,6 +22,7 @@ class Player_disp(display.Display):
         for win in self.wins:
             win.win.syncok(True)
 
+        self.player = player
         self.db = db
         self.conn = db.conn
         self.curs = db.curs
@@ -44,7 +45,7 @@ class Player_disp(display.Display):
     """
     Functions called from key press/events
     """
-    def up(self, *args):
+    def up(self, arg=None):
         self.curwin().up()
 
         if self.cur == 0:
@@ -56,7 +57,7 @@ class Player_disp(display.Display):
         self.disp_selected_song()
 
 
-    def down(self, *args):
+    def down(self, arg=None):
         self.curwin().down()
 
         if self.cur == 0:
@@ -68,7 +69,7 @@ class Player_disp(display.Display):
         self.disp_selected_song()
 
         
-    def switch_view(self, *args):
+    def switch_view(self, arg=None):
         if self.cur == 1:
             self.cur = 0
             self.wins[0].highlight_colour = keys.FOCUSED
@@ -82,7 +83,7 @@ class Player_disp(display.Display):
         self[1].disp()
         
 
-    def grab_input(self, *args):
+    def grab_input(self, arg=None):
         self[2].win.addstr(2, 0, ":")
         self[2].refresh()
 
@@ -95,15 +96,12 @@ class Player_disp(display.Display):
         self.exec_inp(inp)
         self[2].win.addstr(2, 0, self[2].blank)
 
-
     
-    def select(self, *args):
-        player = args[2]
+    def select(self, arg=None):
+        with self.player.playq.mutex:
+            self.player.playq.queue.clear()
 
-        with player.playq.mutex:
-            player.playq.queue.clear()
-
-        player.play(self[1].highlighted());
+        self.player.play(self[1].highlighted());
 
         curpl = self[0].highlighted()
 
@@ -113,7 +111,7 @@ class Player_disp(display.Display):
 
         for _ in range(len(self[1].data)):
             newsong = curpl._next()
-            player.append(newsong)
+            self.player.append(newsong)
 
 
     def resize(self, stdscr):
@@ -195,6 +193,7 @@ class Player_disp(display.Display):
         else:
             self.err_print(f'"{_key}" is not a valid key to sort by')
             
+
     def new_pl(self, args):
         if len(args) < 2:
             self.err_print('Two arguments required')
@@ -239,6 +238,7 @@ class Player_disp(display.Display):
             self.up(None)
             
         self[0].disp()
+
                 
     def rename_pl(self, args):
         if len(args) > 1:

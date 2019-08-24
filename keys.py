@@ -46,7 +46,7 @@ def song_format(ll):
     minutes = str(int(ll['length'] // 60))
     seconds = str(int(round(ll['length'] % 60)))
     if len(seconds) < 2:
-        seconds = '0'+ str(seconds)
+        seconds = '0' + seconds
     
     length = ':'.join([minutes, seconds])
     

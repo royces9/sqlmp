@@ -32,37 +32,35 @@ class Player:
         self.state = Play_state.init
         self.playq = queue.Queue(0)
         self.curq = queue.Queue(0)
-        self.cur = None
 
-        self.thread = threading.Thread(target=self.__play_loop)
-        self.thread.daemon = True;
+        self.thread = threading.Thread(target=self.__play_loop, daemon=True)
         self.thread.start();        
 
 
-    def curplay(self):
+    def curplay(self, arg=None):
         return self.curq.get(block=True, timeout = None)
 
 
-    def vol_up(self, *args):
+    def vol_up(self, arg=None):
             newvol = self.vol + keys.VOL_STEP;
             if newvol > 100:
                 newvol = 100;
             self.vol = newvol;
 
     
-    def vol_down(self, *args):
+    def vol_down(self, arg=None):
             newvol = self.vol - keys.VOL_STEP;
             if newvol < 0:
                 newvol = 0;
             self.vol = newvol;
 
 
-    def append(self, *args):
-        self.playq.put_nowait(args[0])
+    def append(self, arg):
+        self.playq.put_nowait(arg)
 
 
-    def play(self, *args):
-        self.append(*args);
+    def play(self, arg):
+        self.append(arg);
         self.state = Play_state.new;
 
         
@@ -153,7 +151,3 @@ class Player:
         self.pyaudio = pyaudio.PyAudio();
 
         os.dup2(cp_err, og_err)
-
-
-def init_music():
-    return Player()
