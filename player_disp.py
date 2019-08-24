@@ -46,7 +46,7 @@ class Player_disp(display.Display):
     Functions called from key press/events
     """
     def up(self, arg=None):
-        self.curwin().up()
+        selonef.curwin().up()
 
         if self.cur == 0:
             self[1].data = self[0].highlighted().data
@@ -235,7 +235,7 @@ class Player_disp(display.Display):
         playlist.del_pl(plname, self.db)
         self[0].data.pop(ind)
         if ind >= len(self[0].data):
-            self.up(None)
+            self.up()
             
         self[0].disp()
 
