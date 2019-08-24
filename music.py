@@ -22,8 +22,6 @@ class Play_state(enum.Enum):
 
     
 class Player:
-
-
     def __init__(self):
         self.pyaudio_init()
         self.vol = keys.DEFAULT_VOLUME;
@@ -39,7 +37,11 @@ class Player:
         self.thread = threading.Thread(target=self.__play_loop)
         self.thread.daemon = True;
         self.thread.start();        
-        
+
+
+    def curplay(self):
+        return self.curq.get(block=True, timeout = None)
+
 
     def vol_up(self, *args):
             newvol = self.vol + keys.VOL_STEP;
@@ -57,10 +59,6 @@ class Player:
 
     def append(self, *args):
         self.playq.put_nowait(args[0])
-
-
-    def curplay(self):
-        return self.curq.get(block=True, timeout = None)
 
 
     def play(self, *args):

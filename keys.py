@@ -42,12 +42,20 @@ def song_format(ll):
     album = ll['album']
     artist = ll['artist']
     bitrate = str(int(ll['bitrate']/1000))
+
+    minutes = str(int(ll['length'] // 60))
+    seconds = str(int(round(ll['length'] % 60)))
+    if len(seconds) < 2:
+        seconds = '0'+ str(seconds)
+    
+    length = ':'.join([minutes, seconds])
     
     return (
         (title, 3/8),
         (artist, 1/4),
         (album, 1/4),
-        (bitrate, 1/8)
+        (bitrate, 1/16),
+        (length, 1/16),
     ), 1
 
 def debug_file(err):

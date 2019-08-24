@@ -233,11 +233,10 @@ class Player_disp(display.Display):
             ind = self[0].highlighted_ind()
             plname = self[0].data[ind].name
 
-        playlist.del_pl(plname, self.conn, self.curs)
+        playlist.del_pl(plname, self.db)
         self[0].data.pop(ind)
         if ind >= len(self[0].data):
             self.up(None)
-            #self[1].disp()
             
         self[0].disp()
                 
