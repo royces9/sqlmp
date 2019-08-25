@@ -105,6 +105,9 @@ def init_windows(db, play):
     rightwin = menu.Menu(ww, 0, curses.COLS - ww, hh, form=keys.SONG_DISP, highlight_colour=keys.HIGHLIGHTED, normal_colour=keys.NORMAL)
     botwin = menu.Window(0, hh - 1, curses.COLS, bottom_bar)
 
+    sys.stdout.write("\x1b]2;sqlmp\x07")
+    sys.stdout.flush()
+
     return player_disp.Player_disp([leftwin, rightwin, botwin], db, play)
 
 
@@ -112,7 +115,7 @@ def main(stdscr):
     curses.curs_set(False);
     stdscr.clear();
     init_colours()
-    
+
     db = musicdb.Musicdb(keys.LIBPATH)
 
     play = player.Player();
