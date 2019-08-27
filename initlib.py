@@ -18,13 +18,7 @@ libpath = os.getenv('HOME') + '/Music/'
 #list of playlists to add
 prefix = os.getenv('HOME') + '/.config/cmus/playlists/'
 pl_list = [
-    prefix + 'damnsumman',
-    prefix + 'anisongbanger',
-    prefix + 'sumluv',
-    prefix + 'THE_playlist',
-    prefix + 'coolassshit',
-    prefix + 'actuallykms',
-    prefix + 'animusumluv',
+    'test.pl'
 ]
 
 
@@ -32,9 +26,9 @@ conn = sqlite3.connect(dbpath);
 curs = conn.cursor();
 db = musicdb.Musicdb(dbpath)
 
-db.exe(f"CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, bitrate INT, playcount INT);")
-db.exe(f"CREATE TABLE playlists (plname TEXT, sort TEXT, playorder TEXT);")
-db.exe(f"CREATE TABLE pl_song (path TEXT, plname TEXT);")
+db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, bitrate INT, playcount INT);")
+db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
+db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
 db.commit()
 
 db.add_dir(libpath)

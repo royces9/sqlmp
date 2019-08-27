@@ -89,7 +89,6 @@ def init_dict(disp):
 
     assert len(_keys) == len(vals)
 
-
     for key, val in zip(_keys, vals):
         out.update(dict.fromkeys(key, val))
 

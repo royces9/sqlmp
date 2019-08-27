@@ -1,8 +1,8 @@
 import enum
-import sys
-import threading
 import os
 import queue
+import sys
+import threading
 
 import ffmpeg
 import pyaudio

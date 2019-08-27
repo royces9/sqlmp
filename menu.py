@@ -1,4 +1,5 @@
 import curses
+
 import wchar
 
 class Window:
@@ -39,11 +40,12 @@ class Menu(Window):
         return self.data[ind]
 
     def highlighted(self):
-        return self.data[self.highlighted_ind()]
+        return self[self.highlighted_ind()]
 
     def highlighted_ind(self):
         return self.cursor + self.offset
 
+    
     def up(self):
         self.win.chgat(self.cursor, 0, self.normal_colour)
         
@@ -60,20 +62,19 @@ class Menu(Window):
 
     def down(self):
         self.win.chgat(self.cursor, 0, curses.A_NORMAL);
-        
-        at_bot = self.cursor > (self.h - 3);
 
-        if at_bot:
-            if (self.offset + self.cursor) < (len(self.data) - 1):
-                self.offset += 1;
-        else:
-            if (self.offset + self.cursor) < (len(self.data) - 1):
-                self.cursor += 1;
+        if (self.offset + self.cursor) < (len(self.data) - 1):
+            at_bot = self.cursor > (self.h - 3);
+            if at_bot:
+                self.offset += 1
+            else:
+                self.cursor += 1
 
         self.disp();
 
+        
     def disp(self):
-        for ii in range(0, self.h - 1):
+        for ii in range(self.h - 1):
             self.print_line(0, ii, self.blank)
             if not ((ii + self.offset) > (len(self.data) - 1)):
                 formatted_list, flag = self.form(self.data[ii + self.offset])

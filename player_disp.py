@@ -46,7 +46,7 @@ class Player_disp(display.Display):
     Functions called from key press/events
     """
     def up(self, arg=None):
-        selonef.curwin().up()
+        self.curwin().up()
 
         if self.cur == 0:
             self[1].data = self[0].highlighted().data
@@ -172,12 +172,12 @@ class Player_disp(display.Display):
             self.err_print('One argument required')
             return
 
-        playback = args[0]
+        playmode = args[0]
         cur = self[0].highlighted()
-        if playback in cur.play_order_list:
-            cur.change_playtype(playback)
+        if playmode in cur.playmode_list:
+            cur.change_playmode(playmode)
         else:
-            self.err_print(f'"{playback}" is not a valid playback mode')
+            self.err_print(f'"{playmode}" is not a valid playback mode')
 
 
     def sort_pl(self, args):
@@ -202,8 +202,8 @@ class Player_disp(display.Display):
         plfile = args[0]
         plname = args[1]
 
-        sqlstr = f"SELECT plname FROM playlists WHERE plname='{plname}' LIMIT 1;";
-        self.curs.execute(sqlstr);
+        self.db.exe(f"SELECT plname FROM playlists WHERE plname='{plname}' LIMIT 1;")
+        #self.db.exe2("SELECT plname FROM playlists WHERE plname='?' LIMIT 1;", (plname,))
         if self.curs.fetchone():
             self.err_print(f'Playlist "{plname}" already exists')
             return
@@ -275,10 +275,12 @@ class Player_disp(display.Display):
         
 
     def disp_selected_song(self):
+        if len(self[1].data) < 1:
+            return
         sel_song = self[1].highlighted()
         disp_song = ' - '.join([sel_song['title'], sel_song['artist'], sel_song['album']])
         self[2].print_line(0, 1, disp_song)
 
-        playback = self[0].highlighted().playback
-        self[2].win.addstr(1, self[2].w - len(playback) - 2, ' '+ playback + ' ')
+        playmode = self[0].highlighted().playmode
+        self[2].win.addstr(1, self[2].w - len(playmode) - 2, ' '+ playmode + ' ')
         self[2].refresh()

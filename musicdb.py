@@ -1,6 +1,6 @@
 import os
-
 import sqlite3
+
 import mutagen
 
 
@@ -26,22 +26,21 @@ class Musicdb:
     #only check library, not anything else like playlists
     def __contains__(self, path):
         path = path.replace("'", "''")
-        self.exe(f"SELECT path FROM library WHERE path='{path}' LIMIT 1;")
+        self.exe("SELECT path FROM library WHERE path=? LIMIT 1;", (path,))
         return True if self.curs.fetchone() else False
 
     def __def__(self):
         self.conn.close()
 
-    def exe(self, query):
-        return self.curs.execute(query)
-
+    def exe(self, query, args=()):
+        return self.curs.execute(query, args)
 
     def commit(self):
         self.conn.commit()
     
     def in_table(path, table):
         path = path.replace("'", "''")
-        self.exe(f"SELECT path FROM {table} WHERE path='{path}' LIMIT 1;")
+        self.exe("SELECT path FROM ? WHERE path=? LIMIT 1;", (table, path,))
         return True if self.curs.fetchone() else False
 
 
@@ -58,20 +57,12 @@ class Musicdb:
         if not out:
             return None
 
-        song_dict = {}
-        for key in key_list:
-            if key in out.keys():
-                song_dict[key] = out[key][0].replace("'", "''")
-            else:
-                song_dict[key] = ""
+        song_dict = {key: out[key][0].replace("'", "''") if key in out.keys() else "" for key in key_list}
 
-        attr_out = {}
         if hasattr(out, 'info'):
-            for attr in attr_list:
-                attr_out[attr] = getattr(out.info, attr) if hasattr(out.info, attr) else 0
+            attr_out = {attr: getattr(out.info, attr) if hasattr(out.info, attr) else 0 for attr in attr_list}
         else:
-            for attr in attr_list:
-                attr_out[attr] = 0;
+            attr_out = {attr: 0 for attr in attr_list}
                     
         return (song_dict.values(), attr_out.values());
 
@@ -87,7 +78,7 @@ class Musicdb:
         
         path = path.replace("'", "''")
 
-        self.exe(f"INSERT INTO library VALUES ('{path}','{title}','{artist}','{album}',{length},{bitrate},0);")
+        self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,0);", (path, title, artist, album, length, bitrate,))
         self.commit();
 
         
@@ -95,11 +86,13 @@ class Musicdb:
         if path not in self:
             return
 
-        self.exe(f"DELETE FROM library WHERE path='{path}';")
-        pl_all = "','".join([qq[0] for qq in self.exe(f"SELECT plname FROM pl_song WHERE path='{path}';")])
+        self.exe(f"DELETE FROM library WHERE path=?;", (path,))
+        pl_all = "','".join([qq[0] for qq in self.exe("SELECT plname FROM pl_song WHERE path=?;", (path,))])
 
-        self.exe(f"DELETE FROM {pl_all} WHERE path='{path}';")
-        self.exe(f"DELETE FROM pl_song WHERE path='{path}';")
+        self.exe("DELETE FROM ? WHERE path=?;", (pl_all, path,))
+        self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
+        #self.exe(f"DELETE FROM {pl_all} WHERE path='{path}';")
+        #self.exe(f"DELETE FROM pl_song WHERE path='{path}';")
         self.commit()
         
 
