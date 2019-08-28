@@ -115,41 +115,26 @@ class Player_disp(display.Display):
 
 
     def resize(self, stdscr):
-        y, x = stdscr.getmaxyx()
-        curses.resizeterm(y, x)
-        bottom_bar = 5
-        hh = curses.LINES - bottom_bar + 1
-        ww = curses.COLS // 6
-
-        wl = [ww, curses.COLS - ww, curses.COLS]
-        hl = [hh, hh, bottom_bar]
-        """
-        self[0].w = ww
-        self[0].h = hh
-        self[0].blank = " " * self[0].w
-
-        self[1].w = curses.COLS - ww
-        self[1].h = hh
-        self[1].blank = " " * self[1].w
-
+        hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
         
-        self[2].w = curses.COLS
-        self[2].h = bottom_bar
-        self[2].blank = " " * self[2].w
+        wl = [ww, cc - ww]
 
-        self[0].win.clear()
-        self[1].win.clear()
-        self[2].win.clear()
-        """
-        for win, w, h in zip(self.wins, wl, hl):
+        for win, w in zip(self.wins[0:2], wl):
             win.w = w
-            win.h = h
-            win.blank = ' ' * w
-            #win.win.resize(h, w)
-            #win.win.clear()
-            #win.win.refresh()
-        #stdscr.clear()
+            win.h = hh
+            win.cursor = 0
+            win.offset = 0
+            win.blank = ' ' * win.w
+            win.win.clear()
 
+
+        self.wins[2].w = cc
+        self.wins[2].h = bottom_bar
+        self.wins[2].blank = ' ' * cc
+        self.wins[2].win.clear()
+
+        self.wins[0].disp()
+        self.wins[1].disp()
 
     """
     Functions called from exec_inp
@@ -277,6 +262,7 @@ class Player_disp(display.Display):
     def disp_selected_song(self):
         if len(self[1].data) < 1:
             return
+
         sel_song = self[1].highlighted()
         disp_song = ' - '.join([sel_song['title'], sel_song['artist'], sel_song['album']])
         self[2].print_line(0, 1, disp_song)

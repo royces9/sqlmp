@@ -58,6 +58,24 @@ def song_format(ll):
         (length, 1/16),
     ), 1
 
+
+def set_size(stdscr):
+    #heigh of bottom window
+    bottom = 5
+
+    #cur term size
+    lines, cols  = stdscr.getmaxyx()
+
+    #height of the left and right windows
+    height = lines - bottom + 1
+
+    #width of the left window
+    width = cols // 6
+
+    return height, width, bottom, lines, cols
+
+    
+
 def debug_file(err):
     with open('test.txt', 'a+') as fp:
         for e in err:

@@ -36,7 +36,6 @@ def run(disp, stdscr):
 
         if key in action:
             action[key](disp)
-
         elif key == 'KEY_RESIZE':
             disp.resize(stdscr)
 
@@ -95,14 +94,14 @@ def init_dict(disp):
     return out;
 
 
-def init_windows(db, play):
-    bottom_bar = 5
-    hh = curses.LINES - bottom_bar + 1
-    ww = curses.COLS // 6
+def init_windows(db, play, stdscr):
+    hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
     
-    leftwin = menu.Menu(0, 0, ww, hh, form=lambda x: (x.name, 0), highlight_colour=keys.FOCUSED, normal_colour=keys.NORMAL)
-    rightwin = menu.Menu(ww, 0, curses.COLS - ww, hh, form=keys.SONG_DISP, highlight_colour=keys.HIGHLIGHTED, normal_colour=keys.NORMAL)
-    botwin = menu.Window(0, hh - 1, curses.COLS, bottom_bar)
+    leftwin = menu.Menu(0, 0, ww, hh, form=lambda x: (x.name, 0),
+                        highlight_colour=keys.FOCUSED, normal_colour=keys.NORMAL)
+    rightwin = menu.Menu(ww, 0, cc - ww, hh, form=keys.SONG_DISP,
+                         highlight_colour=keys.HIGHLIGHTED, normal_colour=keys.NORMAL)
+    botwin = menu.Window(0, hh - 1, cc, bottom_bar)
 
     sys.stdout.write("\x1b]2;sqlmp\x07")
     sys.stdout.flush()
@@ -111,17 +110,17 @@ def init_windows(db, play):
 
 
 def main(stdscr):
-    curses.curs_set(False);
-    stdscr.clear();
+    curses.curs_set(False)
+    stdscr.clear()
     init_colours()
 
     db = musicdb.Musicdb(keys.LIBPATH)
 
-    play = player.Player();
-    disp = init_windows(db, play);
+    play = player.Player()
+    disp = init_windows(db, play, stdscr)
     disp[2].print_line(0, 0, "Nothing currently playing")
 
-    run(disp, stdscr);
+    run(disp, stdscr)
 
 if __name__ == "__main__":
-    curses.wrapper(main);
+    curses.wrapper(main)

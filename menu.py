@@ -16,8 +16,11 @@ class Window:
         self.cursor = 0
         self.offset = 0
         
+    def print_blank(self, y):
+        self.win.addnstr(y, 0, self.blank, self.w)
+
     def print_line(self, x, y, line):
-        self.win.addnstr(y, x, self.blank, self.w)
+        self.print_blank(y)
         self.win.addnstr(y, x, line, self.w)
 
     def refresh(self):
@@ -50,7 +53,6 @@ class Menu(Window):
         self.win.chgat(self.cursor, 0, self.normal_colour)
         
         at_top = self.cursor < 1;
-
         if not at_top:
             self.cursor -= 1
         else:
@@ -63,6 +65,7 @@ class Menu(Window):
     def down(self):
         self.win.chgat(self.cursor, 0, curses.A_NORMAL);
 
+            
         if (self.offset + self.cursor) < (len(self.data) - 1):
             at_bot = self.cursor > (self.h - 3);
             if at_bot:
@@ -75,7 +78,7 @@ class Menu(Window):
         
     def disp(self):
         for ii in range(self.h - 1):
-            self.print_line(0, ii, self.blank)
+            self.print_blank(ii)
             if not ((ii + self.offset) > (len(self.data) - 1)):
                 formatted_list, flag = self.form(self.data[ii + self.offset])
 
@@ -87,8 +90,10 @@ class Menu(Window):
         self.win.chgat(self.cursor, 0, self.highlight_colour);
 
         
+
+
     def print_line(self, x, y, line):
-        self.win.addnstr(y, x, self.blank, self.w);
+        self.print_blank(y)
         self.win.addstr(y, x, line);
 
         
