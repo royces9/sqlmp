@@ -101,7 +101,7 @@ def init_windows(db, play, stdscr):
                         highlight_colour=keys.FOCUSED, normal_colour=keys.NORMAL)
     rightwin = menu.Menu(ww, 0, cc - ww, hh, form=keys.SONG_DISP,
                          highlight_colour=keys.HIGHLIGHTED, normal_colour=keys.NORMAL)
-    botwin = menu.Window(0, hh - 1, cc, bottom_bar)
+    botwin = menu.Window(0, hh, cc, bottom_bar)
 
     sys.stdout.write("\x1b]2;sqlmp\x07")
     sys.stdout.flush()

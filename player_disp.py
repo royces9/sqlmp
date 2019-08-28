@@ -107,6 +107,7 @@ class Player_disp(display.Display):
 
         curpl.cur = self[1].highlighted_ind()
         curpl.ind = curpl.cur
+        keys.debug_file([curpl.ind is curpl.cur])
         curpl.set_order()
 
         for _ in range(len(self[1].data)):
@@ -124,13 +125,13 @@ class Player_disp(display.Display):
             win.h = hh
             win.cursor = 0
             win.offset = 0
-            win.blank = ' ' * win.w
+            win.blank = ' ' * (win.w - 1)
             win.win.clear()
 
 
         self.wins[2].w = cc
         self.wins[2].h = bottom_bar
-        self.wins[2].blank = ' ' * cc
+        self.wins[2].blank = ' ' * (cc - 1)
         self.wins[2].win.clear()
 
         self.wins[0].disp()
@@ -187,8 +188,7 @@ class Player_disp(display.Display):
         plfile = args[0]
         plname = args[1]
 
-        self.db.exe(f"SELECT plname FROM playlists WHERE plname='{plname}' LIMIT 1;")
-        #self.db.exe2("SELECT plname FROM playlists WHERE plname='?' LIMIT 1;", (plname,))
+        self.db.exe("SELECT plname FROM playlists WHERE plname=? LIMIT 1;", (plname,))
         if self.curs.fetchone():
             self.err_print(f'Playlist "{plname}" already exists')
             return
@@ -239,7 +239,7 @@ class Player_disp(display.Display):
                 self.err_print(f'Playlist "{plname}" doesn\'t exist')
                 return
 
-        elif len(args) > 0:
+        elif len(args) == 1:
             ind = self[0].highlighted_ind()
             newname = args[0]
 

@@ -11,7 +11,7 @@ class Window:
         self.win = curses.newwin(h, w, y, x)
         self.win.keypad(True)
 
-        self.blank = " " * self.w
+        self.blank = " " * (self.w - 1)
 
         self.cursor = 0
         self.offset = 0
@@ -30,7 +30,8 @@ class Window:
 class Menu(Window):
     def __init__(self, x = 0, y = 0, w = 0, h = 0, data = [],
                  form = lambda ll: (str(ll), 0),
-                 highlight_colour=curses.A_STANDOUT, normal_colour=curses.A_NORMAL):
+                 highlight_colour=curses.A_STANDOUT,
+                 normal_colour=curses.A_NORMAL):
         super().__init__(x, y, w, h)
         self.data = data
         self.form = form
@@ -47,7 +48,6 @@ class Menu(Window):
 
     def highlighted_ind(self):
         return self.cursor + self.offset
-
     
     def up(self):
         self.win.chgat(self.cursor, 0, self.normal_colour)
@@ -55,9 +55,8 @@ class Menu(Window):
         at_top = self.cursor < 1;
         if not at_top:
             self.cursor -= 1
-        else:
-            if self.offset > 0:
-                self.offset -= 1
+        elif self.offset > 0:
+            self.offset -= 1
 
         self.disp();
 
@@ -65,9 +64,8 @@ class Menu(Window):
     def down(self):
         self.win.chgat(self.cursor, 0, curses.A_NORMAL);
 
-            
         if (self.offset + self.cursor) < (len(self.data) - 1):
-            at_bot = self.cursor > (self.h - 3);
+            at_bot = self.cursor >= (self.h - 1)
             if at_bot:
                 self.offset += 1
             else:
@@ -77,7 +75,7 @@ class Menu(Window):
 
         
     def disp(self):
-        for ii in range(self.h - 1):
+        for ii in range(self.h):
             self.print_blank(ii)
             if not ((ii + self.offset) > (len(self.data) - 1)):
                 formatted_list, flag = self.form(self.data[ii + self.offset])
@@ -88,8 +86,6 @@ class Menu(Window):
                     self.print_line(0, ii, formatted_list)
 
         self.win.chgat(self.cursor, 0, self.highlight_colour);
-
-        
 
 
     def print_line(self, x, y, line):

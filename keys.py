@@ -23,6 +23,7 @@ VOL_STEP=1
 #display
 SONG_DISP=lambda ll: song_format(ll)
 
+#colours
 FOCUSED_BG=9
 FOCUSED_FG=219
 
@@ -61,13 +62,13 @@ def song_format(ll):
 
 def set_size(stdscr):
     #heigh of bottom window
-    bottom = 5
+    bottom = 4
 
     #cur term size
     lines, cols  = stdscr.getmaxyx()
 
     #height of the left and right windows
-    height = lines - bottom + 1
+    height = lines - bottom
 
     #width of the left window
     width = cols // 6

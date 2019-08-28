@@ -3,7 +3,6 @@ import sqlite3
 
 import mutagen
 
-
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
 key_list = ['title',
             'artist',
@@ -59,12 +58,9 @@ class Musicdb:
 
         song_dict = {key: out[key][0].replace("'", "''") if key in out.keys() else "" for key in key_list}
 
-        if hasattr(out, 'info'):
-            attr_out = {attr: getattr(out.info, attr) if hasattr(out.info, attr) else 0 for attr in attr_list}
-        else:
-            attr_out = {attr: 0 for attr in attr_list}
+        attr_out = {attr: getattr(out.info, attr) if hasattr(out.info, attr) else 0 for attr in attr_list} if hasattr(out, 'info') else {attr: 0 for attr in attr_list}
                     
-        return (song_dict.values(), attr_out.values());
+        return tuple(song_dict.values(),) + tuple(attr_out.values(),)
 
 
     def add_to_lib(self, path):
@@ -74,7 +70,7 @@ class Musicdb:
         out = self.extract_metadata(path)
         if not out:
             return
-        ((title, artist, album), (length, bitrate)) = out
+        (title, artist, album, length, bitrate) = out
         
         path = path.replace("'", "''")
 
@@ -91,8 +87,6 @@ class Musicdb:
 
         self.exe("DELETE FROM ? WHERE path=?;", (pl_all, path,))
         self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
-        #self.exe(f"DELETE FROM {pl_all} WHERE path='{path}';")
-        #self.exe(f"DELETE FROM pl_song WHERE path='{path}';")
         self.commit()
         
 
@@ -101,16 +95,19 @@ class Musicdb:
         for root, subdirs, files in os.walk(di):
             for ff in files:
                 path = os.path.join(root, ff);
-                path = path.replace("'", "''")
+
                 if path not in self:
                     out = self.extract_metadata(path)
                     if out:
-                        ((title, artist, album), (length, bitrate)) = out
+                        path = path.replace("'", "''")
+                        (title, artist, album,length, bitrate) = out
+                        #((title, artist, album), (length, bitrate)) = out
                         list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
                 
 
         joined = ",".join(list_all)
         self.exe(f"INSERT INTO library VALUES {joined}")
+        #self.exe("INSERT INTO library VALUES ", (joined,))
         self.commit()
 
                                 
