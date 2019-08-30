@@ -7,23 +7,29 @@ def init_pl(name, db):
         print("Can't name playlist 'library' or 'playlists'.")
         return
 
-    db.exe(f"CREATE TABLE {name} (path);");
-    db.exe(f"INSERT INTO playlists VALUES ('{name}', 'artist', 'shuffle');");
+    try:
+        db.exe(f"CREATE TABLE {name} (path);")
+        db.exe(f"INSERT INTO playlists VALUES ('{name}', 'artist', 'shuffle');")
+        db.commit()
 
-    db.commit();
-
+    except Exception as err:
+        print(str(err))
 
 def del_pl(name, db):
-    db.exe("DELETE FROM playlists WHERE plname=?;", (name,))
-    db.exe("DELETE FROM pl_song WHERE plname=?;", (name,))
-    db.exe(f"DROP TABLE '{name}';")
+    try:
+        db.exe("DELETE FROM playlists WHERE plname=?;", (name,))
+        db.exe("DELETE FROM pl_song WHERE plname=?;", (name,))
+        db.exe(f"DROP TABLE '{name}';")
 
-    db.commit();
+        db.commit()
+    except Exception as err:
+        print(str(err))
 
 class Playlist:
     def __init__(self, name, db):
         self.name = name
         self.db = db
+        self.commit = self.db.commit
 
         self.ind = 0
         self.cur = 0
@@ -47,14 +53,24 @@ class Playlist:
     def __getitem__(self, ind):
         return self.data[ind]
             
+    def exe(self, query, args):
+        try:
+            return self.db.exe(query, args)
+        except Exception as err:
+            raise err
+                    
+        """
+    def commit(self):
+        self.db.commit()
+        """
     def get_songs(self):
         #dict comprehension in a list comprehension (yikes)
         return [{tag: data for tag, data in zip(self.tags, song)}
-                for song in self.db.exe(f"SELECT {self.joined_tag} FROM library WHERE path IN\
+                for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path IN\
                 (SELECT path FROM pl_song WHERE plname=?);", (self.name,))]
 
     def get_val(self, val):
-        self.db.exe(f"SELECT {val} FROM playlists WHERE plname=?;", (self.name,))
+        self.exe(f"SELECT {val} FROM playlists WHERE plname=?;", (self.name,))
         out = self.db.curs.fetchone()
         if out:
             return out[0]
@@ -87,10 +103,10 @@ class Playlist:
         return self.data[self.order[self.ind]]
 
     def remove(self, path):
-        self.db.exe("DELETE FROM ? WHERE path=?;", (self.name, path,))
-        self.db.exe(f"DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
+        self.exe("DELETE FROM ? WHERE path=?;", (self.name, path,))
+        self.exe(f"DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
 
-        self.db.commit()
+        self.commit()
 
     def insert(self, path):
         #add file to library table if it's not already
@@ -98,15 +114,13 @@ class Playlist:
         path = path.replace("'", "''")
 
         #add file into playlist table
-        #self.db.exe(f"INSERT INTO {self.name} VALUES ('{path}');")
-        #self.db.exe(f"INSERT INTO pl_song VALUES ('{path}','{self.name}');")
-        self.db.exe("INSERT INTO ? VALUES (?);", (self.name, path,))
-        self.db.exe("INSERT INTO pl_song VALUES (?,?);", (path, self.name,))
+        self.exe(f"INSERT INTO {self.name} VALUES (?);", (path,))
+        self.exe("INSERT INTO pl_song VALUES (?,?);", (path, self.name,))
 
-        self.db.commit()
+        self.commit()
 
         self.data += [{tag: data for tag, data in zip(self.tags, song)}
-                      for song in self.db.exe(f"SELECT {self.joined_tag} FROM library WHERE path=?;", (path,))]
+                      for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path=?;", (path,))]
 
 
     def insert_from_file(self, path):
@@ -119,31 +133,31 @@ class Playlist:
         if not combined:
             combined = '(0, 0)'
 
-        self.db.exe(f"INSERT INTO {self.name} VALUES (?);", (path_join,))
-        self.db.exe(f"INSERT INTO pl_song VALUES {combined};")
+        self.exe(f"INSERT INTO {self.name} VALUES (?);", (path_join,))
+        self.exe(f"INSERT INTO pl_song VALUES {combined};")
 
         self.data += self.get_songs()
-        self.db.commit()
+        self.commit()
 
 
     def change_sort(self, sort):
         self.sort_key = sort
         self.sort()
         
-        self.db.exe("UPDATE playlists SET sort=? WHERE plname=?;", (sort, self.name,))
-        self.db.commit()
+        self.exe("UPDATE playlists SET sort=? WHERE plname=?;", (sort, self.name,))
+        self.commit()
 
     def change_playmode(self, play):
         self.playmode = play
         self.set_order()
         
-        self.db.exe("UPDATE playlists SET playmode=? WHERE plname=?;", (play, self.name,))
-        self.db.commit()
+        self.exe("UPDATE playlists SET playmode=? WHERE plname=?;", (play, self.name,))
+        self.commit()
 
     def rename(self, newname):
-        self.db.exe("UPDATE TABLE pl_song SET plname=? WHERE plname=?;", (newname, self.name,))
-        self.db.exe(f"ALTER TABLE {self.name} RENAME TO {newname}")
-        self.db.exe("UPDATE TABLE playlists SET plname=? WHERE plname=?;", (newname, self.name,))
+        self.exe("UPDATE TABLE pl_song SET plname=? WHERE plname=?;", (newname, self.name,))
+        self.exe(f"ALTER TABLE {self.name} RENAME TO {newname}")
+        self.exe("UPDATE TABLE playlists SET plname=? WHERE plname=?;", (newname, self.name,))
 
         self.name = newname
 

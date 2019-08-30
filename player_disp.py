@@ -188,12 +188,12 @@ class Player_disp(display.Display):
         plfile = args[0]
         plname = args[1]
 
-        self.db.exe("SELECT plname FROM playlists WHERE plname=? LIMIT 1;", (plname,))
+        self.exe("SELECT plname FROM playlists WHERE plname=? LIMIT 1;", (plname,))
         if self.curs.fetchone():
             self.err_print(f'Playlist "{plname}" already exists')
             return
 
-        playlist.init_pl(plname, self.db);        
+        playlist.init_pl(plname, self.db)
         newpl = playlist.Playlist(name=plname, db=self.db)
         newpl.insert_from_file(plfile)
 
@@ -254,11 +254,6 @@ class Player_disp(display.Display):
     """
     Utility functions
     """
-    def err_print(self, err):
-        self[2].win.addstr(3, 0, self[2].blank)
-        self[2].win.addstr(3, 0, err)        
-        
-
     def disp_selected_song(self):
         if len(self[1].data) < 1:
             return
@@ -270,3 +265,16 @@ class Player_disp(display.Display):
         playmode = self[0].highlighted().playmode
         self[2].win.addstr(1, self[2].w - len(playmode) - 2, ' '+ playmode + ' ')
         self[2].refresh()
+
+
+    def err_print(self, err):
+        self[2].win.addstr(3, 0, self[2].blank)
+        self[2].win.addstr(3, 0, err)        
+        
+
+    def exe(self, query,args=()):
+        try:
+            return self.db.exe(query, args)
+        except Exception as err:
+            self.err_print('sqlite error: ' + str(E))
+

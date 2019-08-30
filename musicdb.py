@@ -21,22 +21,27 @@ class Musicdb:
         self.conn = sqlite3.connect(self.path)
         self.curs = self.conn.cursor()
 
+        self.commit = self.conn.commit
 
+        
     #only check library, not anything else like playlists
     def __contains__(self, path):
         path = path.replace("'", "''")
         self.exe("SELECT path FROM library WHERE path=? LIMIT 1;", (path,))
         return True if self.curs.fetchone() else False
 
-    def __def__(self):
+
+    def __del__(self):
         self.conn.close()
 
-    def exe(self, query, args=()):
-        return self.curs.execute(query, args)
 
-    def commit(self):
-        self.conn.commit()
-    
+    def exe(self, query, args=()):
+        try:
+            return self.curs.execute(query, args)
+        except Exception as err:
+            raise err
+
+
     def in_table(path, table):
         path = path.replace("'", "''")
         self.exe("SELECT path FROM ? WHERE path=? LIMIT 1;", (table, path,))
@@ -75,7 +80,7 @@ class Musicdb:
         path = path.replace("'", "''")
 
         self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,0);", (path, title, artist, album, length, bitrate,))
-        self.commit();
+        self.commit()
 
         
     def remove_from_lib(path):
@@ -85,7 +90,7 @@ class Musicdb:
         self.exe(f"DELETE FROM library WHERE path=?;", (path,))
         pl_all = "','".join([qq[0] for qq in self.exe("SELECT plname FROM pl_song WHERE path=?;", (path,))])
 
-        self.exe("DELETE FROM ? WHERE path=?;", (pl_all, path,))
+        self.exe(f"DELETE FROM {pl_all} WHERE path=?;", (path,))
         self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
         self.commit()
         
@@ -101,13 +106,11 @@ class Musicdb:
                     if out:
                         path = path.replace("'", "''")
                         (title, artist, album,length, bitrate) = out
-                        #((title, artist, album), (length, bitrate)) = out
                         list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
                 
 
         joined = ",".join(list_all)
         self.exe(f"INSERT INTO library VALUES {joined}")
-        #self.exe("INSERT INTO library VALUES ", (joined,))
         self.commit()
 
                                 
