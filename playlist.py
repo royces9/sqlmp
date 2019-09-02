@@ -43,8 +43,8 @@ class Playlist:
 
         self.playmode = self.get_val('playmode')
         self.playmode_list = {'shuffle': self.shuffle,
-                                'inorder': self.inorder,
-                                'single': self.single}
+                              'inorder': self.inorder,
+                              'single': self.single}
         self.set_order()
 
     def __len__(self):
@@ -59,10 +59,6 @@ class Playlist:
         except Exception as err:
             raise err
                     
-        """
-    def commit(self):
-        self.db.commit()
-        """
     def get_songs(self):
         #dict comprehension in a list comprehension (yikes)
         return [{tag: data for tag, data in zip(self.tags, song)}

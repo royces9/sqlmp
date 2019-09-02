@@ -107,7 +107,6 @@ class Player_disp(display.Display):
 
         curpl.cur = self[1].highlighted_ind()
         curpl.ind = curpl.cur
-        keys.debug_file([curpl.ind is curpl.cur])
         curpl.set_order()
 
         for _ in range(len(self[1].data)):
@@ -119,8 +118,11 @@ class Player_disp(display.Display):
         hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
         
         wl = [ww, cc - ww]
+        xx = [0, ww]
 
-        for win, w in zip(self.wins[0:2], wl):
+        for win, w, x in zip(self.wins[0:2], wl, xx):
+            win.x = x
+            win.y = 0
             win.w = w
             win.h = hh
             win.cursor = 0
@@ -128,11 +130,13 @@ class Player_disp(display.Display):
             win.blank = ' ' * (win.w - 1)
             win.win.clear()
 
-
+        self.wins[2].x = 0
+        self.wins[2].y = hh
         self.wins[2].w = cc
         self.wins[2].h = bottom_bar
         self.wins[2].blank = ' ' * (cc - 1)
         self.wins[2].win.clear()
+        self.wins[2].win.mvwin(hh, 0)
 
         self.wins[0].disp()
         self.wins[1].disp()
@@ -142,7 +146,6 @@ class Player_disp(display.Display):
     """
     def exec_inp(self, inp):
         spl = shlex.split(inp)
-
         if not spl:
             return
         
@@ -276,5 +279,5 @@ class Player_disp(display.Display):
         try:
             return self.db.exe(query, args)
         except Exception as err:
-            self.err_print('sqlite error: ' + str(E))
+            self.err_print('sqlite error: ' + str(err))
 
