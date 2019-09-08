@@ -1,5 +1,6 @@
 import curses
 import curses.textpad as tp
+import os
 import shlex
 
 import display
@@ -27,18 +28,14 @@ class Player_disp(display.Display):
         self.conn = db.conn
         self.curs = db.curs
 
-        #get list of playlists for left window
-        self[0].data = [playlist.Playlist(name=pl, db=self.db) for pl in self.db.list_pl()]
-
-        #set data for the first playlist
-        self[1].data = self[0].data[0].data
-
         #text window for information
         self.textwin =  self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
 
+
         self[0].disp()
         self[1].disp()
+
         self.disp_selected_song()
 
         
@@ -72,12 +69,13 @@ class Player_disp(display.Display):
     def switch_view(self, arg=None):
         if self.cur == 1:
             self.cur = 0
-            self.wins[0].highlight_colour = keys.FOCUSED
-            self.wins[1].highlight_colour = keys.HIGHLIGHTED
+            self.wins[0].cursor_colour = keys.FOCUSED
+            self.wins[1].cursor_colour = keys.CURSOR
+
         else:
             self.cur = 1
-            self.wins[1].highlight_colour = keys.FOCUSED
-            self.wins[0].highlight_colour = keys.HIGHLIGHTED
+            self.wins[1].cursor_colour = keys.FOCUSED
+            self.wins[0].cursor_colour = keys.CURSOR
             
         self[0].disp()
         self[1].disp()
@@ -97,9 +95,33 @@ class Player_disp(display.Display):
         self[2].win.addstr(2, 0, self[2].blank)
 
     
+    def highlight(self, arg=None):
+        if self.cur == 1:
+            self[1].highlight()
+            self[1].down()
+        elif self.cur == 0:
+            self[0].highlight()
+
+
+    def transfer(self, arg=None):
+        if len(self.wins[0].highlight_list) <= 0:
+            return
+
+        curpl = self[0].highlighted()
+        cursong = self[1].highlighted()
+        for pl in self[0].highlight_list:
+            self[0].data[pl].insert(cursong['path'])
+
+        self[1].down()
+
+    def delete(self, arg=None):
+        pass
+
+            
     def select(self, arg=None):
         with self.player.playq.mutex:
             self.player.playq.queue.clear()
+            self.player.pauseq.put_nowait(())
 
         self.player.play(self[1].highlighted());
 
@@ -184,24 +206,38 @@ class Player_disp(display.Display):
             
 
     def new_pl(self, args):
-        if len(args) < 2:
-            self.err_print('Two arguments required')
-            return
+        if len(args) == 1:
+            plname = args[0]
 
-        plfile = args[0]
-        plname = args[1]
+            self.exe("SELECT plname FROM playlists WHERE plname=? LIMIT 1;", (plname,))
+            if self.curs.fetchone():
+                self.err_print(f'Playlist "{plname}" already exists')
+                return
 
-        self.exe("SELECT plname FROM playlists WHERE plname=? LIMIT 1;", (plname,))
-        if self.curs.fetchone():
-            self.err_print(f'Playlist "{plname}" already exists')
-            return
+            playlist.init_pl(plname, self.db)
+            newpl = playlist.Playlist(name=plname, db=self.db)
+            
+            self[0].data.append(newpl)
+            self[0].disp()
 
-        playlist.init_pl(plname, self.db)
-        newpl = playlist.Playlist(name=plname, db=self.db)
-        newpl.insert_from_file(plfile)
+        elif len(args) > 1:
+            plfile = args[0]
+            plname = args[1]
+            if not os.path.isfile(plfile):
+                self.err_print(f'File does not exist: {plfile}.')
+                return
+            
+            self.exe("SELECT plname FROM playlists WHERE plname=? LIMIT 1;", (plname,))
+            if self.curs.fetchone():
+                self.err_print(f'Playlist "{plname}" already exists')
+                return
 
-        self[0].data.append(newpl)
-        self[0].disp()
+            playlist.init_pl(plname, self.db)
+            newpl = playlist.Playlist(name=plname, db=self.db)
+            newpl.insert_from_file(plfile)
+            
+            self[0].data.append(newpl)
+            self[0].disp()
 
         
     def del_pl(self, args):

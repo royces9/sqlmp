@@ -53,7 +53,7 @@ class Playlist:
     def __getitem__(self, ind):
         return self.data[ind]
             
-    def exe(self, query, args):
+    def exe(self, query, args=()):
         try:
             return self.db.exe(query, args)
         except Exception as err:
