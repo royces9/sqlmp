@@ -13,11 +13,12 @@ class Player_disp(display.Display):
     def __init__(self, wins, db, player):
         super().__init__(wins)
         self.ex_dict = {
-            'sort': self.sort_pl,
-            'newpl': self.new_pl,
-            'delpl': self.del_pl,
-            'renamepl': self.rename_pl,
-            'playmode': self.playmode_pl,
+            'sort': self.sort,
+            'newpl': self.newpl,
+            'delpl': self.delpl,
+            'renamepl': self.renamepl,
+            'playmode': self.playmode,
+            'adddir': self.adddir
         }
 
         for win in self.wins:
@@ -31,7 +32,6 @@ class Player_disp(display.Display):
         #text window for information
         self.textwin =  self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
-
 
         self[0].disp()
         self[1].disp()
@@ -109,13 +109,32 @@ class Player_disp(display.Display):
 
         curpl = self[0].highlighted()
         cursong = self[1].highlighted()
+        if not cursong:
+            return
+        
         for pl in self[0].highlight_list:
-            self[0].data[pl].insert(cursong['path'])
+            if pl is not curpl:
+                pl.insert(cursong['path'])
 
         self[1].down()
 
     def delete(self, arg=None):
-        pass
+        if self.cur == 0:
+            self.delpl([])
+        elif self.cur == 1:
+            curpl = self[0].highlighted()
+            cursong = self[1].highlighted()
+
+            if cursong in self[1].highlight_list:
+                self[1].highlight_list.remove(cursong)
+
+            curpl.remove(cursong['path'])
+            
+            if self[1].cursor >= len(self[1].data):
+                self.up()
+            
+        self[self.cur].disp()
+
 
             
     def select(self, arg=None):
@@ -178,7 +197,7 @@ class Player_disp(display.Display):
         else:
             self.err_print('Invalid command: ' + spl[0])
             
-    def playmode_pl(self, args):
+    def playmode(self, args):
         if len(args) < 1:
             self.err_print('One argument required')
             return
@@ -191,7 +210,7 @@ class Player_disp(display.Display):
             self.err_print(f'"{playmode}" is not a valid playback mode')
 
 
-    def sort_pl(self, args):
+    def sort(self, args):
         if len(args) < 1:
             self.err_print('One argument required')
             return
@@ -205,8 +224,12 @@ class Player_disp(display.Display):
             self.err_print(f'"{_key}" is not a valid key to sort by')
             
 
-    def new_pl(self, args):
-        if len(args) == 1:
+    def newpl(self, args):
+        if len(args) == 0:
+            self.err_print('One argument required')
+            return
+            
+        elif len(args) == 1:
             plname = args[0]
 
             self.exe("SELECT plname FROM playlists WHERE plname=? LIMIT 1;", (plname,))
@@ -217,7 +240,7 @@ class Player_disp(display.Display):
             playlist.init_pl(plname, self.db)
             newpl = playlist.Playlist(name=plname, db=self.db)
             
-            self[0].data.append(newpl)
+            self[0].insert(newpl)
             self[0].disp()
 
         elif len(args) > 1:
@@ -236,25 +259,24 @@ class Player_disp(display.Display):
             newpl = playlist.Playlist(name=plname, db=self.db)
             newpl.insert_from_file(plfile)
             
-            self[0].data.append(newpl)
+            self[0].insert(newpl)
             self[0].disp()
 
         
-    def del_pl(self, args):
-        if len(args) > 0:
+    def delpl(self, args):
+        if len(args) == 0:
+            ind = self[0].highlighted_ind()
+            plname = self[0].data[ind].name
+        else:
             plname = args[0]
-            ind = -1
-            for i in range(len(self[0].data)):
-                if self[0].data[i].name == plname:
-                    ind = i
-                    break
+            ind = self.pl_exists(curname)
 
             if ind == -1:
                 self.err_print(f'Playlist "{plname}" doesn\'t exist')
                 return
-        else:
-            ind = self[0].highlighted_ind()
-            plname = self[0].data[ind].name
+
+        if self[0].data[ind] in self[0].highlight_list:
+            self[0].highlight_list.remove(self[0].data[ind])
 
         playlist.del_pl(plname, self.db)
         self[0].data.pop(ind)
@@ -264,30 +286,45 @@ class Player_disp(display.Display):
         self[0].disp()
 
                 
-    def rename_pl(self, args):
-        if len(args) > 1:
-            curname = args[0]
-            newname = args[1]
-            ind = -1
-            for i in range(len(self[0].data)):
-                if self[0].data[i].name == curname:
-                    ind = i
-                    break
-
-            if ind == -1:
-                self.err_print(f'Playlist "{plname}" doesn\'t exist')
-                return
+    def renamepl(self, args):
+        if len(args) == 0:
+            self.err_print('One argument required')
+            return
 
         elif len(args) == 1:
             ind = self[0].highlighted_ind()
             newname = args[0]
 
         else:
-            self.err_print('One argument required')
-            return
+            curname = args[0]
+            newname = args[1]
+            ind = self.pl_exists(curname)
+
+            if ind == -1:
+                self.err_print(f'Playlist "{plname}" doesn\'t exist')
+                return
 
         self[0].data[ind].rename(newname)
         self[0].disp()
+        
+        
+    def adddir(self, args):
+        if len(args) == 0:
+            self.err_print('One argument required')
+            return
+
+        if len(args) == 1:
+            pl = self[0].highlighted()
+        else:
+            ind = self.pl_exists(args[1])
+            if ind >= 0:
+                pl = self[0].data[ind]
+            else:
+                return
+        
+        newdir = args[0]
+        pl.insert_dir(newdir)
+        self[1].disp()
         
         
     """
@@ -305,6 +342,13 @@ class Player_disp(display.Display):
         self[2].win.addstr(1, self[2].w - len(playmode) - 2, ' '+ playmode + ' ')
         self[2].refresh()
 
+
+    def pl_exists(self, name):
+        for i in range(len(self[0].data)):
+            if self[0].data[i].name == name:
+                return i
+
+        return -1
 
     def err_print(self, err):
         self[2].win.addstr(3, 0, self[2].blank)

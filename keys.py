@@ -14,7 +14,7 @@ COMMAND={':'}
 SELECT={'\n'}
 HIGHLIGHT={' '}
 TRANSFER={'y'}
-DELETE={'d'}
+DELETE={'D'}
 
 #database path
 LIBPATH='lib.db'

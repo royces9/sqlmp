@@ -44,13 +44,15 @@ class Menu(Window):
 
         self.paint_cursor(self.highlight_colour)
 
+    def __contains__(self, item):
+        return item in self.data
+
     def __getitem__(self, ind):
         return self.data[ind]
 
-
     def highlight(self):
-        newitem = self.highlighted_ind()
-
+        newitem = self.highlighted()
+        
         if newitem not in self.highlight_list:
             self.highlight_list.append(newitem)
         else:
@@ -59,7 +61,10 @@ class Menu(Window):
         self.paint_highlight(self.highlight_colour)
 
     def highlighted(self):
-        return self[self.highlighted_ind()]
+        if len(self.data) > 0:
+            return self[self.highlighted_ind()]
+        else:
+            return None
 
     def highlighted_ind(self):
         return self.cursor + self.offset
@@ -104,7 +109,7 @@ class Menu(Window):
 
     def paint_highlight(self, colour):
         for hl in self.highlight_list:
-            newind = hl - self.offset
+            newind = self.data.index(hl) - self.offset
             if 0 <= newind <= self.w:
                 self.win.chgat(newind, 0, self.w - 1, colour)
 
@@ -123,3 +128,13 @@ class Menu(Window):
             width = int(self.w * fraction)
             previous += width
             self.win.addstr(y, ind, wchar.set_width(string, width))
+
+    def insert(self, items):
+        if isinstance(items, list):
+            self.data += items
+        else:
+            self.data += [items]
+
+    def delete(self, item):
+        if item in self:
+            self.data.remove(item)
