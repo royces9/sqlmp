@@ -44,21 +44,15 @@ def init_colours():
     curses.start_color()
     curses.use_default_colors()
 
-    if not keys.FOCUSED:
-        curses.init_pair(1, keys.FOCUSED_FG, keys.FOCUSED_BG)
-        keys.FOCUSED=curses.color_pair(1)
+    colours = [keys.FOCUSED, keys.CURSOR, keys.HIGHLIGHT_COLOUR, keys.NORMAL]
 
-    if not keys.HIGHLIGHT_COLOUR:
-        curses.init_pair(2, keys.HIGHLIGHT_FG, keys.HIGHLIGHT_BG)
-        keys.HIGHLIGHT_COLOUR=curses.color_pair(2)
-
-    if not keys.NORMAL:
-        curses.init_pair(3, keys.NORMAL_FG, keys.NORMAL_BG)
-        keys.NORMAL=curses.color_pair(3)
-
-    if not keys.CURSOR:
-        curses.init_pair(4, keys.CURSOR_FG, keys.CURSOR_BG)
-        keys.CURSOR=curses.color_pair(4)
+    for i, c in enumerate(list(range(len(colours))), 1):
+        aa = colours[c]
+        keys.debug_file([aa[0]])
+        if aa[0] is None:
+            keys.debug_file([aa[1], aa[2], '\n'])
+            curses.init_pair(i, aa[1], aa[2])
+            aa[0] = curses.color_pair(i)
 
         
 def init_dict(disp):
@@ -109,18 +103,17 @@ def init_windows(db, play, stdscr):
     hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
     
     leftdata = [playlist.Playlist(name=pl, db=db) for pl in db.list_pl()]
-    keys.debug_file([leftdata])
     leftwin = menu.Menu(0, 0, ww, hh, data=leftdata, form=lambda x: (x.name, 0),
-                        cursor_colour=keys.FOCUSED,
-                        highlight_colour=keys.FOCUSED,
-                        normal_colour=keys.NORMAL)
+                        cursor_colour=keys.FOCUSED[0],
+                        highlight_colour=keys.FOCUSED[0],
+                        normal_colour=keys.NORMAL[0])
 
     #set data for the first playlist
     rightdata = leftdata[0].data
     rightwin = menu.Menu(ww, 0, cc - ww, hh, data=rightdata, form=keys.SONG_DISP,
-                         cursor_colour=keys.CURSOR,
-                         highlight_colour=keys.HIGHLIGHT_COLOUR,
-                         normal_colour=keys.NORMAL)
+                         cursor_colour=keys.CURSOR[0],
+                         highlight_colour=keys.HIGHLIGHT_COLOUR[0],
+                         normal_colour=keys.NORMAL[0])
     botwin = menu.Window(0, hh, cc, bottom_bar)
 
     sys.stdout.write("\x1b]2;sqlmp\x07")

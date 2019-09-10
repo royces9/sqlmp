@@ -15,17 +15,10 @@ dbpath = 'lib.db'
 #Folder to recursively search through
 libpath = os.getenv('HOME') + '/Music/'
 
+plfile = 'pl_list'
 #list of playlists to add
-prefix = os.getenv('HOME') + '/.config/cmus/playlists/'
-pl_list = [
-    prefix + 'damnsumman',
-    prefix + 'anisongbanger',
-    prefix + 'sumluv',
-    prefix + 'THE_playlist',
-    prefix + 'coolassshit',
-    prefix + 'actuallykms',
-    prefix + 'animusumluv',
-]
+with open(plfile, 'r') as fp:
+    pl_list = [line.rstrip() for line in fp.readlines()]
 
 conn = sqlite3.connect(dbpath);
 curs = conn.cursor();
@@ -43,6 +36,7 @@ db.add_dir(libpath)
 for pl in pl_list:
     plname = os.path.splitext(os.path.basename(pl))[0];
     print('Adding "' + plname + '"')
+    plname = plname.replace(' ', '')
     playlist.init_pl(plname, db)
     plclass = playlist.Playlist(plname, db)
     plclass.insert_from_file(pl)

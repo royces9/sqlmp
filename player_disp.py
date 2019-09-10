@@ -67,15 +67,18 @@ class Player_disp(display.Display):
 
         
     def switch_view(self, arg=None):
+        if len(self[1].data) == 0:
+            return
+
         if self.cur == 1:
             self.cur = 0
-            self.wins[0].cursor_colour = keys.FOCUSED
-            self.wins[1].cursor_colour = keys.CURSOR
+            self.wins[0].cursor_colour = keys.FOCUSED[0]
+            self.wins[1].cursor_colour = keys.CURSOR[0]
 
         else:
             self.cur = 1
-            self.wins[1].cursor_colour = keys.FOCUSED
-            self.wins[0].cursor_colour = keys.CURSOR
+            self.wins[1].cursor_colour = keys.FOCUSED[0]
+            self.wins[0].cursor_colour = keys.CURSOR[0]
             
         self[0].disp()
         self[1].disp()
@@ -130,11 +133,17 @@ class Player_disp(display.Display):
 
             curpl.remove(cursong['path'])
             
-            if self[1].cursor >= len(self[1].data):
+            data_len = len(self[1].data)
+
+            if self[1].cursor >= data_len:
                 self.up()
+
+            if not data_len:
+                self.cur = 0
+                self.wins[0].cursor_colour = keys.FOCUSED[0]
+                self.wins[1].cursor_colour = keys.CURSOR[0]
             
         self[self.cur].disp()
-
 
             
     def select(self, arg=None):
@@ -268,8 +277,8 @@ class Player_disp(display.Display):
             ind = self[0].highlighted_ind()
             plname = self[0].data[ind].name
         else:
-            plname = args[0]
             ind = self.pl_exists(curname)
+            plname = args[0]
 
             if ind == -1:
                 self.err_print(f'Playlist "{plname}" doesn\'t exist')
@@ -355,7 +364,7 @@ class Player_disp(display.Display):
         self[2].win.addstr(3, 0, err)        
         
 
-    def exe(self, query,args=()):
+    def exe(self, query, args=()):
         try:
             return self.db.exe(query, args)
         except Exception as err:

@@ -27,22 +27,14 @@ VOL_STEP=1
 SONG_DISP=lambda ll: song_format(ll)
 
 #colours
-FOCUSED_BG=9
-FOCUSED_FG=219
-
-CURSOR_BG=0
-CURSOR_FG=0
-
-NORMAL_BG=0
-NORMAL_FG=0
-
-HIGHLIGHT_BG=0
-HIGHLIGHT_FG=0
-
-FOCUSED=None
-CURSOR=curses.A_STANDOUT
-HIGHLIGHT_COLOUR=curses.A_REVERSE
-NORMAL=curses.A_NORMAL
+#list with three elements
+#0: curses colour, use None if you want a different colour scheme
+#1: fg colour
+#1: bg colour
+FOCUSED=[None, 219, 9]
+CURSOR=[curses.A_STANDOUT, 0, 0]
+HIGHLIGHT_COLOUR=[curses.A_REVERSE, 0, 0]
+NORMAL=[curses.A_NORMAL, 0, 0]
 
 
 def song_format(ll):

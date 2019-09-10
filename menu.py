@@ -114,7 +114,8 @@ class Menu(Window):
                 self.win.chgat(newind, 0, self.w - 1, colour)
 
     def paint_cursor(self, colour):
-        self.win.chgat(self.cursor, 0, self.w - 1, colour)
+        if len(self.data) > 0:
+            self.win.chgat(self.cursor, 0, self.w - 1, colour)
 
     def print_line(self, x, y, line):
         self.print_blank(y)
