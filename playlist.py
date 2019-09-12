@@ -1,3 +1,4 @@
+import os
 import random
 
 import keys
@@ -47,13 +48,23 @@ class Playlist:
                               'single': self.single}
         self.set_order()
 
+
+    def __contains__(self, path):
+        path = path.replace("'", "''")
+        for d in self.data:
+            if d['path'] == path:
+                return True
+
+        return False
+
+    
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, ind):
         return self.data[ind]
             
-    def exe(self, query, args):
+    def exe(self, query, args=()):
         try:
             return self.db.exe(query, args)
         except Exception as err:
@@ -99,10 +110,17 @@ class Playlist:
         return self.data[self.order[self.ind]]
 
     def remove(self, path):
-        self.exe("DELETE FROM ? WHERE path=?;", (self.name, path,))
-        self.exe(f"DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
+        delsong = None
+        for d in self.data:
+            if d['path'] == path:
+                delsong = d
+                
+        if delsong:
+            self.data.remove(delsong)
+            self.exe(f"DELETE FROM {self.name} WHERE path=?;", (path,))
+            self.exe(f"DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
+            self.commit()
 
-        self.commit()
 
     def insert(self, path):
         #add file to library table if it's not already
@@ -118,11 +136,36 @@ class Playlist:
         self.data += [{tag: data for tag, data in zip(self.tags, song)}
                       for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path=?;", (path,))]
 
+    def insert_dir(self, di):
+        list_all = []
+        path_list = []
+        for root, subdirs, files in os.walk(di):
+            for ff in files:
+                path = os.path.join(root, ff);
+            
+                if path not in self.db:
+                    out = self.db.extract_metadata(path)
+                    if out:
+                        path = path.replace("'", "''")
+                        (title, artist, album,length, bitrate) = out
+                        list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
+                        path_list.append(path)
+                elif path not in self:
+                    path_list.append(path)
+                    
+        self.db.add_multi(list_all)
+        self.insert_path_list(path_list)
+        self.sort()
 
     def insert_from_file(self, path):
         with open(path, "r") as fp:
             path_list = [p.rstrip().replace("'", "''") for p in fp]
 
+        self.insert_path_list(path_list)
+        self.sort()
+
+        
+    def insert_path_list(self, path_list):
         path_join = "'),('".join(path_list)
 
         combined = ",".join([f"('{path}','{self.name}')" for path in path_list])
@@ -134,7 +177,6 @@ class Playlist:
 
         self.data += self.get_songs()
         self.commit()
-
 
     def change_sort(self, sort):
         self.sort_key = sort

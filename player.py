@@ -32,6 +32,7 @@ class Player:
         self.state = Play_state.init
         self.playq = queue.Queue(0)
         self.curq = queue.Queue(0)
+        self.pauseq = queue.Queue(0)
 
         self.thread = threading.Thread(target=self.__play_loop, daemon=True)
         self.thread.start();        
@@ -103,7 +104,8 @@ class Player:
             for dd in make_chunks(md, self.step):
                 if self.state == Play_state.paused:
                     while self.state == Play_state.paused:
-                        pass
+                        self.pauseq.get(block=True, timeout=None)
+                        
                 elif self.state in {Play_state.new, Play_state.end}:
                     break;
                 
@@ -120,9 +122,10 @@ class Player:
         
     def play_pause(self, *args):
         if self.state == Play_state.playing:
-            self.state = Play_state.paused;
+            self.state = Play_state.paused
         elif self.state == Play_state.paused:
-            self.state = Play_state.playing;
+            self.state = Play_state.playing
+            self.pauseq.put_nowait(())
 
             
     def pause(self, *args):

@@ -12,6 +12,9 @@ QUIT={'q'}
 SWITCH={'\t'}
 COMMAND={':'}
 SELECT={'\n'}
+HIGHLIGHT={' '}
+TRANSFER={'y'}
+DELETE={'D'}
 
 #database path
 LIBPATH='lib.db'
@@ -24,18 +27,14 @@ VOL_STEP=1
 SONG_DISP=lambda ll: song_format(ll)
 
 #colours
-FOCUSED_BG=9
-FOCUSED_FG=219
-
-HIGHLIGHTED_BG=0
-HIGHLIGHTED_FG=0
-
-NORMAL_BG=0
-NORMAL_FG=0
-
-FOCUSED=None
-HIGHLIGHTED=curses.A_STANDOUT
-NORMAL=curses.A_NORMAL
+#list with three elements
+#0: curses colour, use None if you want a different colour scheme
+#1: fg colour
+#1: bg colour
+FOCUSED=[None, 219, 9]
+CURSOR=[curses.A_STANDOUT, 0, 0]
+HIGHLIGHT_COLOUR=[curses.A_REVERSE, 0, 0]
+NORMAL=[curses.A_NORMAL, 0, 0]
 
 
 def song_format(ll):

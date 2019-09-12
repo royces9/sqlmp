@@ -93,9 +93,14 @@ class Musicdb:
         self.exe(f"DELETE FROM {pl_all} WHERE path=?;", (path,))
         self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
         self.commit()
-        
+
 
     def add_dir(self, di):
+        list_all = self.dir_files(di)
+        self.add_multi(list_all)
+
+
+    def dir_files(self, di):
         list_all = []
         for root, subdirs, files in os.walk(di):
             for ff in files:
@@ -107,12 +112,13 @@ class Musicdb:
                         path = path.replace("'", "''")
                         (title, artist, album,length, bitrate) = out
                         list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
-                
-
-        joined = ",".join(list_all)
+        return list_all
+    
+    def add_multi(self, li):
+        joined = ",".join(li)
         self.exe(f"INSERT INTO library VALUES {joined}")
         self.commit()
+        
 
-                                
     def list_pl(self):
         return [pl[0] for pl in self.exe("SELECT plname FROM playlists;")]

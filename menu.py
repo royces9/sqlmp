@@ -30,27 +30,47 @@ class Window:
 class Menu(Window):
     def __init__(self, x = 0, y = 0, w = 0, h = 0, data = [],
                  form = lambda ll: (str(ll), 0),
-                 highlight_colour=curses.A_STANDOUT,
+                 cursor_colour=curses.A_STANDOUT,
+                 highlight_colour=curses.A_REVERSE,
                  normal_colour=curses.A_NORMAL):
         super().__init__(x, y, w, h)
         self.data = data
         self.form = form
+        self.cursor_colour = cursor_colour
         self.highlight_colour = highlight_colour
         self.normal_colour = normal_colour
 
-        self.win.chgat(self.cursor, 0, self.highlight_colour)
+        self.highlight_list = []
+
+        self.paint_cursor(self.highlight_colour)
+
+    def __contains__(self, item):
+        return item in self.data
 
     def __getitem__(self, ind):
         return self.data[ind]
 
+    def highlight(self):
+        newitem = self.highlighted()
+        
+        if newitem not in self.highlight_list:
+            self.highlight_list.append(newitem)
+        else:
+            self.highlight_list.remove(newitem)
+
+        self.paint_highlight(self.highlight_colour)
+
     def highlighted(self):
-        return self[self.highlighted_ind()]
+        if len(self.data) > 0:
+            return self[self.highlighted_ind()]
+        else:
+            return None
 
     def highlighted_ind(self):
         return self.cursor + self.offset
     
     def up(self):
-        self.win.chgat(self.cursor, 0, self.normal_colour)
+        self.paint_cursor(self.normal_colour)
         
         at_top = self.cursor < 1;
         if not at_top:
@@ -62,7 +82,7 @@ class Menu(Window):
 
 
     def down(self):
-        self.win.chgat(self.cursor, 0, curses.A_NORMAL);
+        self.paint_cursor(self.normal_colour)
 
         if (self.offset + self.cursor) < (len(self.data) - 1):
             at_bot = self.cursor >= (self.h - 1)
@@ -72,7 +92,6 @@ class Menu(Window):
                 self.cursor += 1
 
         self.disp();
-
         
     def disp(self):
         for ii in range(self.h):
@@ -85,8 +104,18 @@ class Menu(Window):
                 else:
                     self.print_line(0, ii, formatted_list)
 
-        self.win.chgat(self.cursor, 0, self.highlight_colour);
+        self.paint_highlight(self.highlight_colour)
+        self.paint_cursor(self.cursor_colour)
 
+    def paint_highlight(self, colour):
+        for hl in self.highlight_list:
+            newind = self.data.index(hl) - self.offset
+            if 0 <= newind <= self.w:
+                self.win.chgat(newind, 0, self.w - 1, colour)
+
+    def paint_cursor(self, colour):
+        if len(self.data) > 0:
+            self.win.chgat(self.cursor, 0, self.w - 1, colour)
 
     def print_line(self, x, y, line):
         self.print_blank(y)
@@ -100,3 +129,13 @@ class Menu(Window):
             width = int(self.w * fraction)
             previous += width
             self.win.addstr(y, ind, wchar.set_width(string, width))
+
+    def insert(self, items):
+        if isinstance(items, list):
+            self.data += items
+        else:
+            self.data += [items]
+
+    def delete(self, item):
+        if item in self:
+            self.data.remove(item)
