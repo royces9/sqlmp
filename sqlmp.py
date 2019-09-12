@@ -19,7 +19,6 @@ def info_print(disp):
         if fn:
             line = fn['title'] + ' - ' + fn['artist'] + ' - ' + fn['album']
             disp[2].print_line(0, 0, line)
-
         disp[2].refresh()
 
         
