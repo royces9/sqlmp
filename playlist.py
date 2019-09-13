@@ -112,14 +112,16 @@ class Playlist:
     def remove(self, path):
         delsong = None
         for d in self.data:
+            keys.debug_file([d['path'], path])
             if d['path'] == path:
+                keys.debug_file(['if'])
                 delsong = d
-                
-        if delsong:
-            self.data.remove(delsong)
-            self.exe(f"DELETE FROM {self.name} WHERE path=?;", (path,))
-            self.exe(f"DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
-            self.commit()
+                break
+
+        self.data.remove(delsong)
+        self.exe(f"DELETE FROM {self.name} WHERE path=?;", (path,))
+        self.exe(f"DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
+        self.commit()
 
 
     def insert(self, path):

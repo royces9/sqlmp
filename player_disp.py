@@ -121,6 +121,7 @@ class Player_disp(display.Display):
 
         self[1].down()
 
+
     def delete(self, arg=None):
         if self.cur == 0:
             self.delpl([])
@@ -128,17 +129,10 @@ class Player_disp(display.Display):
             curpl = self[0].highlighted()
             cursong = self[1].highlighted()
 
-            if cursong in self[1].highlight_list:
-                self[1].highlight_list.remove(cursong)
-
             curpl.remove(cursong['path'])
-            
-            data_len = len(self[1].data)
+            self[1].delete(cursong)
 
-            if self[1].cursor >= data_len:
-                self.up()
-
-            if not data_len:
+            if not len(self[1].data):
                 self.cur = 0
                 self.wins[0].cursor_colour = keys.FOCUSED[0]
                 self.wins[1].cursor_colour = keys.CURSOR[0]
@@ -191,6 +185,7 @@ class Player_disp(display.Display):
         self.wins[0].disp()
         self.wins[1].disp()
 
+
     """
     Functions called from exec_inp
     """
@@ -205,6 +200,7 @@ class Player_disp(display.Display):
             self.disp_selected_song()
         else:
             self.err_print('Invalid command: ' + spl[0])
+
             
     def playmode(self, args):
         if len(args) < 1:
@@ -241,26 +237,21 @@ class Player_disp(display.Display):
         elif len(args) == 1:
             plname = args[0]
 
-            self.exe("SELECT plname FROM playlists WHERE plname=? LIMIT 1;", (plname,))
-            if self.curs.fetchone():
+            if self.pl_exists(plname) >= 0:
                 self.err_print(f'Playlist "{plname}" already exists')
                 return
 
             playlist.init_pl(plname, self.db)
             newpl = playlist.Playlist(name=plname, db=self.db)
-            
-            self[0].insert(newpl)
-            self[0].disp()
 
-        elif len(args) > 1:
+        else:
             plfile = args[0]
             plname = args[1]
             if not os.path.isfile(plfile):
                 self.err_print(f'File does not exist: {plfile}.')
                 return
             
-            self.exe("SELECT plname FROM playlists WHERE plname=? LIMIT 1;", (plname,))
-            if self.curs.fetchone():
+            if self.pl_exists(plname) >= 0:
                 self.err_print(f'Playlist "{plname}" already exists')
                 return
 
@@ -268,14 +259,14 @@ class Player_disp(display.Display):
             newpl = playlist.Playlist(name=plname, db=self.db)
             newpl.insert_from_file(plfile)
             
-            self[0].insert(newpl)
-            self[0].disp()
+        self[0].insert(newpl)
+        self[0].disp()
 
         
     def delpl(self, args):
         if len(args) == 0:
-            ind = self[0].highlighted_ind()
-            plname = self[0].data[ind].name
+            item = self[0].highlighted()
+            plname = item.name
         else:
             ind = self.pl_exists(curname)
             plname = args[0]
@@ -284,15 +275,15 @@ class Player_disp(display.Display):
                 self.err_print(f'Playlist "{plname}" doesn\'t exist')
                 return
 
-        if self[0].data[ind] in self[0].highlight_list:
-            self[0].highlight_list.remove(self[0].data[ind])
+            item = self[0].data[ind]
 
+        self[0].delete(item)
         playlist.del_pl(plname, self.db)
-        self[0].data.pop(ind)
-        if ind >= len(self[0].data):
-            self.up()
             
         self[0].disp()
+
+        self[1].data = self[0].highlighted().data
+        self[1].disp()
 
                 
     def renamepl(self, args):
@@ -326,10 +317,10 @@ class Player_disp(display.Display):
             pl = self[0].highlighted()
         else:
             ind = self.pl_exists(args[1])
-            if ind >= 0:
-                pl = self[0].data[ind]
-            else:
+            if ind < 0:
                 return
+
+            pl = self[0].data[ind]
         
         newdir = args[0]
         pl.insert_dir(newdir)
@@ -353,20 +344,14 @@ class Player_disp(display.Display):
 
 
     def pl_exists(self, name):
-        for i in range(len(self[0].data)):
-            if self[0].data[i].name == name:
+        for i, d in enumerate(self[0].data):
+            if d.name == name:
                 return i
 
         return -1
+
 
     def err_print(self, err):
         self[2].win.addstr(3, 0, self[2].blank)
         self[2].win.addstr(3, 0, err)        
         
-
-    def exe(self, query, args=()):
-        try:
-            return self.db.exe(query, args)
-        except Exception as err:
-            self.err_print('sqlite error: ' + str(err))
-
