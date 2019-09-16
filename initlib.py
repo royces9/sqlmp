@@ -15,8 +15,9 @@ dbpath = 'lib.db'
 #Folder to recursively search through
 libpath = os.getenv('HOME') + '/Music/'
 
+#textfile with list of playlists to add
 plfile = 'pl_list'
-#list of playlists to add
+
 with open(plfile, 'r') as fp:
     pl_list = [line.rstrip() for line in fp.readlines()]
 
@@ -25,19 +26,17 @@ curs = conn.cursor();
 db = musicdb.Musicdb(dbpath)
 
 print('Creating database')
-db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, bitrate INT, playcount INT);")
-db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
-db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
-db.commit()
+musicdb.init_db(db)
 
 print('Adding ' + libpath)
 db.add_dir(libpath)
 
 for pl in pl_list:
-    plname = os.path.splitext(os.path.basename(pl))[0];
+    plname = os.path.splitext(os.path.basename(pl))[0].replace(' ', '')
+
     print('Adding "' + plname + '"')
-    plname = plname.replace(' ', '')
     playlist.init_pl(plname, db)
+
     plclass = playlist.Playlist(plname, db)
     plclass.insert_from_file(pl)
                                         

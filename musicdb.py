@@ -11,7 +11,12 @@ key_list = ['title',
 attr_list = ['length',
              'bitrate',
 ]
-
+def init_db(db):
+    db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, bitrate INT, playcount INT);")
+    db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
+    db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
+    db.commit()
+    
 
 class Musicdb:
     def __init__(self, path):
