@@ -3,7 +3,6 @@
 import curses
 import sqlite3
 import sys
-import threading
 
 import menu
 import musicdb
@@ -12,22 +11,9 @@ import player_disp
 import playlist
 
 import keys
-
-def info_print(disp):
-    while True:
-        fn = disp.player.curplay()
-        disp[2].print_line(0, 0, disp[2].blank)
-        if fn:
-            line = fn['title'] + ' - ' + fn['artist'] + ' - ' + fn['album']
-            disp[2].print_line(0, 0, line)
-        disp[2].refresh()
-
         
 def run(disp, stdscr):
     action = init_dict(disp)
-
-    infothread = threading.Thread(target=info_print, args=(disp,), daemon=True)
-    infothread.start()
 
     while True:
         disp.refresh()

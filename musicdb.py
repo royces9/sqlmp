@@ -11,12 +11,13 @@ key_list = ['title',
 attr_list = ['length',
              'bitrate',
 ]
+
 def init_db(db):
     db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, bitrate INT, playcount INT);")
     db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
     db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
     db.commit()
-    
+
 
 class Musicdb:
     def __init__(self, path):
@@ -38,7 +39,6 @@ class Musicdb:
 
     def __del__(self):
         self.conn.close()
-
 
     def exe(self, query, args=()):
         try:
@@ -88,15 +88,16 @@ class Musicdb:
         self.commit()
 
         
-    def remove_from_lib(path):
+    def remove_from_lib(self, path):
         if path not in self:
             return
-
         self.exe(f"DELETE FROM library WHERE path=?;", (path,))
         pl_all = "','".join([qq[0] for qq in self.exe("SELECT plname FROM pl_song WHERE path=?;", (path,))])
 
-        self.exe(f"DELETE FROM {pl_all} WHERE path=?;", (path,))
-        self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
+        if len(pl_all) > 0:
+            self.exe(f"DELETE FROM {pl_all} WHERE path=?;", (path,))
+            self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
+
         self.commit()
 
 
@@ -117,15 +118,27 @@ class Musicdb:
                     if out:
                         (title, artist, album,length, bitrate) = out
                         list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
-
-
         return list_all
+
     
     def add_multi(self, li):
         joined = ",".join(li)
         self.exe(f"INSERT INTO library VALUES {joined}")
         self.commit()
-        
+
+
+    def update(self):
+        new = set(self.dir_files(self.path))
+        new_paths = [path for path in new if path not in self]
+        if len(new_paths) > 0:
+            self.add_multi(new_paths)
+
+        old_paths = new - set(new_paths)
+        for path in old_paths:
+            if not os.path.exists(path):
+                self.remove_from_lib(path)
 
     def list_pl(self):
         return [pl[0] for pl in self.exe("SELECT plname FROM playlists;")]
+
+    

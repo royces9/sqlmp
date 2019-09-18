@@ -10,7 +10,6 @@ import audioop
 
 import keys
 
-
 class Play_state(enum.Enum):
     init = 0
     not_playing = 1
@@ -91,7 +90,7 @@ class Player:
             prob = ffmpeg.probe(fp)
             rate = int(prob['streams'][0]['sample_rate'])
             channels = int(prob['streams'][0]['channels'])
-            width = int(prob['streams'][0]['bits_per_raw_sample']) // 8
+            width = 2
 
             #open a pyaudio stream
             stream = self.pyaudio.open(
@@ -101,11 +100,8 @@ class Player:
                 output=True,
             )
 
-            def chunks(l, n):
-                 return [l[i:i+n] for i in range(0, len(l), n)]
-
-            wav = bytearray(wav)
-            for dd in chunks(wav, self.step):
+            wav_chunks = [wav[i:i+self.step] for i in range(0, len(wav), self.step)]
+            for chunk in wav_chunks:
                 if self.state == Play_state.paused:
                     while self.state == Play_state.paused:
                         self.pauseq.get(block=True, timeout=None)
@@ -113,8 +109,7 @@ class Player:
                 elif self.state in {Play_state.new, Play_state.end}:
                     break;
                 
-
-                adjust = audioop.mul(dd, width, self.vol/100)
+                adjust = audioop.mul(chunk, width, self.vol/100)
                 stream.write(bytes(adjust));
 
             #resource clean up

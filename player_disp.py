@@ -2,6 +2,7 @@ import curses
 import curses.textpad as tp
 import os
 import shlex
+import threading
 
 import display
 import musicdb
@@ -18,7 +19,8 @@ class Player_disp(display.Display):
             'delpl': self.delpl,
             'renamepl': self.renamepl,
             'playmode': self.playmode,
-            'adddir': self.adddir
+            'adddir': self.adddir,
+            'update': self.update,
         }
 
         for win in self.wins:
@@ -36,6 +38,9 @@ class Player_disp(display.Display):
         self[0].disp()
         self[1].disp()
 
+        self.thread = threading.Thread(target=self.__info_print, daemon=True)
+        self.thread.start()
+
         self.disp_selected_song()
 
         
@@ -43,6 +48,10 @@ class Player_disp(display.Display):
     Functions called from key press/events
     """
     def up(self, arg=None):
+        """
+        scroll up on the menu
+        also update the right window's data if the left window is scrolled up
+        """
         self.curwin().up()
 
         if self.cur == 0:
@@ -55,6 +64,9 @@ class Player_disp(display.Display):
 
 
     def down(self, arg=None):
+        """
+        same as up, but down (?)
+        """
         self.curwin().down()
 
         if self.cur == 0:
@@ -67,6 +79,9 @@ class Player_disp(display.Display):
 
         
     def switch_view(self, arg=None):
+        """
+        switch focus from left to right, and vice versa
+        """
         if len(self[1].data) == 0:
             return
 
@@ -85,6 +100,9 @@ class Player_disp(display.Display):
         
 
     def grab_input(self, arg=None):
+        """
+        grab a command input when ':' is pressed
+        """
         self[2].win.addstr(2, 0, ":")
         self[2].refresh()
 
@@ -99,6 +117,9 @@ class Player_disp(display.Display):
 
     
     def highlight(self, arg=None):
+        """
+        highlight an entry to do stuff with
+        """
         if self.cur == 1:
             self[1].highlight()
             self[1].down()
@@ -107,6 +128,9 @@ class Player_disp(display.Display):
 
 
     def transfer(self, arg=None):
+        """
+        move songs around playlists
+        """
         if len(self.wins[0].highlight_list) <= 0:
             return
 
@@ -123,6 +147,9 @@ class Player_disp(display.Display):
 
 
     def delete(self, arg=None):
+        """
+        delete songs from playlists
+        """
         if self.cur == 0:
             self.delpl([])
         elif self.cur == 1:
@@ -137,10 +164,14 @@ class Player_disp(display.Display):
                 self.wins[0].cursor_colour = keys.FOCUSED[0]
                 self.wins[1].cursor_colour = keys.CURSOR[0]
             
+
         self[self.cur].disp()
 
             
     def select(self, arg=None):
+        """
+        play a song in a playlist
+        """
         with self.player.playq.mutex:
             self.player.playq.queue.clear()
             self.player.pauseq.put_nowait(())
@@ -159,6 +190,9 @@ class Player_disp(display.Display):
 
 
     def resize(self, stdscr):
+        """
+        handle resize event (wip, still doesn't work)
+        """
         hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
         
         wl = [ww, cc - ww]
@@ -190,6 +224,9 @@ class Player_disp(display.Display):
     Functions called from exec_inp
     """
     def exec_inp(self, inp):
+        """
+        executes the actual command from grab_inp
+        """
         spl = shlex.split(inp)
         if not spl:
             return
@@ -203,6 +240,9 @@ class Player_disp(display.Display):
 
             
     def playmode(self, args):
+        """
+        change the playmode (shuffle, in order, single)
+        """
         if len(args) < 1:
             self.err_print('One argument required')
             return
@@ -216,6 +256,10 @@ class Player_disp(display.Display):
 
 
     def sort(self, args):
+        """
+        sort the playlist according to some key
+        changes are saved to the db
+        """
         if len(args) < 1:
             self.err_print('One argument required')
             return
@@ -230,6 +274,11 @@ class Player_disp(display.Display):
             
 
     def newpl(self, args):
+        """
+        makes a new playlist
+        1 arg : blank playlist with given name
+        2 args: playlist with given name and contents given by file argument
+        """
         if len(args) == 0:
             self.err_print('One argument required')
             return
@@ -264,12 +313,17 @@ class Player_disp(display.Display):
 
         
     def delpl(self, args):
+        """
+        delete a playlist
+        0 args: delete highlighted playlist
+        1 arg : delete the named playlist
+        """
         if len(args) == 0:
             item = self[0].highlighted()
             plname = item.name
         else:
-            ind = self.pl_exists(curname)
             plname = args[0]
+            ind = self.pl_exists(plname)
 
             if ind == -1:
                 self.err_print(f'Playlist "{plname}" doesn\'t exist')
@@ -287,6 +341,11 @@ class Player_disp(display.Display):
 
                 
     def renamepl(self, args):
+        """
+        rename a playlist
+        0 args: rename highlighted playlist
+        1 arg : rename the named playlist
+        """
         if len(args) == 0:
             self.err_print('One argument required')
             return
@@ -309,6 +368,11 @@ class Player_disp(display.Display):
         
         
     def adddir(self, args):
+        """
+        add a directory to a playlist, this also adds new directories to the db
+        1 arg : add directory to highlighted playlist
+        2 args: add directory to named playlist
+        """
         if len(args) == 0:
             self.err_print('One argument required')
             return
@@ -325,8 +389,14 @@ class Player_disp(display.Display):
         newdir = args[0]
         pl.insert_dir(newdir)
         self[1].disp()
+
         
-        
+    def update(self, args):
+        """
+        update db
+        """
+        self.db.update()
+    
     """
     Utility functions
     """
@@ -355,3 +425,13 @@ class Player_disp(display.Display):
         self[2].win.addstr(3, 0, self[2].blank)
         self[2].win.addstr(3, 0, err)        
         
+
+    #stuff for bottom window
+    def __info_print(self):
+        while True:
+            fn = self.player.curplay()
+            self[2].print_blank(0)
+            if fn:
+                line = fn['title'] + ' - ' + fn['artist'] + ' - ' + fn['album']
+                self[2].print_line(0, 0, line)
+            self[2].refresh()

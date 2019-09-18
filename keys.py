@@ -20,7 +20,7 @@ DELETE={'D'}
 LIBPATH='lib.db'
 
 #volume
-DEFAULT_VOLUME=50
+DEFAULT_VOLUME=20
 VOL_STEP=1
 
 #display
