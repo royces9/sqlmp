@@ -6,8 +6,7 @@ import threading
 
 import ffmpeg
 import pyaudio
-from pydub import AudioSegment
-from pydub.playback import make_chunks
+import audioop
 
 import keys
 
@@ -27,7 +26,7 @@ class Player:
         self.vol = keys.DEFAULT_VOLUME;
 
         #size of chunks in ms to playback
-        self.step = 250
+        self.step = 100
 
         self.state = Play_state.init
         self.playq = queue.Queue(0)
@@ -83,25 +82,30 @@ class Player:
             #convert input file to wav and put it into wav variable
             wav, _ = (ffmpeg
                      .input(fp)
-                     .output('-', format='wav', acodec='pcm_s16le')
+                     .output('-', format='s16le', acodec='pcm_s16le')
                      .overwrite_output()
                     .run(capture_stdout=True, capture_stderr=True)
             )
-
-            #convert wav to pydub AudioSegment
-            #we do this to allow for easy volume changes
-            md = AudioSegment(wav)
+            
+            #grab stream data for the pyaudio stream
+            prob = ffmpeg.probe(fp)
+            rate = int(prob['streams'][0]['sample_rate'])
+            channels = int(prob['streams'][0]['channels'])
+            width = int(prob['streams'][0]['bits_per_raw_sample']) // 8
 
             #open a pyaudio stream
             stream = self.pyaudio.open(
-                format=self.pyaudio.get_format_from_width(md.sample_width),
-                channels=md.channels,
-                rate=md.frame_rate,
+                format=self.pyaudio.get_format_from_width(width),
+                channels=channels,
+                rate=rate,
                 output=True,
             )
 
-            #iterate through the AudioSegment
-            for dd in make_chunks(md, self.step):
+            def chunks(l, n):
+                 return [l[i:i+n] for i in range(0, len(l), n)]
+
+            wav = bytearray(wav)
+            for dd in chunks(wav, self.step):
                 if self.state == Play_state.paused:
                     while self.state == Play_state.paused:
                         self.pauseq.get(block=True, timeout=None)
@@ -109,8 +113,9 @@ class Player:
                 elif self.state in {Play_state.new, Play_state.end}:
                     break;
                 
-                adjust = dd - (100 - self.vol);
-                stream.write(adjust._data);
+
+                adjust = audioop.mul(dd, width, self.vol/100)
+                stream.write(bytes(adjust));
 
             #resource clean up
             stream.stop_stream()
@@ -118,7 +123,7 @@ class Player:
 
             #set stream to not playing after playback ends
             self.state = Play_state.not_playing
-                
+
         
     def play_pause(self, *args):
         if self.state == Play_state.playing:

@@ -141,12 +141,10 @@ class Playlist:
         path_list = []
         for root, subdirs, files in os.walk(di):
             for ff in files:
-                path = os.path.join(root, ff);
-            
+                path = os.path.join(root, ff).replace("'", "''")
                 if path not in self.db:
                     out = self.db.extract_metadata(path)
                     if out:
-                        path = path.replace("'", "''")
                         (title, artist, album,length, bitrate) = out
                         list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
                         path_list.append(path)

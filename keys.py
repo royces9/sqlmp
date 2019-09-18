@@ -20,7 +20,7 @@ DELETE={'D'}
 LIBPATH='lib.db'
 
 #volume
-DEFAULT_VOLUME=80
+DEFAULT_VOLUME=50
 VOL_STEP=1
 
 #display
@@ -51,8 +51,8 @@ def song_format(ll):
     length = ':'.join([minutes, seconds])
     
     return (
-        (title, 3/8),
         (artist, 1/4),
+        (title, 3/8),
         (album, 1/4),
         (bitrate, 1/16),
         (length, 1/16),
