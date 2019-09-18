@@ -20,7 +20,6 @@ def info_print(disp):
         if fn:
             line = fn['title'] + ' - ' + fn['artist'] + ' - ' + fn['album']
             disp[2].print_line(0, 0, line)
-
         disp[2].refresh()
 
         
@@ -48,9 +47,7 @@ def init_colours():
 
     for i, c in enumerate(list(range(len(colours))), 1):
         aa = colours[c]
-        keys.debug_file([aa[0]])
         if aa[0] is None:
-            keys.debug_file([aa[1], aa[2], '\n'])
             curses.init_pair(i, aa[1], aa[2])
             aa[0] = curses.color_pair(i)
 
@@ -103,7 +100,8 @@ def init_windows(db, play, stdscr):
     hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
     
     leftdata = [playlist.Playlist(name=pl, db=db) for pl in db.list_pl()]
-    leftwin = menu.Menu(0, 0, ww, hh, data=leftdata, form=lambda x: (x.name, 0),
+    plname = lambda x: ((x.name, 1),)
+    leftwin = menu.Menu(0, 0, ww, hh, data=leftdata, form=plname, 
                         cursor_colour=keys.FOCUSED[0],
                         highlight_colour=keys.FOCUSED[0],
                         normal_colour=keys.NORMAL[0])

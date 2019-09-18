@@ -56,7 +56,7 @@ def song_format(ll):
         (album, 1/4),
         (bitrate, 1/16),
         (length, 1/16),
-    ), 1
+    )
 
 
 def set_size(stdscr):

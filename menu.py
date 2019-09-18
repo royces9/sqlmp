@@ -13,18 +13,19 @@ class Window:
 
         self.blank = " " * (self.w - 1)
 
-        self.cursor = 0
-        self.offset = 0
         
     def print_blank(self, y):
         self.win.addnstr(y, 0, self.blank, self.w)
 
-    def print_line(self, x, y, line):
+
+    def print_line(self, x , y, line):
         self.print_blank(y)
         self.win.addnstr(y, x, line, self.w)
 
+
     def refresh(self):
         self.win.refresh()
+
 
 
 class Menu(Window):
@@ -34,6 +35,10 @@ class Menu(Window):
                  highlight_colour=curses.A_REVERSE,
                  normal_colour=curses.A_NORMAL):
         super().__init__(x, y, w, h)
+
+        self.cursor = 0
+        self.offset = 0
+
         self.data = data
         self.form = form
         self.cursor_colour = cursor_colour
@@ -42,13 +47,16 @@ class Menu(Window):
 
         self.highlight_list = []
 
-        self.paint_cursor(self.highlight_colour)
+        self.paint_cursor(self.cursor_colour)
+
 
     def __contains__(self, item):
         return item in self.data
 
+
     def __getitem__(self, ind):
         return self.data[ind]
+
 
     def highlight(self):
         newitem = self.highlighted()
@@ -60,14 +68,17 @@ class Menu(Window):
 
         self.paint_highlight(self.highlight_colour)
 
+
     def highlighted(self):
         if len(self.data) > 0:
             return self[self.highlighted_ind()]
         else:
             return None
 
+
     def highlighted_ind(self):
         return self.cursor + self.offset
+
     
     def up(self):
         self.paint_cursor(self.normal_colour)
@@ -92,20 +103,18 @@ class Menu(Window):
                 self.cursor += 1
 
         self.disp();
+
         
     def disp(self):
         for ii in range(self.h):
             self.print_blank(ii)
             if not ((ii + self.offset) > (len(self.data) - 1)):
-                formatted_list, flag = self.form(self.data[ii + self.offset])
-
-                if flag:
-                    self.print_col(ii, formatted_list)
-                else:
-                    self.print_line(0, ii, formatted_list)
+                formatted_list = self.form(self.data[ii + self.offset])
+                self.print_col(0, ii, formatted_list)
 
         self.paint_highlight(self.highlight_colour)
         self.paint_cursor(self.cursor_colour)
+
 
     def paint_highlight(self, colour):
         for hl in self.highlight_list:
@@ -113,22 +122,19 @@ class Menu(Window):
             if 0 <= newind <= self.w:
                 self.win.chgat(newind, 0, self.w - 1, colour)
 
+
     def paint_cursor(self, colour):
         if len(self.data) > 0:
             self.win.chgat(self.cursor, 0, self.w - 1, colour)
 
-    def print_line(self, x, y, line):
-        self.print_blank(y)
-        self.win.addstr(y, x, line);
-
         
-    def print_col(self, y, datas):
-        previous = 0
+    def print_col(self, x, y, datas):
         for string, fraction in datas:
-            ind = previous
+            ind = x
             width = int(self.w * fraction)
-            previous += width
+            x += width
             self.win.addstr(y, ind, wchar.set_width(string, width))
+
 
     def insert(self, items):
         if isinstance(items, list):
@@ -136,6 +142,13 @@ class Menu(Window):
         else:
             self.data += [items]
 
+
     def delete(self, item):
         if item in self:
             self.data.remove(item)
+
+        if item in self.highlight_list:
+            self.highlight_list.remove(item)
+
+        if self.highlighted_ind() >= len(self.data):
+            self.up()
