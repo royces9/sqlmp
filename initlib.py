@@ -23,7 +23,7 @@ with open(plfile, 'r') as fp:
 
 conn = sqlite3.connect(dbpath);
 curs = conn.cursor();
-db = musicdb.Musicdb(dbpath)
+db = musicdb.Musicdb(dbpath, libpath)
 
 print('Creating database')
 musicdb.init_db(db)

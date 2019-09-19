@@ -113,7 +113,7 @@ def main(stdscr):
     if curses.has_colors():
         init_colours()
 
-    db = musicdb.Musicdb(keys.LIBPATH)
+    db = musicdb.Musicdb(keys.DBPATH, keys.LIBPATH)
 
     play = player.Player()
     disp = init_windows(db, play, stdscr)

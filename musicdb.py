@@ -3,6 +3,9 @@ import sqlite3
 
 import mutagen
 
+from keys import debug_file as df
+import time
+
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
 key_list = ['title',
             'artist',
@@ -20,9 +23,10 @@ def init_db(db):
 
 
 class Musicdb:
-    def __init__(self, path):
+    def __init__(self, path, lib):
         #assume that the db exists
         self.path = path
+        self.lib = lib
 
         self.conn = sqlite3.connect(self.path)
         self.curs = self.conn.cursor()
@@ -105,7 +109,6 @@ class Musicdb:
         list_all = self.dir_files(di)
         self.add_multi(list_all)
 
-
     def dir_files(self, di):
         list_all = []
 
@@ -128,15 +131,41 @@ class Musicdb:
 
 
     def update(self):
-        new = set(self.dir_files(self.path))
-        new_paths = [path for path in new if path not in self]
-        if len(new_paths) > 0:
-            self.add_multi(new_paths)
+        start= time.time()
+        #this gets every file
+        all_files = [os.path.join(root,ff).replace("'", "''")\
+                     for root, subdirs, files in os.walk(self.lib)\
+                     for ff in files]
 
-        old_paths = new - set(new_paths)
-        for path in old_paths:
-            if not os.path.exists(path):
-                self.remove_from_lib(path)
+        q = "('" + "','".join(all_files) + "')"
+        #this gets every file in the db
+        in_db = self.exe("SELECT path FROM library WHERE path IN " + q)
+
+        #files that are not in db
+        new_file_paths = list(set(all_files) - set(in_db))
+
+        new_files = []
+        for path in new_file_paths:
+            out = self.extract_metadata(path)
+            if out and path not in self:
+                df(path)
+                (title, artist, album,length, bitrate) = out
+                new_files.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
+        return
+        #list of files that aren't in the db        
+        #start= time.time()
+        #new_files = self.dir_files(self.lib)
+        total = time.time() - start
+        df([total])
+
+        #add new files
+        if len(new_files) > 0:
+            self.add_multi(new_files)
+
+        for path in self.exe("SELECT path FROM library"):
+            if not os.path.exists(path[0]):
+                self.remove_from_lib(path[0])
+
 
     def list_pl(self):
         return [pl[0] for pl in self.exe("SELECT plname FROM playlists;")]

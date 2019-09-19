@@ -1,4 +1,5 @@
 import curses
+import os
 
 #key bindings
 UP={'KEY_UP', 'l'}
@@ -17,7 +18,8 @@ TRANSFER={'y'}
 DELETE={'D'}
 
 #database path
-LIBPATH='lib.db'
+DBPATH='lib.db'
+LIBPATH= os.getenv('HOME') + '/Music/'
 
 #volume
 DEFAULT_VOLUME=20
