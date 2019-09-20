@@ -80,6 +80,9 @@ def set_size(stdscr):
 
 def debug_file(err):
     with open('test.txt', 'a+') as fp:
-        for e in err:
-            print(str(e), file=fp)
+        if isinstance(err, str):
+            print(e)
+        else:
+            for e in err:
+                print(str(e), file=fp)
                     

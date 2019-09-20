@@ -22,7 +22,7 @@ class Play_state(enum.Enum):
 class Player:
     def __init__(self):
         self.pyaudio_init()
-        self.vol = keys.DEFAULT_VOLUME;
+        self.vol = keys.DEFAULT_VOLUME
 
         #size of chunks in ms to playback
         self.step = 100
@@ -33,7 +33,7 @@ class Player:
         self.pauseq = queue.Queue(0)
 
         self.thread = threading.Thread(target=self.__play_loop, daemon=True)
-        self.thread.start();        
+        self.thread.start()
 
 
     def curplay(self, arg=None):
@@ -41,17 +41,17 @@ class Player:
 
 
     def vol_up(self, arg=None):
-            newvol = self.vol + keys.VOL_STEP;
+            newvol = self.vol + keys.VOL_STEP
             if newvol > 100:
-                newvol = 100;
-            self.vol = newvol;
+                newvol = 100
+            self.vol = newvol
 
     
     def vol_down(self, arg=None):
-            newvol = self.vol - keys.VOL_STEP;
+            newvol = self.vol - keys.VOL_STEP
             if newvol < 0:
-                newvol = 0;
-            self.vol = newvol;
+                newvol = 0
+            self.vol = newvol
 
 
     def append(self, arg):
@@ -59,21 +59,21 @@ class Player:
 
 
     def play(self, arg):
-        self.append(arg);
-        self.state = Play_state.new;
+        self.append(arg)
+        self.state = Play_state.new
 
         
     def __play_loop(self):
         #always loop unless we quit
         while self.state != Play_state.end:
             #this call blocks until something is pushed onto the queue
-            fn = self.playq.get(block=True, timeout=None);
+            fn = self.playq.get(block=True, timeout=None)
 
             #change state to playing
             self.state = Play_state.playing
             
             #push onto play queue
-            self.curq.put_nowait(fn);
+            self.curq.put_nowait(fn)
 
             #grab path
             fp = fn['path']
@@ -107,10 +107,10 @@ class Player:
                         self.pauseq.get(block=True, timeout=None)
                         
                 elif self.state in {Play_state.new, Play_state.end}:
-                    break;
+                    break
                 
                 adjust = audioop.mul(chunk, width, self.vol/100)
-                stream.write(bytes(adjust));
+                stream.write(bytes(adjust))
 
             #resource clean up
             stream.stop_stream()
@@ -151,6 +151,6 @@ class Player:
         with open(os.devnull, 'w') as devnull:
             os.dup2(devnull.fileno(), og_err)
         
-        self.pyaudio = pyaudio.PyAudio();
+        self.pyaudio = pyaudio.PyAudio()
 
         os.dup2(cp_err, og_err)

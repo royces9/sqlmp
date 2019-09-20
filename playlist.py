@@ -112,9 +112,7 @@ class Playlist:
     def remove(self, path):
         delsong = None
         for d in self.data:
-            keys.debug_file([d['path'], path])
             if d['path'] == path:
-                keys.debug_file(['if'])
                 delsong = d
                 break
 

@@ -107,7 +107,8 @@ class Musicdb:
 
     def add_dir(self, di):
         list_all = self.dir_files(di)
-        self.add_multi(list_all)
+        if len(list_all) > 0:
+            self.add_multi(list_all)
 
     def dir_files(self, di):
         list_all = []
