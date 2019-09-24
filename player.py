@@ -110,7 +110,7 @@ class Player:
                     break
                 
                 adjust = audioop.mul(chunk, width, self.vol/100)
-                stream.write(bytes(adjust))
+                stream.write(adjust)
 
             #resource clean up
             stream.stop_stream()

@@ -1,6 +1,11 @@
 import curses
 import os
 
+#database path
+DBPATH='lib.db'
+LIBPATH= os.getenv('HOME') + '/Music/'
+
+
 #key bindings
 UP={'KEY_UP', 'l'}
 DOWN={'KEY_DOWN', 'k'}
@@ -17,28 +22,13 @@ HIGHLIGHT={' '}
 TRANSFER={'y'}
 DELETE={'D'}
 
-#database path
-DBPATH='lib.db'
-LIBPATH= os.getenv('HOME') + '/Music/'
 
 #volume
-DEFAULT_VOLUME=20
+DEFAULT_VOLUME=10
 VOL_STEP=1
 
+
 #display
-SONG_DISP=lambda ll: song_format(ll)
-
-#colours
-#list with three elements
-#0: curses colour, use None if you want a different colour scheme
-#1: fg colour
-#1: bg colour
-FOCUSED=[None, 219, 9]
-CURSOR=[curses.A_STANDOUT, 0, 0]
-HIGHLIGHT_COLOUR=[curses.A_REVERSE, 0, 0]
-NORMAL=[curses.A_NORMAL, 0, 0]
-
-
 def song_format(ll):
     title = ll['title']
     album = ll['album']
@@ -60,9 +50,24 @@ def song_format(ll):
         (length, 1/16),
     )
 
+SONG_DISP=song_format
+
+
+#colours
+#list with three elements
+#0: curses colour, use None if you want a different colour scheme
+#1: fg colour
+#1: bg colour
+FOCUSED=[None, 219, 9]
+CURSOR=[curses.A_STANDOUT, 0, 0]
+HIGHLIGHT_COLOUR=[curses.A_REVERSE, 0, 0]
+NORMAL=[curses.A_NORMAL, 0, 0]
+
+
+
 
 def set_size(stdscr):
-    #heigh of bottom window
+    #height of bottom window
     bottom = 4
 
     #cur term size
@@ -75,14 +80,3 @@ def set_size(stdscr):
     width = cols // 6
 
     return height, width, bottom, lines, cols
-
-    
-
-def debug_file(err):
-    with open('test.txt', 'a+') as fp:
-        if isinstance(err, str):
-            print(e)
-        else:
-            for e in err:
-                print(str(e), file=fp)
-                    

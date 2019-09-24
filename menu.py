@@ -14,14 +14,14 @@ class Window:
         self.blank = " " * (self.w - 1)
 
         
-    def print_blank(self, y):
-        self.win.addnstr(y, 0, self.blank, self.w)
+    def print_blank(self, y, x=0):
+        self.win.addnstr(y, x, self.blank, self.w - x)
 
 
-    def print_line(self, x , y, line):
+    def print_line(self, line, y=0, x=0):
         self.print_blank(y)
-        self.win.addnstr(y, x, line, self.w)
-
+        trunc_line = wchar.set_width(line, self.w - x)
+        self.win.addnstr(y, x, trunc_line, self.w - x)
 
     def refresh(self):
         self.win.refresh()
@@ -36,7 +36,11 @@ class Menu(Window):
                  normal_colour=curses.A_NORMAL):
         super().__init__(x, y, w, h)
 
+        #the coordinate of the cursor on the screen
         self.cursor = 0
+
+        #the number of items the top item
+        #of the list is offset from the top
         self.offset = 0
 
         self.data = data
@@ -133,7 +137,7 @@ class Menu(Window):
             ind = x
             width = int(self.w * fraction)
             x += width
-            self.win.addstr(y, ind, wchar.set_width(string, width))
+            self.win.addnstr(y, ind, wchar.set_width(string, width), self.w)
 
 
     def insert(self, items):

@@ -1,8 +1,6 @@
 import os
 import random
 
-import keys
-
 def init_pl(name, db):
     if name in {'library', 'playlists'}:
         print("Can't name playlist 'library' or 'playlists'.")

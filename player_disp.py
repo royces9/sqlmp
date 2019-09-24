@@ -38,6 +38,8 @@ class Player_disp(display.Display):
         self[0].disp()
         self[1].disp()
 
+        self.cur_song = None
+        
         self.thread = threading.Thread(target=self.__info_print, daemon=True)
         self.thread.start()
 
@@ -103,6 +105,7 @@ class Player_disp(display.Display):
         """
         grab a command input when ':' is pressed
         """
+        self[2].win.win.move(2, 1)
         self[2].win.addstr(2, 0, ":")
         self[2].refresh()
 
@@ -113,7 +116,7 @@ class Player_disp(display.Display):
         curses.curs_set(0)
 
         self.exec_inp(inp)
-        self[2].win.addstr(2, 0, self[2].blank)
+        self[2].print_blank(2)
 
     
     def highlight(self, arg=None):
@@ -164,7 +167,6 @@ class Player_disp(display.Display):
                 self.wins[0].cursor_colour = keys.FOCUSED[0]
                 self.wins[1].cursor_colour = keys.CURSOR[0]
             
-
         self[self.cur].disp()
 
             
@@ -194,31 +196,33 @@ class Player_disp(display.Display):
         handle resize event (wip, still doesn't work)
         """
         hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
-        
-        wl = [ww, cc - ww]
-        xx = [0, ww]
 
-        for win, w, x in zip(self.wins[0:2], wl, xx):
+        xx = [0, ww, 0]
+        yy = [0, 0, hh]
+        wl = [ww, cc - ww, cc]
+        hl = [hh, hh, bottom_bar]
+
+        for win, x, y, w, h in zip(self.wins, xx, yy, wl, hl):
             win.x = x
-            win.y = 0
+            win.y = y
             win.w = w
-            win.h = hh
-            win.cursor = 0
-            win.offset = 0
-            win.blank = ' ' * (win.w - 1)
+            win.h = h
+            win.blank = ' ' * (w - 1)
+
+            win.win.resize(h, w)
+            win.win.mvwin(y, x)
             win.win.clear()
 
-        self.wins[2].x = 0
-        self.wins[2].y = hh
-        self.wins[2].w = cc
-        self.wins[2].h = bottom_bar
-        self.wins[2].blank = ' ' * (cc - 1)
-        self.wins[2].win.clear()
-        self.wins[2].win.mvwin(hh, 0)
+        for win in self.wins[0:2]:
+            if win.cursor >= win.h:
+                prev = win.cursor + win.offset
+                win.cursor = win.h - 1
+                win.offset = prev - win.cursor
+            win.disp()
 
-        self.wins[0].disp()
-        self.wins[1].disp()
-
+        self.disp_selected_song()
+        self.__print_cur_playing()
+        
 
     """
     Functions called from exec_inp
@@ -402,14 +406,17 @@ class Player_disp(display.Display):
     """
     def disp_selected_song(self):
         if len(self[1].data) < 1:
-            return
+            self[2].print_blank(1)
 
-        sel_song = self[1].highlighted()
-        disp_song = ' - '.join([sel_song['title'], sel_song['artist'], sel_song['album']])
-        self[2].print_line(0, 1, disp_song)
+        else:
+            sel_song = self[1].highlighted()
+            disp_song = self.__print_song(sel_song)
+            self[2].print_line(disp_song,y=1)
+
 
         playmode = self[0].highlighted().playmode
-        self[2].win.addstr(1, self[2].w - len(playmode) - 2, ' '+ playmode + ' ')
+
+        self[2].win.addnstr(1, self[2].w - len(playmode) - 2, ' '+ playmode + ' ', len(playmode) + 1)
         self[2].refresh()
 
 
@@ -421,17 +428,30 @@ class Player_disp(display.Display):
         return -1
 
 
-    def err_print(self, err):
-        self[2].win.addstr(3, 0, self[2].blank)
-        self[2].win.addstr(3, 0, err)        
-        
+    def __print_song(self, song):
+        return ' - '.join([song['artist'], song['title'], song['album']])
+
 
     #stuff for bottom window
     def __info_print(self):
+        self.__print_cur_playing()
         while True:
-            fn = self.player.curplay()
+            self.cur_song = self.player.curplay()
             self[2].print_blank(0)
-            if fn:
-                line = fn['title'] + ' - ' + fn['artist'] + ' - ' + fn['album']
-                self[2].print_line(0, 0, line)
+            self.__print_cur_playing()
+
             self[2].refresh()
+
+
+    def __print_cur_playing(self):
+        line = self.__print_song(self.cur_song)\
+            if self.cur_song\
+               else "Nothing currently playing"
+        self[2].print_line(line)
+
+
+    def err_print(self, err):
+        self[2].print_blank(3)
+        self[2].print_line(err, y=3)
+
+        

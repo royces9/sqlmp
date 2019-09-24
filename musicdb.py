@@ -3,7 +3,6 @@ import sqlite3
 
 import mutagen
 
-from keys import debug_file as df
 import time
 
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
@@ -149,7 +148,6 @@ class Musicdb:
         for path in new_file_paths:
             out = self.extract_metadata(path)
             if out and path not in self:
-                df(path)
                 (title, artist, album,length, bitrate) = out
                 new_files.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
         return
@@ -157,7 +155,6 @@ class Musicdb:
         #start= time.time()
         #new_files = self.dir_files(self.lib)
         total = time.time() - start
-        df([total])
 
         #add new files
         if len(new_files) > 0:

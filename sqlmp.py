@@ -117,7 +117,6 @@ def main(stdscr):
 
     play = player.Player()
     disp = init_windows(db, play, stdscr)
-    disp[2].print_line(0, 0, "Nothing currently playing")
 
     run(disp, stdscr)
 
