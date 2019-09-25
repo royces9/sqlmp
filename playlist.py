@@ -93,7 +93,12 @@ class Playlist:
         self.order = [self.cur] * len(self.data)
 
     def sort(self):
-        self.data.sort(key=lambda x: x[self.sort_key].lower())
+        if self.sort_key in {'path', 'artist', 'album', 'title'}:
+            key = lambda x: x[self.sort_key].lower()
+        else:
+            key = lambda x: x[self.sort_key]
+
+        self.data.sort(key=key)
 
     def set_order(self):
         self.playmode_list[self.playmode]()

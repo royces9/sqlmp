@@ -125,9 +125,10 @@ class Musicdb:
 
     
     def add_multi(self, li):
-        joined = ",".join(li)
-        self.exe(f"INSERT INTO library VALUES {joined}")
-        self.commit()
+        if len(li) > 0:
+            joined = ",".join(li)
+            self.exe(f"INSERT INTO library VALUES {joined}")
+            self.commit()
 
 
     def update(self):

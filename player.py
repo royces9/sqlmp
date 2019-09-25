@@ -72,7 +72,7 @@ class Player:
             #change state to playing
             self.state = Play_state.playing
             
-            #push onto play queue
+            #push song onto play queue to signal that playback is starting
             self.curq.put_nowait(fn)
 
             #grab path
@@ -115,6 +115,9 @@ class Player:
             #resource clean up
             stream.stop_stream()
             stream.close()
+
+            #push None to queue to signal that playback of a song has ended
+            self.curq.put_nowait(None)
 
             #set stream to not playing after playback ends
             self.state = Play_state.not_playing

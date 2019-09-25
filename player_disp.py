@@ -20,6 +20,7 @@ class Player_disp(display.Display):
             'renamepl': self.renamepl,
             'playmode': self.playmode,
             'adddir': self.adddir,
+            'addfile': self.addfile,
             'update': self.update,
         }
 
@@ -39,6 +40,7 @@ class Player_disp(display.Display):
         self[1].disp()
 
         self.cur_song = None
+        self.cur_pl = None
         
         self.thread = threading.Thread(target=self.__info_print, daemon=True)
         self.thread.start()
@@ -105,7 +107,7 @@ class Player_disp(display.Display):
         """
         grab a command input when ':' is pressed
         """
-        self[2].win.win.move(2, 1)
+        self[2].win.move(2, 1)
         self[2].win.addstr(2, 0, ":")
         self[2].refresh()
 
@@ -180,15 +182,13 @@ class Player_disp(display.Display):
 
         self.player.play(self[1].highlighted());
 
-        curpl = self[0].highlighted()
+        self.cur_pl = self[0].highlighted()
 
-        curpl.cur = self[1].highlighted_ind()
-        curpl.ind = curpl.cur
-        curpl.set_order()
+        self.cur_pl.cur = self[1].highlighted_ind()
+        self.cur_pl.ind = self.cur_pl.cur
+        self.cur_pl.set_order()
 
-        for _ in range(len(self[1].data)):
-            newsong = curpl._next()
-            self.player.append(newsong)
+        self.__enqueue()
 
 
     def resize(self, stdscr):
@@ -371,6 +371,30 @@ class Player_disp(display.Display):
         self[0].disp()
         
         
+    def addfile(self, args):
+        """
+        add a file to a playlist, also adds the file to the playlist
+        1 arg : add file to highlighted playlist
+        2 args: add file to named playlist
+        """
+        if len(args) == 0:
+            self.err_print('One argument required')
+            return
+
+        if len(args) == 1:
+            pl = self[0].highlighted()
+        else:
+            ind = self.pl_exists(args[1])
+            if ind < 0:
+                return
+
+            pl = self[0].data[ind]
+
+        newfile = args[0]
+        pl.insert(newfile)
+        self[1].disp()
+
+
     def adddir(self, args):
         """
         add a directory to a playlist, this also adds new directories to the db
@@ -410,7 +434,7 @@ class Player_disp(display.Display):
 
         else:
             sel_song = self[1].highlighted()
-            disp_song = self.__print_song(sel_song)
+            disp_song = self.__song_str_info(sel_song)
             self[2].print_line(disp_song,y=1)
 
 
@@ -428,7 +452,7 @@ class Player_disp(display.Display):
         return -1
 
 
-    def __print_song(self, song):
+    def __song_str_info(self, song):
         return ' - '.join([song['artist'], song['title'], song['album']])
 
 
@@ -436,19 +460,30 @@ class Player_disp(display.Display):
     def __info_print(self):
         self.__print_cur_playing()
         while True:
-            self.cur_song = self.player.curplay()
-            self[2].print_blank(0)
-            self.__print_cur_playing()
+            player_event = self.player.curplay()
+            #check if the event is for playback starting or ending
+            if player_event:
+                #playback started, print information to bottom window
+                self.cur_song = player_event
+                self[2].print_blank(0)
+                self.__print_cur_playing()
 
-            self[2].refresh()
+                self[2].refresh()
+            else:
+                #playback ended, queue another song
+                self.__enqueue()
 
-
+    def __enqueue(self):
+        newsong = self.cur_pl._next()
+        self.player.append(newsong)        
+        
     def __print_cur_playing(self):
-        line = self.__print_song(self.cur_song)\
+        line = self.__song_str_info(self.cur_song)\
             if self.cur_song\
                else "Nothing currently playing"
+        
         self[2].print_line(line)
-
+        self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
 
     def err_print(self, err):
         self[2].print_blank(3)
