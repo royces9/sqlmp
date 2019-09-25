@@ -118,13 +118,6 @@ def main(stdscr):
     play = player.Player()
     disp = init_windows(db, play, stdscr)
 
-    try:
-        a = []
-        a[2]
-    except:
-        import debug
-        debug.trace()
-    
     run(disp, stdscr)
 
 if __name__ == "__main__":
