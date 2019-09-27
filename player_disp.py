@@ -10,6 +10,8 @@ import playlist
 
 import keys
 
+import debug
+
 class Player_disp(display.Display):
     def __init__(self, wins, db, player):
         super().__init__(wins)
@@ -176,11 +178,15 @@ class Player_disp(display.Display):
         """
         play a song in a playlist
         """
+        next_song = self[1].highlighted()
+        if not next_song:
+            return
+        
         with self.player.playq.mutex:
             self.player.playq.queue.clear()
             self.player.pauseq.put_nowait(())
 
-        self.player.play(self[1].highlighted());
+        self.player.play(next_song);
 
         self.cur_pl = self[0].highlighted()
 
@@ -193,7 +199,7 @@ class Player_disp(display.Display):
 
     def resize(self, stdscr):
         """
-        handle resize event (wip, still doesn't work)
+        handle resize event
         """
         hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
 
@@ -437,11 +443,9 @@ class Player_disp(display.Display):
             disp_song = self.__song_str_info(sel_song)
             self[2].print_line(disp_song,y=1)
 
-
         playmode = self[0].highlighted().playmode
 
         self[2].win.addnstr(1, self[2].w - len(playmode) - 2, ' '+ playmode + ' ', len(playmode) + 1)
-        self[2].refresh()
 
 
     def pl_exists(self, name):
@@ -465,13 +469,13 @@ class Player_disp(display.Display):
             if player_event:
                 #playback started, print information to bottom window
                 self.cur_song = player_event
-                self[2].print_blank(0)
                 self.__print_cur_playing()
 
                 self[2].refresh()
             else:
                 #playback ended, queue another song
                 self.__enqueue()
+
 
     def __enqueue(self):
         newsong = self.cur_pl._next()
@@ -481,9 +485,10 @@ class Player_disp(display.Display):
         line = self.__song_str_info(self.cur_song)\
             if self.cur_song\
                else "Nothing currently playing"
-        
+
         self[2].print_line(line)
         self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
+
 
     def err_print(self, err):
         self[2].print_blank(3)

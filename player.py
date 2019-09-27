@@ -24,7 +24,7 @@ class Player:
         self.pyaudio_init()
         self.vol = keys.DEFAULT_VOLUME
 
-        #size of chunks in ms to playback
+        #size of chunks in bytes to playback
         self.step = 100
 
         self.state = Play_state.init
@@ -78,7 +78,7 @@ class Player:
             #grab path
             fp = fn['path']
             
-            #convert input file to wav and put it into wav variable
+            #convert input file to pcm data
             wav, _ = (ffmpeg
                      .input(fp)
                      .output('-', format='s16le', acodec='pcm_s16le')
@@ -125,10 +125,9 @@ class Player:
         
     def play_pause(self, *args):
         if self.state == Play_state.playing:
-            self.state = Play_state.paused
+            self.pause()
         elif self.state == Play_state.paused:
-            self.state = Play_state.playing
-            self.pauseq.put_nowait(())
+            self.unpause()
 
             
     def pause(self, *args):
@@ -137,7 +136,7 @@ class Player:
 
     def unpause(self, *args):
         self.state = Play_state.playing
-
+        self.pauseq.put_nowait(())
 
     def seek_forward(self, *args):
         pass

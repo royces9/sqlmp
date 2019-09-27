@@ -11,7 +11,7 @@ import player_disp
 import playlist
 
 import keys
-        
+
 def run(disp, stdscr):
     action = init_dict(disp)
 
@@ -117,7 +117,6 @@ def main(stdscr):
 
     play = player.Player()
     disp = init_windows(db, play, stdscr)
-
     run(disp, stdscr)
 
 if __name__ == "__main__":

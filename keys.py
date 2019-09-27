@@ -64,8 +64,6 @@ HIGHLIGHT_COLOUR=[curses.A_REVERSE, 0, 0]
 NORMAL=[curses.A_NORMAL, 0, 0]
 
 
-
-
 def set_size(stdscr):
     #height of bottom window
     bottom = 4

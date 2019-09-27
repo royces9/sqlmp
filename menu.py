@@ -14,7 +14,7 @@ class Window:
         self.blank = " " * (self.w - 1)
 
         
-    def print_blank(self, y, x=0):
+    def print_blank(self, y=0, x=0):
         self.win.addnstr(y, x, self.blank, self.w - x)
 
 
@@ -134,10 +134,10 @@ class Menu(Window):
         
     def print_col(self, x, y, datas):
         for string, fraction in datas:
-            ind = x
             width = int(self.w * fraction)
+            self.win.addnstr(y, x, wchar.set_width(string, width), self.w)
             x += width
-            self.win.addnstr(y, ind, wchar.set_width(string, width), self.w)
+
 
 
     def insert(self, items):
