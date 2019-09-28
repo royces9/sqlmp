@@ -171,7 +171,7 @@ class Player_disp(display.Display):
                 self.wins[0].cursor_colour = keys.FOCUSED[0]
                 self.wins[1].cursor_colour = keys.CURSOR[0]
             
-        self[self.cur].disp()
+        self.curwin().disp()
 
             
     def select(self, arg=None):

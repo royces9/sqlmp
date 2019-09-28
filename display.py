@@ -11,15 +11,17 @@ class Display:
         return self.wins[ind]
     
     def append(self, arg):
-        self.wins.append(arg);
+        self.wins.append(arg)
 
         
     def refresh(self):
         for win in self.wins:
-            win.refresh();
+            win.refresh()
+
             
     def getkey(self):
         return self.wins[0].win.getkey()
 
+
     def curwin(self):
-        return self.wins[self.cur];
+        return self.wins[self.cur]

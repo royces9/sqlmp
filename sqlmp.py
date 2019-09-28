@@ -25,6 +25,7 @@ def run(disp, stdscr):
         elif key == 'KEY_RESIZE':
             disp.resize(stdscr)
 
+            
 def init_colours():
     curses.start_color()
     curses.use_default_colors()
@@ -41,42 +42,22 @@ def init_colours():
 def init_dict(disp):
     out = dict()
 
-    def exitpl(*args):
-        sys.exit()
-
-    _keys = [
-        keys.UP,
-        keys.DOWN,
-        keys.VOLUP,
-        keys.VOLDOWN,
-        keys.PLAYPAUSE,
-        keys.QUIT,
-        keys.SWITCH,
-        keys.COMMAND,
-        keys.SELECT,
-        keys.HIGHLIGHT,
-        keys.TRANSFER,
-        keys.DELETE,
+    pairs = [
+        [keys.UP, disp.up],
+        [keys.DOWN, disp.down],
+        [keys.VOLUP, disp.player.vol_up],
+        [keys.VOLDOWN, disp.player.vol_down],
+        [keys.PLAYPAUSE, disp.player.play_pause],
+        [keys.QUIT, lambda x: sys.exit()],
+        [keys.SWITCH, disp.switch_view],
+        [keys.COMMAND, disp.grab_input],
+        [keys.SELECT, disp.select],
+        [keys.HIGHLIGHT, disp.highlight],
+        [keys.TRANSFER, disp.transfer],
+        [keys.DELETE, disp.delete],
     ]
 
-    vals = [
-        disp.up,
-        disp.down,
-        disp.player.vol_up,
-        disp.player.vol_down,
-        disp.player.play_pause,
-        exitpl,
-        disp.switch_view,
-        disp.grab_input,
-        disp.select,
-        disp.highlight,
-        disp.transfer,
-        disp.delete,
-    ]
-
-    assert len(_keys) == len(vals)
-
-    for key, val in zip(_keys, vals):
+    for key, val in pairs:
         out.update(dict.fromkeys(key, val))
 
     return out;

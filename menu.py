@@ -19,7 +19,7 @@ class Window:
 
 
     def print_line(self, line, y=0, x=0):
-        self.print_blank(y)
+        self.print_blank(y, x)
         trunc_line = wchar.set_width(line, self.w - x)
         self.win.addnstr(y, x, trunc_line, self.w - x)
 
@@ -60,7 +60,6 @@ class Menu(Window):
 
     def __getitem__(self, ind):
         return self.data[ind]
-
 
     def highlight(self):
         newitem = self.highlighted()
@@ -137,7 +136,6 @@ class Menu(Window):
             width = int(self.w * fraction)
             self.win.addnstr(y, x, wchar.set_width(string, width), self.w)
             x += width
-
 
 
     def insert(self, items):
