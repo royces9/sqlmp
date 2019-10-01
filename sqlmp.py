@@ -45,6 +45,8 @@ def init_dict(disp):
     pairs = [
         [keys.UP, disp.up],
         [keys.DOWN, disp.down],
+        [keys.LEFT, disp.player.seek_backward],
+        [keys.RIGHT, disp.player.seek_forward],
         [keys.VOLUP, disp.player.vol_up],
         [keys.VOLDOWN, disp.player.vol_down],
         [keys.PLAYPAUSE, disp.player.play_pause],

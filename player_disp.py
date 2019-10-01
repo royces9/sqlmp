@@ -3,6 +3,8 @@ import curses.textpad as tp
 import os
 import shlex
 import threading
+import time
+import queue
 
 import display
 import musicdb
@@ -35,7 +37,7 @@ class Player_disp(display.Display):
         self.curs = db.curs
 
         #text window for information
-        self.textwin =  self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
+        self.textwin = self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
 
         self[0].disp()
@@ -435,12 +437,14 @@ class Player_disp(display.Display):
     Utility functions
     """
     def disp_selected_song(self):
+        return
         if len(self[1].data) < 1:
             self[2].print_blank(1)
 
         else:
             sel_song = self[1].highlighted()
             disp_song = self.__song_str_info(sel_song)
+            m, s = self.player.cur_time()
             self[2].print_line(disp_song,y=1)
 
         playmode = self[0].highlighted().playmode
@@ -464,22 +468,44 @@ class Player_disp(display.Display):
     def __info_print(self):
         self.__print_cur_playing()
         while True:
-            player_event = self.player.curplay()
-            #check if the event is for playback starting or ending
-            if player_event:
-                #playback started, print information to bottom window
-                self.cur_song = player_event
-                self.__print_cur_playing()
-
-                self[2].refresh()
+            if self.cur_song:
+                time_str = self.str_song_length(self.player.cur_time())
+                total_time_str = self.str_song_length(self.cur_song['length'])
             else:
-                #playback ended, queue another song
-                self.__enqueue()
+                time_str = '0:00'
+                total_time_str = time_str
+
+            self[2].print_line(' / '.join([time_str, total_time_str]),y=1)
+            
+            playmode = self[0].highlighted().playmode
+            self[2].win.addnstr(1, self[2].w - len(playmode) - 2, ' '+ playmode + ' ', len(playmode) + 1)
+            
+            if not self.player.curq.empty():
+                player_event = self.player.curplay()
+                #check if the event is for playback starting or ending
+                if player_event:
+                    #playback started, print information to bottom window
+                    self.cur_song = player_event
+
+                    #stupid temporary hack to fix bottom bar printing garbage
+                    #TEMP
+                    self.__print_cur_playing()
+                    self.__print_cur_playing()
+                    
+                    self[2].refresh()
+                else:
+                    #playback ended, queue another song
+                    self.__enqueue()
+
+            time.sleep(0.1)
+            self[2].refresh()
+
 
 
     def __enqueue(self):
         newsong = self.cur_pl._next()
         self.player.append(newsong)        
+
         
     def __print_cur_playing(self):
         line = self.__song_str_info(self.cur_song)\
@@ -494,4 +520,16 @@ class Player_disp(display.Display):
         self[2].print_blank(3)
         self[2].print_line(err, y=3)
 
+
+    def str_song_length(self, len_s):
+        """
+        return formatted string for time given a value in seconds
+        """
+        m = str(int(len_s // 60))
+        s = str(int(round(len_s % 60)))
+
+        if len(s) < 2:
+            s = '0' + s
+
+        return ':'.join([m, s])
         

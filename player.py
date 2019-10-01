@@ -24,8 +24,26 @@ class Player:
         self.pyaudio_init()
         self.vol = keys.DEFAULT_VOLUME
 
+        #the length of time (s) each chunk of playback is
+        #the play call blocks during this time, so the
+        #thread will completely stop
+        self.play_len = 0.1
+
         #size of chunks in bytes to playback
-        self.step = 100
+        self.step = 0
+
+        #seconds to skip when seeking
+        self.vol_inc = 5
+        #number of chunks to skip when seeking
+        self.vol_inc_c = 0
+
+        #music info
+        self.rate = 0
+        self.channels = 0
+        self.width = 2
+
+        self.iterator = 0
+        self.time = 0
 
         self.state = Play_state.init
         self.playq = queue.Queue(0)
@@ -37,7 +55,8 @@ class Player:
 
 
     def curplay(self, arg=None):
-        return self.curq.get(block=True, timeout = None)
+        return self.curq.get_nowait()
+        #return self.curq.get(block=True, timeout = None)
 
 
     def vol_up(self, arg=None):
@@ -88,20 +107,25 @@ class Player:
             
             #grab stream data for the pyaudio stream
             prob = ffmpeg.probe(fp)
-            rate = int(prob['streams'][0]['sample_rate'])
-            channels = int(prob['streams'][0]['channels'])
-            width = 2
+            self.rate = int(prob['streams'][0]['sample_rate'])
+            self.channels = int(prob['streams'][0]['channels'])
+            self.width = 2
 
+            self.set_time()
             #open a pyaudio stream
             stream = self.pyaudio.open(
-                format=self.pyaudio.get_format_from_width(width),
-                channels=channels,
-                rate=rate,
+                format=self.pyaudio.get_format_from_width(self.width),
+                channels=self.channels,
+                rate=self.rate,
                 output=True,
             )
+            #bytes = len * rate * width * channels
+            self.step = int(self.play_len * self.rate * self.width * self.channels)
+            self.vol_inc_c = self.vol_inc * self.rate * self.width * self.channels // self.step
 
             wav_chunks = [wav[i:i+self.step] for i in range(0, len(wav), self.step)]
-            for chunk in wav_chunks:
+            self.iterator = 0
+            while self.iterator < len(wav_chunks):
                 if self.state == Play_state.paused:
                     while self.state == Play_state.paused:
                         self.pauseq.get(block=True, timeout=None)
@@ -109,8 +133,10 @@ class Player:
                 elif self.state in {Play_state.new, Play_state.end}:
                     break
                 
-                adjust = audioop.mul(chunk, width, self.vol/100)
+                adjust = audioop.mul(wav_chunks[self.iterator], self.width, self.vol/100)
                 stream.write(adjust)
+                self.iterator += 1
+                self.set_time()
 
             #resource clean up
             stream.stop_stream()
@@ -138,13 +164,23 @@ class Player:
         self.state = Play_state.playing
         self.pauseq.put_nowait(())
 
+        
     def seek_forward(self, *args):
-        pass
+        self.iterator += self.vol_inc_c
 
 
     def seek_backward(self, *args):
-        pass
+        self.iterator -= self.vol_inc_c
+        if self.iterator < 0:
+            self.iterator = 0
 
+
+    def set_time(self):
+        self.time = self.step * self.iterator / (self.width * self.channels * self.rate)
+
+
+    def cur_time(self, *args):
+        return self.time
 
     def pyaudio_init(self):
         og_err = sys.stderr.fileno()
