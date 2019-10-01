@@ -12,7 +12,7 @@ import playlist
 
 import keys
 
-def run(disp, stdscr):
+def main_loop(disp, stdscr):
     action = init_dict(disp)
 
     while True:
@@ -62,7 +62,7 @@ def init_dict(disp):
     for key, val in pairs:
         out.update(dict.fromkeys(key, val))
 
-    return out;
+    return out
 
 
 def init_windows(db, play, stdscr):
@@ -100,7 +100,7 @@ def main(stdscr):
 
     play = player.Player()
     disp = init_windows(db, play, stdscr)
-    run(disp, stdscr)
+    main_loop(disp, stdscr)
 
 if __name__ == "__main__":
     curses.wrapper(main)

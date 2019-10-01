@@ -4,7 +4,6 @@ import os
 import shlex
 import threading
 import time
-import queue
 
 import display
 import musicdb
