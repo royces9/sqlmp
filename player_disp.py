@@ -48,8 +48,6 @@ class Player_disp(display.Display):
         self.thread = threading.Thread(target=self.__info_print, daemon=True)
         self.thread.start()
 
-        self.disp_selected_song()
-
         
     """
     Functions called from key press/events
@@ -67,8 +65,6 @@ class Player_disp(display.Display):
             self[1].offset = 0
             self[1].disp()
 
-        self.disp_selected_song()
-
 
     def down(self, arg=None):
         """
@@ -82,8 +78,6 @@ class Player_disp(display.Display):
             self[1].offset = 0
             self[1].disp()
                                                             
-        self.disp_selected_song()
-
         
     def switch_view(self, arg=None):
         """
@@ -227,7 +221,6 @@ class Player_disp(display.Display):
                 win.offset = prev - win.cursor
             win.disp()
 
-        self.disp_selected_song()
         self.__print_cur_playing()
         
 
@@ -245,7 +238,6 @@ class Player_disp(display.Display):
         if spl[0] in self.ex_dict:
             self.err_print("")
             self.ex_dict[spl[0]](spl[1:])
-            self.disp_selected_song()
         else:
             self.err_print('Invalid command: ' + spl[0])
 
@@ -435,22 +427,6 @@ class Player_disp(display.Display):
     """
     Utility functions
     """
-    def disp_selected_song(self):
-        return
-        if len(self[1].data) < 1:
-            self[2].print_blank(1)
-
-        else:
-            sel_song = self[1].highlighted()
-            disp_song = self.__song_str_info(sel_song)
-            m, s = self.player.cur_time()
-            self[2].print_line(disp_song,y=1)
-
-        playmode = self[0].highlighted().playmode
-
-        self[2].win.addnstr(1, self[2].w - len(playmode) - 2, ' '+ playmode + ' ', len(playmode) + 1)
-
-
     def pl_exists(self, name):
         for i, d in enumerate(self[0].data):
             if d.name == name:

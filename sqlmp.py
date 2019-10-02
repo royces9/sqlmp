@@ -21,7 +21,7 @@ def main_loop(disp, stdscr):
         key = disp.getkey()
 
         if key in action:
-            action[key](disp)
+            action[key]()
         elif key == 'KEY_RESIZE':
             disp.resize(stdscr)
 
@@ -50,7 +50,7 @@ def init_dict(disp):
         [keys.VOLUP, disp.player.vol_up],
         [keys.VOLDOWN, disp.player.vol_down],
         [keys.PLAYPAUSE, disp.player.play_pause],
-        [keys.QUIT, lambda x: sys.exit()],
+        [keys.QUIT, sys.exit],
         [keys.SWITCH, disp.switch_view],
         [keys.COMMAND, disp.grab_input],
         [keys.SELECT, disp.select],
