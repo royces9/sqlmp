@@ -14,8 +14,8 @@ import keys
 import debug
 
 class Player_disp(display.Display):
-    def __init__(self, wins, db, player):
-        super().__init__(wins)
+    def __init__(self, wins, stdscr, db, player):
+        super().__init__(wins, stdscr)
         self.ex_dict = {
             'sort': self.sort,
             'newpl': self.newpl,
@@ -27,9 +27,6 @@ class Player_disp(display.Display):
             'update': self.update,
         }
 
-        for win in self.wins:
-            win.win.syncok(True)
-
         self.player = player
         self.db = db
         self.conn = db.conn
@@ -38,15 +35,24 @@ class Player_disp(display.Display):
         #text window for information
         self.textwin = self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
+        self[2].win.leaveok(True)
+        
+        #init a blank song 
+        self.cur_song = {'title': 'Nothing currently playing',
+                         'artist': '',
+                         'album': '',
+                         'length': 0,
+                         'bitrate': 0}
 
-        self[0].disp()
-        self[1].disp()
-
-        self.cur_song = None
         self.cur_pl = None
         
         self.thread = threading.Thread(target=self.__info_print, daemon=True)
         self.thread.start()
+
+        self[0].disp()
+        self[1].disp()
+
+        self.stdscr.refresh()
 
         
     """
@@ -104,6 +110,8 @@ class Player_disp(display.Display):
         """
         grab a command input when ':' is pressed
         """
+        self[2].print_blank(2)
+        
         self[2].win.move(2, 1)
         self[2].win.addstr(2, 0, ":")
         self[2].refresh()
@@ -192,11 +200,11 @@ class Player_disp(display.Display):
         self.__enqueue()
 
 
-    def resize(self, stdscr):
+    def resize(self):
         """
         handle resize event
         """
-        hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
+        hh, ww, bottom_bar, ll, cc = keys.set_size(self.stdscr)
 
         xx = [0, ww, 0]
         yy = [0, 0, hh]
@@ -221,6 +229,8 @@ class Player_disp(display.Display):
                 win.offset = prev - win.cursor
             win.disp()
 
+        self.stdscr.refresh()
+
         self.__print_cur_playing()
         
 
@@ -231,7 +241,7 @@ class Player_disp(display.Display):
         """
         executes the actual command from grab_inp
         """
-        spl = shlex.split(inp)
+        spl = shlex.split(shlex.quote(inp))
         if not spl:
             return
         
@@ -328,7 +338,7 @@ class Player_disp(display.Display):
             plname = args[0]
             ind = self.pl_exists(plname)
 
-            if ind == -1:
+            if ind < 0:
                 self.err_print(f'Playlist "{plname}" doesn\'t exist')
                 return
 
@@ -362,7 +372,7 @@ class Player_disp(display.Display):
             newname = args[1]
             ind = self.pl_exists(curname)
 
-            if ind == -1:
+            if ind < 0:
                 self.err_print(f'Playlist "{plname}" doesn\'t exist')
                 return
 
@@ -428,6 +438,9 @@ class Player_disp(display.Display):
     Utility functions
     """
     def pl_exists(self, name):
+        """
+        check if pl exists and return its index in list
+        """
         for i, d in enumerate(self[0].data):
             if d.name == name:
                 return i
@@ -436,19 +449,22 @@ class Player_disp(display.Display):
 
 
     def __song_str_info(self, song):
-        return ' - '.join([song['artist'], song['title'], song['album']])
+        """
+        return a string with formatted song info
+        """
+        info = [song[key] for key in ['artist', 'title', 'album'] if song[key] is not '']
+        return ' - '.join(info)
 
 
     #stuff for bottom window
     def __info_print(self):
-        self.__print_cur_playing()
+        """
+        function that runs on separate thread
+        prints information onto bottom window
+        """
         while True:
-            if self.cur_song:
-                time_str = self.str_song_length(self.player.cur_time())
-                total_time_str = self.str_song_length(self.cur_song['length'])
-            else:
-                time_str = '0:00'
-                total_time_str = time_str
+            time_str = self.str_song_length(self.player.cur_time())
+            total_time_str = self.str_song_length(self.cur_song['length'])
 
             self[2].print_line(' / '.join([time_str, total_time_str]),y=1)
             
@@ -461,16 +477,13 @@ class Player_disp(display.Display):
                 if player_event:
                     #playback started, print information to bottom window
                     self.cur_song = player_event
-
-                    #stupid temporary hack to fix bottom bar printing garbage
-                    #TEMP
-                    self.__print_cur_playing()
-                    self.__print_cur_playing()
                     
                     self[2].refresh()
                 else:
                     #playback ended, queue another song
                     self.__enqueue()
+
+            self.__print_cur_playing()
 
             time.sleep(0.1)
             self[2].refresh()
@@ -478,14 +491,18 @@ class Player_disp(display.Display):
 
 
     def __enqueue(self):
+        """
+        add a new song onto the player queue
+        """
         newsong = self.cur_pl._next()
         self.player.append(newsong)        
 
         
     def __print_cur_playing(self):
-        line = self.__song_str_info(self.cur_song)\
-            if self.cur_song\
-               else "Nothing currently playing"
+        """
+        print currently playing song in bottom window with highlight
+        """
+        line = self.__song_str_info(self.cur_song)
 
         self[2].print_line(line)
         self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
@@ -501,10 +518,9 @@ class Player_disp(display.Display):
         return formatted string for time given a value in seconds
         """
         m = str(int(len_s // 60))
-        s = str(int(round(len_s % 60)))
+        s = int(round(len_s % 60))
 
-        if len(s) < 2:
-            s = '0' + s
+        s = str(s) if s > 9 else '0' + str(s)
 
         return ':'.join([m, s])
         

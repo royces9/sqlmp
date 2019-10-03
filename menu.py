@@ -1,3 +1,4 @@
+
 import curses
 
 import wchar
@@ -9,9 +10,8 @@ class Window:
         self.w = w
         self.h = h
         self.win = curses.newwin(h, w, y, x)
-        self.win.keypad(True)
 
-        self.blank = " " * (self.w - 1)
+        self.blank = ' ' * (self.w - 1)
 
         
     def print_blank(self, y=0, x=0):
@@ -53,6 +53,9 @@ class Menu(Window):
 
         self.paint_cursor(self.cursor_colour)
 
+        self.win.idlok(True)
+        self.win.scrollok(True)
+
 
     def __contains__(self, item):
         return item in self.data
@@ -86,13 +89,20 @@ class Menu(Window):
     def up(self):
         self.paint_cursor(self.normal_colour)
         
-        at_top = self.cursor < 1;
+        at_top = self.cursor < 1
+
         if not at_top:
             self.cursor -= 1
         elif self.offset > 0:
             self.offset -= 1
 
-        self.disp();
+            self.win.scroll(-1)
+            if self.offset < len(self.data):
+                formatted_list = self.form(self.data[self.offset])
+                self.print_col(0, 0, formatted_list)
+
+        self.paint_highlight(self.highlight_colour)
+        self.paint_cursor(self.cursor_colour)
 
 
     def down(self):
@@ -102,16 +112,23 @@ class Menu(Window):
             at_bot = self.cursor >= (self.h - 1)
             if at_bot:
                 self.offset += 1
+                self.win.scroll(1)
+
+                if (self.h - 1 + self.offset) < len(self.data):
+                    formatted_list = self.form(self.data[(self.h - 1) + self.offset])
+                    self.print_col(0, self.h - 1, formatted_list)
+
             else:
                 self.cursor += 1
 
-        self.disp();
+        self.paint_highlight(self.highlight_colour)
+        self.paint_cursor(self.cursor_colour)
 
         
     def disp(self):
         for ii in range(self.h):
             self.print_blank(ii)
-            if not ((ii + self.offset) > (len(self.data) - 1)):
+            if (ii + self.offset) < len(self.data):
                 formatted_list = self.form(self.data[ii + self.offset])
                 self.print_col(0, ii, formatted_list)
 
@@ -122,7 +139,7 @@ class Menu(Window):
     def paint_highlight(self, colour):
         for hl in self.highlight_list:
             newind = self.data.index(hl) - self.offset
-            if 0 <= newind <= self.w:
+            if 0 <= newind < self.w:
                 self.win.chgat(newind, 0, self.w - 1, colour)
 
 

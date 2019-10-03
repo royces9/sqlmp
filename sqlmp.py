@@ -11,19 +11,23 @@ import player_disp
 import playlist
 
 import keys
+import debug
 
-def main_loop(disp, stdscr):
+def main_loop(disp):
     action = init_dict(disp)
+    debug.debug('Start')
 
     while True:
         disp.refresh()
 
+        curses.flushinp()
         key = disp.getkey()
+
+        if key not in {'k', 'l'}:
+            debug.debug(key)
 
         if key in action:
             action[key]()
-        elif key == 'KEY_RESIZE':
-            disp.resize(stdscr)
 
             
 def init_colours():
@@ -32,11 +36,10 @@ def init_colours():
 
     colours = [keys.FOCUSED, keys.CURSOR, keys.HIGHLIGHT_COLOUR, keys.NORMAL]
 
-    for i, c in enumerate(list(range(len(colours))), 1):
-        aa = colours[c]
-        if aa[0] is None:
-            curses.init_pair(i, aa[1], aa[2])
-            aa[0] = curses.color_pair(i)
+    for i, c in enumerate(colours, 1):
+        if c[0] is None:
+            curses.init_pair(i, c[1], c[2])
+            c[0] = curses.color_pair(i)
 
         
 def init_dict(disp):
@@ -57,8 +60,9 @@ def init_dict(disp):
         [keys.HIGHLIGHT, disp.highlight],
         [keys.TRANSFER, disp.transfer],
         [keys.DELETE, disp.delete],
+        [['KEY_RESIZE'], disp.resize],
     ]
-
+    
     for key, val in pairs:
         out.update(dict.fromkeys(key, val))
 
@@ -67,40 +71,52 @@ def init_dict(disp):
 
 def init_windows(db, play, stdscr):
     hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
-    
-    leftdata = [playlist.Playlist(name=pl, db=db) for pl in db.list_pl()]
-    plname = lambda x: ((x.name, 1),)
-    leftwin = menu.Menu(0, 0, ww, hh, data=leftdata, form=plname, 
+
+    leftwin = menu.Menu(0, 0, ww, hh,
+                        data=[playlist.Playlist(name=pl, db=db) for pl in db.list_pl()],
+                        form=lambda x: ((x.name, 1),), 
                         cursor_colour=keys.FOCUSED[0],
                         highlight_colour=keys.FOCUSED[0],
                         normal_colour=keys.NORMAL[0])
 
-    #set data for the first playlist
-    rightdata = leftdata[0].data
-    rightwin = menu.Menu(ww, 0, cc - ww, hh, data=rightdata, form=keys.SONG_DISP,
+    rightwin = menu.Menu(ww, 0, cc - ww, hh,
+                         data=leftwin.data[0].data,
+                         form=keys.SONG_DISP,
                          cursor_colour=keys.CURSOR[0],
                          highlight_colour=keys.HIGHLIGHT_COLOUR[0],
                          normal_colour=keys.NORMAL[0])
+
     botwin = menu.Window(0, hh, cc, bottom_bar)
 
     sys.stdout.write("\x1b]2;sqlmp\x07")
     sys.stdout.flush()
 
-    return player_disp.Player_disp([leftwin, rightwin, botwin], db, play)
+    return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db, play)
 
 
 def main(stdscr):
-    curses.curs_set(False)
-    stdscr.clear()
-
-    if curses.has_colors():
-        init_colours()
-
     db = musicdb.Musicdb(keys.DBPATH, keys.LIBPATH)
 
     play = player.Player()
     disp = init_windows(db, play, stdscr)
-    main_loop(disp, stdscr)
+    main_loop(disp)
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    try:
+        stdscr = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
+        curses.curs_set(0)
+
+        if curses.has_colors():
+            init_colours()
+
+        stdscr.keypad(True)
+        main(stdscr)
+
+    finally:
+        curses.echo()
+        curses.nocbreak()
+        stdscr.keypad(0)
+
+        curses.endwin()

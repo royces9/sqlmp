@@ -1,7 +1,8 @@
 class Display:
-    def __init__(self, wins):
+    def __init__(self, wins, stdscr):
         self.cur = 0
         self.wins = wins
+        self.stdscr = stdscr
             
     def __len__(self):
         return len(self.wins)
@@ -18,9 +19,11 @@ class Display:
         for win in self.wins:
             win.refresh()
 
+        self.stdscr.refresh()
+
             
     def getkey(self):
-        return self.wins[0].win.getkey()
+        return self.stdscr.getkey()
 
 
     def curwin(self):
