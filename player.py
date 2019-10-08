@@ -56,7 +56,6 @@ class Player:
 
     def curplay(self, arg=None):
         return self.curq.get_nowait()
-        #return self.curq.get(block=True, timeout = None)
 
 
     def vol_up(self, arg=None):

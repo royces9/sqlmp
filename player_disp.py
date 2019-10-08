@@ -54,7 +54,6 @@ class Player_disp(display.Display):
 
         self.stdscr.refresh()
 
-        
     """
     Functions called from key press/events
     """
@@ -67,10 +66,10 @@ class Player_disp(display.Display):
 
         if self.cur == 0:
             self[1].data = self[0].highlighted().data
+            self[1].highlight_list = []
             self[1].cursor = 0
             self[1].offset = 0
             self[1].disp()
-
 
     def down(self, arg=None):
         """
@@ -80,10 +79,11 @@ class Player_disp(display.Display):
 
         if self.cur == 0:
             self[1].data = self[0].highlighted().data
+            self[1].highlight_list = []
             self[1].cursor = 0
             self[1].offset = 0
             self[1].disp()
-                                                            
+
         
     def switch_view(self, arg=None):
         """
@@ -463,13 +463,14 @@ class Player_disp(display.Display):
         prints information onto bottom window
         """
         while True:
+            start = time.time()
             time_str = self.str_song_length(self.player.cur_time())
             total_time_str = self.str_song_length(self.cur_song['length'])
 
             self[2].print_line(' / '.join([time_str, total_time_str]),y=1)
             
             playmode = self[0].highlighted().playmode
-            self[2].win.addnstr(1, self[2].w - len(playmode) - 2, ' '+ playmode + ' ', len(playmode) + 1)
+            self[2].print_line(' ' + playmode + ' ', y=1, x=self[2].w - len(playmode) - 2)
             
             if not self.player.curq.empty():
                 player_event = self.player.curplay()
@@ -485,8 +486,10 @@ class Player_disp(display.Display):
 
             self.__print_cur_playing()
 
-            time.sleep(0.1)
             self[2].refresh()
+            diff = time.time() - start
+            if diff < 0.1:
+                time.sleep(0.1 -diff)
 
 
 
@@ -494,17 +497,14 @@ class Player_disp(display.Display):
         """
         add a new song onto the player queue
         """
-        newsong = self.cur_pl._next()
-        self.player.append(newsong)        
+        self.player.append(self.cur_pl._next())
 
         
     def __print_cur_playing(self):
         """
         print currently playing song in bottom window with highlight
         """
-        line = self.__song_str_info(self.cur_song)
-
-        self[2].print_line(line)
+        self[2].print_line(self.__song_str_info(self.cur_song))
         self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
 
 
