@@ -8,6 +8,7 @@ import time
 import display
 import musicdb
 import playlist
+import wchar
 
 import keys
 
@@ -16,6 +17,7 @@ import debug
 class Player_disp(display.Display):
     def __init__(self, wins, stdscr, db, player):
         super().__init__(wins, stdscr)
+
         self.ex_dict = {
             'sort': self.sort,
             'newpl': self.newpl,
@@ -502,9 +504,12 @@ class Player_disp(display.Display):
         
     def __print_cur_playing(self):
         """
-        print currently playing song in bottom window with highlight
+        print currently playing song/playlist in bottom window with highlight
         """
         self[2].print_line(self.__song_str_info(self.cur_song))
+        if self.cur_pl:
+            self[2].print_line(' ' + self.cur_pl.name + ' ', x=self[2].w - wchar.wcswidth(self.cur_pl.name)[0] - 2)
+
         self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
 
 

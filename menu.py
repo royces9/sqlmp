@@ -1,4 +1,5 @@
 import curses
+import threadwin
 
 import wchar
 
@@ -8,7 +9,7 @@ class Window:
         self.y = y
         self.w = w
         self.h = h
-        self.win = curses.newwin(h, w, y, x)
+        self.win = threadwin.Threadwin(h, w, y, x)
 
         self.blank = ' ' * (self.w - 1)
 
@@ -29,7 +30,7 @@ class Window:
 
 class Menu(Window):
     def __init__(self, x = 0, y = 0, w = 0, h = 0, data = [],
-                 form = lambda ll: (str(ll), 0),
+                 form=lambda ll: ((str(ll), 1),),
                  cursor_colour=curses.A_STANDOUT,
                  highlight_colour=curses.A_REVERSE,
                  normal_colour=curses.A_NORMAL):
