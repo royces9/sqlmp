@@ -33,9 +33,9 @@ class Player:
         self.step = 0
 
         #seconds to skip when seeking
-        self.vol_inc = 5
+        self.seek_delta = 5
         #number of chunks to skip when seeking
-        self.vol_inc_c = 0
+        self.seek_delta_c = 0
 
         #music info
         self.rate = 0
@@ -43,7 +43,6 @@ class Player:
         self.width = 2
 
         self.iterator = 0
-        self.time = 0
 
         self.state = Play_state.init
         self.playq = queue.Queue(0)
@@ -54,33 +53,6 @@ class Player:
         self.thread.start()
 
 
-    def curplay(self, arg=None):
-        return self.curq.get_nowait()
-
-
-    def vol_up(self, arg=None):
-            newvol = self.vol + keys.VOL_STEP
-            if newvol > 100:
-                newvol = 100
-            self.vol = newvol
-
-    
-    def vol_down(self, arg=None):
-            newvol = self.vol - keys.VOL_STEP
-            if newvol < 0:
-                newvol = 0
-            self.vol = newvol
-
-
-    def append(self, arg):
-        self.playq.put_nowait(arg)
-
-
-    def play(self, arg):
-        self.append(arg)
-        self.state = Play_state.new
-
-        
     def __play_loop(self):
         #always loop unless we quit
         while self.state != Play_state.end:
@@ -110,7 +82,6 @@ class Player:
             self.channels = int(prob['streams'][0]['channels'])
             self.width = 2
 
-            self.set_time()
             #open a pyaudio stream
             stream = self.pyaudio.open(
                 format=self.pyaudio.get_format_from_width(self.width),
@@ -120,10 +91,11 @@ class Player:
             )
             #bytes = len * rate * width * channels
             self.step = int(self.play_len * self.rate * self.width * self.channels)
-            self.vol_inc_c = self.vol_inc * self.rate * self.width * self.channels // self.step
+            self.seek_delta_c = self.seek_delta * self.rate * self.width * self.channels // self.step
+            self.iterator = 0
 
             wav_chunks = [wav[i:i+self.step] for i in range(0, len(wav), self.step)]
-            self.iterator = 0
+
             while self.iterator < len(wav_chunks):
                 if self.state == Play_state.paused:
                     while self.state == Play_state.paused:
@@ -135,7 +107,6 @@ class Player:
                 adjust = audioop.mul(wav_chunks[self.iterator], self.width, self.vol/100)
                 stream.write(adjust)
                 self.iterator += 1
-                self.set_time()
 
             #resource clean up
             stream.stop_stream()
@@ -148,6 +119,32 @@ class Player:
             self.state = Play_state.not_playing
 
         
+    def vol_up(self):
+        self.vol += keys.VOL_STEP
+        if self.vol > 100:
+            self.vol = 100
+
+    
+    def vol_down(self):
+        self.vol -= keys.VOL_STEP
+        if self.vol < 0:
+            self.vol = 0
+
+
+    def append(self, arg):
+        self.playq.put_nowait(arg)
+
+
+    def play(self, arg):
+        #reset playback before starting new song
+        with self.playq.mutex:
+            self.playq.queue.clear()
+            self.pauseq.put_nowait(())
+
+        self.append(arg)
+        self.state = Play_state.new
+
+
     def play_pause(self, *args):
         if self.state == Play_state.playing:
             self.pause()
@@ -165,21 +162,28 @@ class Player:
 
         
     def seek_forward(self, *args):
-        self.iterator += self.vol_inc_c
+        self.iterator += self.seek_delta_c
 
 
     def seek_backward(self, *args):
-        self.iterator -= self.vol_inc_c
+        self.iterator -= self.seek_delta_c
         if self.iterator < 0:
             self.iterator = 0
 
 
-    def set_time(self):
-        self.time = self.step * self.iterator / (self.width * self.channels * self.rate)
-
-
     def cur_time(self, *args):
-        return self.time
+        d = self.width * self.channels * self.rate
+        n = self.step * self.iterator
+        return n / d if d is not 0 else 0
+
+
+    def curplay(self):
+        return self.curq.get_nowait()
+
+
+    def curempty(self):
+        return self.curq.empty()
+
 
     def pyaudio_init(self):
         og_err = sys.stderr.fileno()

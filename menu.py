@@ -23,6 +23,10 @@ class Window:
         trunc_line = wchar.set_width(line, self.w - x)
         self.win.addnstr(y, x, trunc_line, self.w - x)
 
+    def print_right_justified(self, line, y=0):
+        length = wchar.wcswidth(line)[0]
+        self.win.addnstr(y, self.w - length, line, length)
+
     def refresh(self):
         self.win.refresh()
 

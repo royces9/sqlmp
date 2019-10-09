@@ -18,7 +18,7 @@ class Player_disp(display.Display):
     def __init__(self, wins, stdscr, db, player):
         super().__init__(wins, stdscr)
 
-        self.ex_dict = {
+        self.commands = {
             'sort': self.sort,
             'newpl': self.newpl,
             'delpl': self.delpl,
@@ -187,10 +187,6 @@ class Player_disp(display.Display):
         if not next_song:
             return
         
-        with self.player.playq.mutex:
-            self.player.playq.queue.clear()
-            self.player.pauseq.put_nowait(())
-
         self.player.play(next_song);
 
         self.cur_pl = self[0].highlighted()
@@ -247,9 +243,9 @@ class Player_disp(display.Display):
         if not spl:
             return
         
-        if spl[0] in self.ex_dict:
+        if spl[0] in self.commands:
             self.err_print("")
-            self.ex_dict[spl[0]](spl[1:])
+            self.commands[spl[0]](spl[1:])
         else:
             self.err_print('Invalid command: ' + spl[0])
 
@@ -469,19 +465,17 @@ class Player_disp(display.Display):
             time_str = self.str_song_length(self.player.cur_time())
             total_time_str = self.str_song_length(self.cur_song['length'])
 
-            self[2].print_line(' / '.join([time_str, total_time_str]),y=1)
+            info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
+            self[2].print_line(info_str, y=1)
             
             playmode = self[0].highlighted().playmode
-            self[2].print_line(' ' + playmode + ' ', y=1, x=self[2].w - len(playmode) - 2)
-            
-            if not self.player.curq.empty():
+            self[2].print_right_justified(' ' + playmode + ' ', y=1)
+            if not self.player.curempty():
                 player_event = self.player.curplay()
                 #check if the event is for playback starting or ending
                 if player_event:
                     #playback started, print information to bottom window
                     self.cur_song = player_event
-                    
-                    self[2].refresh()
                 else:
                     #playback ended, queue another song
                     self.__enqueue()
@@ -491,7 +485,7 @@ class Player_disp(display.Display):
             self[2].refresh()
             diff = time.time() - start
             if diff < 0.1:
-                time.sleep(0.1 -diff)
+                time.sleep(0.1 - diff)
 
 
 
@@ -508,7 +502,7 @@ class Player_disp(display.Display):
         """
         self[2].print_line(self.__song_str_info(self.cur_song))
         if self.cur_pl:
-            self[2].print_line(' ' + self.cur_pl.name + ' ', x=self[2].w - wchar.wcswidth(self.cur_pl.name)[0] - 2)
+            self[2].print_right_justified(' ' + self.cur_pl.name + ' ')
 
         self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
 
