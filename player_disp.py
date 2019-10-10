@@ -466,6 +466,7 @@ class Player_disp(display.Display):
             total_time_str = self.str_song_length(self.cur_song['length'])
 
             info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
+            
             self[2].print_line(info_str, y=1)
             
             playmode = self[0].highlighted().playmode
@@ -500,10 +501,18 @@ class Player_disp(display.Display):
         """
         print currently playing song/playlist in bottom window with highlight
         """
-        self[2].print_line(self.__song_str_info(self.cur_song))
+        song = self.__song_str_info(self.cur_song)
+
+        if self.player.is_paused():
+            song += ' *PAUSED*'
+
+        self[2].print_line(song)
+
         if self.cur_pl:
             self[2].print_right_justified(' ' + self.cur_pl.name + ' ')
 
+
+            
         self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
 
 

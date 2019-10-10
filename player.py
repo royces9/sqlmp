@@ -97,8 +97,8 @@ class Player:
             wav_chunks = [wav[i:i+self.step] for i in range(0, len(wav), self.step)]
 
             while self.iterator < len(wav_chunks):
-                if self.state == Play_state.paused:
-                    while self.state == Play_state.paused:
+                if self.is_paused():
+                    while self.is_paused():
                         self.pauseq.get(block=True, timeout=None)
                         
                 elif self.state in {Play_state.new, Play_state.end}:
@@ -119,6 +119,13 @@ class Player:
             self.state = Play_state.not_playing
 
         
+    def is_paused(self):
+        return self.state == Play_state.paused
+
+    def is_playing(self):
+        return self.state == Play_state.playing
+
+
     def vol_up(self):
         self.vol += keys.VOL_STEP
         if self.vol > 100:

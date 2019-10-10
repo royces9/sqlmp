@@ -1,0 +1,23 @@
+Things that I want to implement:
+
+An easier way to add single files:
+- Implement basic file explorer OR
+- some sort of tab completion or something in the command window OR
+- use tie in an already existing file explorer somehow?
+
+Remote feature like cmus has:
+- only really need a few things, like currently playing meta data and play pause maybe?
+
+Play count:
+- increment play count when something is done playing, 
+
+Mute:
+- maybe a mute option? i'll think about it, easy to implement so w/e right?
+
+Display:
+- Need to find a way to make columns cleaner, it's kinda ugly right now
+- also maybe consider putting bars or something to separate windows
+
+
+Bugs:
+- when entering a command (with :), the cursor moves next to the current time playing
