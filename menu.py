@@ -80,7 +80,7 @@ class Menu(Window):
 
 
     def highlighted(self):
-        if len(self.data) > 0:
+        if self.data:
             return self[self.highlighted_ind()]
         else:
             return None
@@ -148,7 +148,7 @@ class Menu(Window):
 
 
     def paint_cursor(self, colour):
-        if len(self.data) > 0:
+        if self.data:
             self.win.chgat(self.cursor, 0, self.w - 1, colour)
 
         

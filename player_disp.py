@@ -19,13 +19,14 @@ class Player_disp(display.Display):
         super().__init__(wins, stdscr)
 
         self.commands = {
-            'sort': self.sort,
-            'newpl': self.newpl,
-            'delpl': self.delpl,
-            'renamepl': self.renamepl,
-            'playmode': self.playmode,
             'adddir': self.adddir,
             'addfile': self.addfile,
+            'delpl': self.delpl,
+            'export': self.export,
+            'newpl': self.newpl,
+            'playmode': self.playmode,
+            'renamepl': self.renamepl,
+            'sort': self.sort,
             'update': self.update,
         }
 
@@ -91,7 +92,7 @@ class Player_disp(display.Display):
         """
         switch focus from left to right, and vice versa
         """
-        if len(self[1].data) == 0:
+        if not self[1].data:
             return
 
         if self.cur == 1:
@@ -143,7 +144,7 @@ class Player_disp(display.Display):
         """
         move songs around playlists
         """
-        if len(self.wins[0].highlight_list) <= 0:
+        if not self.wins[0].highlight_list:
             return
 
         curpl = self[0].highlighted()
@@ -171,7 +172,7 @@ class Player_disp(display.Display):
             curpl.remove(cursong['path'])
             self[1].delete(cursong)
 
-            if not len(self[1].data):
+            if not self[1].data:
                 self.cur = 0
                 self.wins[0].cursor_colour = keys.FOCUSED[0]
                 self.wins[1].cursor_colour = keys.CURSOR[0]
@@ -183,16 +184,21 @@ class Player_disp(display.Display):
         """
         play a song in a playlist
         """
-        next_song = self[1].highlighted()
-        if not next_song:
-            return
-        
-        self.player.play(next_song);
-
         self.cur_pl = self[0].highlighted()
 
+        if self.cur == 1:
+            next_song = self[1].highlighted()
+
+        elif self.cur == 0:
+            next_song = self.cur_pl._next()
+        
+        if not next_song:
+            return
+
+        self.player.play(next_song);
+
         self.cur_pl.cur = self[1].highlighted_ind()
-        self.cur_pl.ind = self.cur_pl.cur
+        self.cur_pl.ind = 0
         self.cur_pl.set_order()
 
         self.__enqueue()
@@ -239,8 +245,9 @@ class Player_disp(display.Display):
         """
         executes the actual command from grab_inp
         """
-        spl = shlex.split(shlex.quote(inp))
+        spl = shlex.split(inp)
         if not spl:
+            self.err_print("")            
             return
         
         if spl[0] in self.commands:
@@ -250,39 +257,119 @@ class Player_disp(display.Display):
             self.err_print('Invalid command: ' + spl[0])
 
             
-    def playmode(self, args):
+
+
+    def adddir(self, args):
         """
-        change the playmode (shuffle, in order, single)
+        add a directory to a playlist, this also adds new directories to the db
+        1 arg : add directory to highlighted playlist
+        2 args: add directory to named playlist
         """
-        if len(args) < 1:
+        if not args:
             self.err_print('One argument required')
             return
 
-        playmode = args[0]
-        cur = self[0].highlighted()
-        if playmode in cur.playmode_list:
-            cur.change_playmode(playmode)
+        if len(args) == 1:
+            pl = self[0].highlighted()
         else:
-            self.err_print(f'"{playmode}" is not a valid playback mode')
+            ind = self.pl_exists(args[1])
+            if ind < 0:
+                return
+
+            pl = self[0].data[ind]
+        
+        newdir = args[0]
+        pl.insert_dir(newdir)
+        self[1].disp()
 
 
-    def sort(self, args):
+    def addfile(self, args):
         """
-        sort the playlist according to some key
-        changes are saved to the db
+        add a file to a playlist, also adds the file to the playlist
+        1 arg : add file to highlighted playlist
+        2 args: add file to named playlist
         """
-        if len(args) < 1:
+        if not args:
             self.err_print('One argument required')
             return
 
-        _key = args[0]
-        cur = self[0].highlighted()
-        if _key in cur.tags:
-            cur.change_sort(_key)
-            self[1].disp()
+        if len(args) == 1:
+            pl = self[0].highlighted()
         else:
-            self.err_print(f'"{_key}" is not a valid key to sort by')
+            ind = self.pl_exists(args[1])
+            if ind < 0:
+                return
+
+            pl = self[0].data[ind]
+
+        newfile = args[0]
+        pl.insert(newfile)
+        self[1].disp()
+
+        
+    def delpl(self, args):
+        """
+        delete a playlist
+        0 args: delete highlighted playlist
+        1 arg : delete the named playlist
+        """
+        if not args:
+            pl = self[0].highlighted()
+            plname = pl.name
+        else:
+            plname = args[0]
+            ind = self.pl_exists(plname)
+
+            if ind < 0:
+                self.err_print(f'Playlist "{plname}" doesn\'t exist')
+                return
+
+            pl = self[0].data[ind]
+
+        self[0].delete(pl)
+        playlist.del_pl(plname, self.db)
             
+        self[0].disp()
+
+        self[1].data = self[0].highlighted().data
+        self[1].disp()
+
+                
+    def export(self, args):
+        """
+        export a playlist
+        1 args: export highlighted playlist to directory
+        2 args: export the named playlist to directory
+        """
+        if not args:
+            self.err_print('One argument required')
+            return
+
+        elif len(args) == 1:
+            pl = self[0].highlighted()
+            plname = pl.name
+            dest = args[0]
+
+        else:
+            plname = args[0]
+            dest = args[1]
+
+            ind = self.pl_exists(plname)
+
+            if ind < 0:
+                self.err_print(f'Playlist "{plname}" doesn\'t exist')
+                return
+
+            pl = self[0].data[ind]
+
+        if not os.path.exists(dest):
+            self.err_print(f'Directory "{dest}" doesn\'t exists')
+            return
+
+        with open('/'.join([dest, plname]), 'w+') as fp:
+            for d in pl.data:
+                print(d['path'], file=fp)
+
 
     def newpl(self, args):
         """
@@ -290,7 +377,7 @@ class Player_disp(display.Display):
         1 arg : blank playlist with given name
         2 args: playlist with given name and contents given by file argument
         """
-        if len(args) == 0:
+        if not args:
             self.err_print('One argument required')
             return
             
@@ -323,41 +410,30 @@ class Player_disp(display.Display):
         self[0].disp()
 
         
-    def delpl(self, args):
+
+    def playmode(self, args):
         """
-        delete a playlist
-        0 args: delete highlighted playlist
-        1 arg : delete the named playlist
+        change the playmode (shuffle, in order, single)
         """
-        if len(args) == 0:
-            item = self[0].highlighted()
-            plname = item.name
+        if not args:
+            self.err_print('One argument required')
+            return
+
+        playmode = args[0]
+        cur = self[0].highlighted()
+        if playmode in cur.playmode_list:
+            cur.change_playmode(playmode)
         else:
-            plname = args[0]
-            ind = self.pl_exists(plname)
+            self.err_print(f'"{playmode}" is not a valid playback mode')
 
-            if ind < 0:
-                self.err_print(f'Playlist "{plname}" doesn\'t exist')
-                return
 
-            item = self[0].data[ind]
-
-        self[0].delete(item)
-        playlist.del_pl(plname, self.db)
-            
-        self[0].disp()
-
-        self[1].data = self[0].highlighted().data
-        self[1].disp()
-
-                
     def renamepl(self, args):
         """
         rename a playlist
         0 args: rename highlighted playlist
         1 arg : rename the named playlist
         """
-        if len(args) == 0:
+        if not args:
             self.err_print('One argument required')
             return
 
@@ -376,56 +452,26 @@ class Player_disp(display.Display):
 
         self[0].data[ind].rename(newname)
         self[0].disp()
+
         
-        
-    def addfile(self, args):
+    def sort(self, args):
         """
-        add a file to a playlist, also adds the file to the playlist
-        1 arg : add file to highlighted playlist
-        2 args: add file to named playlist
+        sort the playlist according to some key
+        changes are saved to the db
         """
-        if len(args) == 0:
+        if not args:
             self.err_print('One argument required')
             return
 
-        if len(args) == 1:
-            pl = self[0].highlighted()
+        _key = args[0]
+        cur = self[0].highlighted()
+        if _key in cur.tags:
+            cur.change_sort(_key)
+            self[1].disp()
         else:
-            ind = self.pl_exists(args[1])
-            if ind < 0:
-                return
-
-            pl = self[0].data[ind]
-
-        newfile = args[0]
-        pl.insert(newfile)
-        self[1].disp()
+            self.err_print(f'"{_key}" is not a valid key to sort by')
 
 
-    def adddir(self, args):
-        """
-        add a directory to a playlist, this also adds new directories to the db
-        1 arg : add directory to highlighted playlist
-        2 args: add directory to named playlist
-        """
-        if len(args) == 0:
-            self.err_print('One argument required')
-            return
-
-        if len(args) == 1:
-            pl = self[0].highlighted()
-        else:
-            ind = self.pl_exists(args[1])
-            if ind < 0:
-                return
-
-            pl = self[0].data[ind]
-        
-        newdir = args[0]
-        pl.insert_dir(newdir)
-        self[1].disp()
-
-        
     def update(self, args):
         """
         update db

@@ -97,7 +97,7 @@ class Musicdb:
         self.exe(f"DELETE FROM library WHERE path=?;", (path,))
         pl_all = "','".join([qq[0] for qq in self.exe("SELECT plname FROM pl_song WHERE path=?;", (path,))])
 
-        if len(pl_all) > 0:
+        if pl_all:
             self.exe(f"DELETE FROM {pl_all} WHERE path=?;", (path,))
             self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
 
@@ -106,7 +106,7 @@ class Musicdb:
 
     def add_dir(self, di):
         list_all = self.dir_files(di)
-        if len(list_all) > 0:
+        if list_all:
             self.add_multi(list_all)
 
     def dir_files(self, di):
@@ -125,14 +125,13 @@ class Musicdb:
 
     
     def add_multi(self, li):
-        if len(li) > 0:
+        if li:
             joined = ",".join(li)
             self.exe(f"INSERT INTO library VALUES {joined}")
             self.commit()
 
 
     def update(self):
-        start= time.time()
         #this gets every file
         all_files = [os.path.join(root,ff).replace("'", "''")\
                      for root, subdirs, files in os.walk(self.lib)\
@@ -153,12 +152,10 @@ class Musicdb:
                 new_files.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
         return
         #list of files that aren't in the db        
-        #start= time.time()
         #new_files = self.dir_files(self.lib)
-        total = time.time() - start
 
         #add new files
-        if len(new_files) > 0:
+        if new_files:
             self.add_multi(new_files)
 
         for path in self.exe("SELECT path FROM library"):

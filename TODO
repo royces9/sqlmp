@@ -18,6 +18,11 @@ Display:
 - Need to find a way to make columns cleaner, it's kinda ugly right now
 - also maybe consider putting bars or something to separate windows
 
+Update:
+- I'm pretty sure db.update() still doesn't work
+- good way to test is create a dummy library I guess
+
+
 
 Bugs:
 - when entering a command (with :), the cursor moves next to the current time playing

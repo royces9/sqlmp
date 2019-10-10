@@ -15,16 +15,12 @@ import debug
 
 def main_loop(disp):
     action = init_dict(disp)
-    debug.debug('Start')
 
     while True:
         disp.refresh()
 
         curses.flushinp()
         key = disp.getkey()
-
-        if key not in {'k', 'l'}:
-            debug.debug(key)
 
         if key in action:
             action[key]()

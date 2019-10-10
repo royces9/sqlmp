@@ -49,11 +49,7 @@ class Playlist:
 
     def __contains__(self, path):
         path = path.replace("'", "''")
-        for d in self.data:
-            if d['path'] == path:
-                return True
-
-        return False
+        return any(filter(lambda x: x['path'] == path, self.data))
 
     
     def __len__(self):
@@ -104,6 +100,9 @@ class Playlist:
         self.playmode_list[self.playmode]()
 
     def _next(self):
+        if not self.data:
+            return None
+        
         self.ind += 1
 
         if self.ind >= len(self.data):
@@ -113,11 +112,9 @@ class Playlist:
         return self.data[self.order[self.ind]]
 
     def remove(self, path):
-        delsong = None
-        for d in self.data:
-            if d['path'] == path:
-                delsong = d
-                break
+        delsong = list(filter(lambda x: x['path'] == path, self.data))[:1]
+        if not delsong:
+            return
 
         self.data.remove(delsong)
         self.exe(f"DELETE FROM {self.name} WHERE path=?;", (path,))
@@ -126,6 +123,9 @@ class Playlist:
 
 
     def insert(self, path):
+        if path in self:
+            return
+        
         #add file to library table if it's not already
         self.db.add_to_lib(path)
         path = path.replace("'", "''")
@@ -150,10 +150,10 @@ class Playlist:
                     if out:
                         (title, artist, album,length, bitrate) = out
                         list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
-                        path_list.append(path)
-                elif path not in self:
+                if path not in self:
                     path_list.append(path)
                     
+        
         self.db.add_multi(list_all)
         self.insert_path_list(path_list)
         self.sort()
