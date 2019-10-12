@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import curses
-import sqlite3
+import os
 import sys
 
 import menu
@@ -9,23 +9,12 @@ import musicdb
 import player
 import player_disp
 import playlist
+import socket_thread
 
 import keys
 import debug
 
-def main_loop(disp):
-    action = init_dict(disp)
 
-    while True:
-        disp.refresh()
-
-        curses.flushinp()
-        key = disp.getkey()
-
-        if key in action:
-            action[key]()
-
-            
 def init_colours():
     curses.start_color()
     curses.use_default_colors()
@@ -36,33 +25,6 @@ def init_colours():
         if c[0] is None:
             curses.init_pair(i, c[1], c[2])
             c[0] = curses.color_pair(i)
-
-        
-def init_dict(disp):
-    out = dict()
-
-    pairs = [
-        [keys.UP, disp.up],
-        [keys.DOWN, disp.down],
-        [keys.LEFT, disp.player.seek_backward],
-        [keys.RIGHT, disp.player.seek_forward],
-        [keys.VOLUP, disp.player.vol_up],
-        [keys.VOLDOWN, disp.player.vol_down],
-        [keys.PLAYPAUSE, disp.player.play_pause],
-        [keys.QUIT, sys.exit],
-        [keys.SWITCH, disp.switch_view],
-        [keys.COMMAND, disp.grab_input],
-        [keys.SELECT, disp.select],
-        [keys.HIGHLIGHT, disp.highlight],
-        [keys.TRANSFER, disp.transfer],
-        [keys.DELETE, disp.delete],
-        [['KEY_RESIZE'], disp.resize],
-    ]
-    
-    for key, val in pairs:
-        out.update(dict.fromkeys(key, val))
-
-    return out
 
 
 def init_windows(db, play, stdscr):
@@ -95,9 +57,15 @@ def main(stdscr):
 
     play = player.Player()
     disp = init_windows(db, play, stdscr)
-    main_loop(disp)
 
+    socket_thread.start_socket(disp)
+
+    disp.main_loop()
+
+    
 if __name__ == "__main__":
+    if os.path.exists(keys.SOCKET):
+        sys.exit('sqlmp socket already open')
     try:
         stdscr = curses.initscr()
         curses.noecho()
@@ -114,5 +82,6 @@ if __name__ == "__main__":
         curses.echo()
         curses.nocbreak()
         stdscr.keypad(0)
-
+        
+        os.remove(keys.SOCKET)
         curses.endwin()

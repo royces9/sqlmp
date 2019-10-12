@@ -5,9 +5,6 @@ An easier way to add single files:
 - some sort of tab completion or something in the command window OR
 - use tie in an already existing file explorer somehow?
 
-Remote feature like cmus has:
-- only really need a few things, like currently playing meta data and play pause maybe?
-
 Play count:
 - increment play count when something is done playing, 
 
@@ -21,7 +18,6 @@ Display:
 Update:
 - I'm pretty sure db.update() still doesn't work
 - good way to test is create a dummy library I guess
-
 
 
 Bugs:

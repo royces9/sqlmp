@@ -11,12 +11,14 @@ import audioop
 import keys
 
 class Play_state(enum.Enum):
-    init = 0
-    not_playing = 1
-    playing = 2
-    paused = 3
-    new = 4
-    end = 5
+    not_playing = 0
+    playing = 1
+    paused = 2
+    new = 3
+    end = 4
+
+    def __format__(self, form):
+        return self.name
 
     
 class Player:
@@ -44,11 +46,12 @@ class Player:
 
         self.iterator = 0
 
-        self.state = Play_state.init
+
         self.playq = queue.Queue(0)
         self.curq = queue.Queue(0)
         self.pauseq = queue.Queue(0)
 
+        self.state = Play_state.not_playing
         self.thread = threading.Thread(target=self.__play_loop, daemon=True)
         self.thread.start()
 

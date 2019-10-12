@@ -2,21 +2,23 @@ import curses
 import curses.textpad as tp
 import os
 import shlex
+import sys
 import threading
 import time
 
 import display
-import musicdb
 import playlist
-import wchar
 
 import keys
-
-import debug
 
 class Player_disp(display.Display):
     def __init__(self, wins, stdscr, db, player):
         super().__init__(wins, stdscr)
+
+        self.player = player
+        self.db = db
+        self.conn = db.conn
+        self.curs = db.curs
 
         self.commands = {
             'adddir': self.adddir,
@@ -29,11 +31,8 @@ class Player_disp(display.Display):
             'sort': self.sort,
             'update': self.update,
         }
-
-        self.player = player
-        self.db = db
-        self.conn = db.conn
-        self.curs = db.curs
+        self.actions = {}
+        self.__init_actions()
 
         #text window for information
         self.textwin = self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
@@ -48,14 +47,46 @@ class Player_disp(display.Display):
                          'bitrate': 0}
 
         self.cur_pl = None
-        
-        self.thread = threading.Thread(target=self.__info_print, daemon=True)
-        self.thread.start()
+
+        self.info = threading.Thread(target=self.__info_print, daemon=True)
+        self.info.start()
 
         self[0].disp()
         self[1].disp()
 
         self.stdscr.refresh()
+
+
+    def main_loop(self):
+        while True:
+            self.refresh()
+            key = self.getkey()
+
+            if key in self.actions:
+                self.actions[key]()
+
+    def __init_actions(self):
+        pairs = [
+            [keys.UP, self.up],
+            [keys.DOWN, self.down],
+            [keys.LEFT, self.player.seek_backward],
+            [keys.RIGHT, self.player.seek_forward],
+            [keys.VOLUP, self.player.vol_up],
+            [keys.VOLDOWN, self.player.vol_down],
+            [keys.PLAYPAUSE, self.player.play_pause],
+            [keys.QUIT, sys.exit],
+            [keys.SWITCH, self.switch_view],
+            [keys.COMMAND, self.grab_input],
+            [keys.SELECT, self.select],
+            [keys.HIGHLIGHT, self.highlight],
+            [keys.TRANSFER, self.transfer],
+            [keys.DELETE, self.delete],
+            [['KEY_RESIZE'], self.resize],
+        ]
+        
+        for key, val in pairs:
+            self.actions.update(dict.fromkeys(key, val))
+
 
     """
     Functions called from key press/events
@@ -577,4 +608,4 @@ class Player_disp(display.Display):
         s = str(s) if s > 9 else '0' + str(s)
 
         return ':'.join([m, s])
-        
+

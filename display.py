@@ -1,8 +1,11 @@
+import curses
+
 class Display:
     def __init__(self, wins, stdscr):
         self.cur = 0
         self.wins = wins
         self.stdscr = stdscr
+
             
     def __len__(self):
         return len(self.wins)
@@ -11,6 +14,7 @@ class Display:
     def __getitem__(self, ind):
         return self.wins[ind]
     
+
     def append(self, arg):
         self.wins.append(arg)
 
@@ -23,6 +27,7 @@ class Display:
 
             
     def getkey(self):
+        curses.flushinp()
         return self.stdscr.getkey()
 
 

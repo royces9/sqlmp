@@ -3,8 +3,9 @@ import os
 
 #database path
 DBPATH='lib.db'
-LIBPATH= os.getenv('HOME') + '/Music/'
+LIBPATH=os.getenv('HOME') + '/Music/'
 
+SOCKET='/tmp/sqlmp.sock'
 
 #key bindings
 UP={'KEY_UP', 'l'}
