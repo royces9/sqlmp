@@ -10,6 +10,8 @@ import audioop
 
 import keys
 
+import debug
+
 class Play_state(enum.Enum):
     not_playing = 0
     playing = 1
@@ -72,13 +74,15 @@ class Player:
             fp = fn['path']
             
             #convert input file to pcm data
-            wav, _ = (ffmpeg
-                     .input(fp)
-                     .output('-', format='s16le', acodec='pcm_s16le')
-                     .overwrite_output()
-                    .run(capture_stdout=True, capture_stderr=True)
-            )
-            
+            try:
+                wav, _ = (ffmpeg
+                          .input(fp)
+                          .output('-', format='s16le', acodec='pcm_s16le')
+                          .overwrite_output()
+                          .run(capture_stdout=True, capture_stderr=True)
+                )
+            except Exception as e:
+                debug.debug(e)
             #grab stream data for the pyaudio stream
             prob = ffmpeg.probe(fp)
             self.rate = int(prob['streams'][0]['sample_rate'])

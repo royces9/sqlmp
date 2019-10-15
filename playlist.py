@@ -50,12 +50,12 @@ class Playlist:
 
 
     def __contains__(self, path):
-        path = path.replace("'", "''")
         return any(filter(lambda x: x['path'] == path, self.data))
 
     
     def __len__(self):
         return len(self.data)
+
 
     def __getitem__(self, ind):
         """
@@ -76,7 +76,8 @@ class Playlist:
                     
     def get_songs(self):
         #dict comprehension in a list comprehension (yikes)
-        return [{tag: data for tag, data in zip(self.tags, song)}
+        return [{tag: data if not isinstance(data, str) else data.replace("''", "'")\
+                 for tag, data in zip(self.tags, song)}
                 for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path IN\
                 (SELECT path FROM pl_song WHERE plname=?);", (self.name,))]
 
@@ -136,6 +137,9 @@ class Playlist:
         if path in self:
             return
         
+        self.data += [{tag: data for tag, data in zip(self.tags, song)}
+                      for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path=?;", (path,))]
+
         #add file to library table if it's not already
         self.db.add_to_lib(path)
         path = path.replace("'", "''")
@@ -146,8 +150,6 @@ class Playlist:
 
         self.commit()
 
-        self.data += [{tag: data for tag, data in zip(self.tags, song)}
-                      for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path=?;", (path,))]
 
     def insert_dir(self, di):
         list_all = []

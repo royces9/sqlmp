@@ -596,7 +596,7 @@ class Player_disp(display.Display):
         return formatted string for time given a value in seconds
         """
         m = str(int(len_s // 60))
-        s = int(round(len_s % 60))
+        s = int(len_s % 60)
 
         s = str(s) if s > 9 else '0' + str(s)
 

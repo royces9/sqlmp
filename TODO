@@ -1,10 +1,5 @@
 Things that I want to implement:
 
-An easier way to add single files:
-- Implement basic file explorer OR
-- some sort of tab completion or something in the command window OR
-- use tie in an already existing file explorer somehow?
-
 Play count:
 - increment play count when something is done playing, 
 

@@ -37,7 +37,7 @@ def song_format(ll):
     bitrate = str(int(ll['bitrate']/1000))
 
     minutes = str(int(ll['length'] // 60))
-    seconds = int(round(ll['length'] % 60))
+    seconds = int(ll['length'] % 60)
     seconds = str(seconds) if seconds > 9 else '0' + str(seconds)
     
     length = ':'.join([minutes, seconds])
