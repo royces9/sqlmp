@@ -11,5 +11,4 @@ def debug(err):
 
             
 def trace():
-    err = traceback.format_exc()
-    debug(err)
+    debug([line for line in traceback.format_stack()])

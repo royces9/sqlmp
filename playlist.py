@@ -1,6 +1,8 @@
 import os
 import random
 
+import debug
+
 def init_pl(name, db):
     if name in {'library', 'playlists'}:
         print("Can't name playlist 'library' or 'playlists'.")
@@ -56,6 +58,14 @@ class Playlist:
         return len(self.data)
 
     def __getitem__(self, ind):
+        """
+        I don't think I need this but I'll keep it here just cause
+        if isinstance(ind, str):
+            s = list(filter(lambda x: x['path'] == ind, self.data))[:1]
+            if not s:
+                return None
+            return s[0]
+        """
         return self.data[ind]
             
     def exe(self, query, args=()):
@@ -116,7 +126,7 @@ class Playlist:
         if not delsong:
             return
 
-        self.data.remove(delsong)
+        self.data.remove(delsong[0])
         self.exe(f"DELETE FROM {self.name} WHERE path=?;", (path,))
         self.exe(f"DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
         self.commit()

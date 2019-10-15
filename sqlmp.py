@@ -52,15 +52,33 @@ def init_windows(db, play, stdscr):
     return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db, play)
 
 
+def main_loop(disp):
+    remote = socket_thread.Remote(disp)
+    while True:
+        disp.refresh()
+        key = disp.getkey()
+
+        if key in disp.actions:
+            disp.actions[key]()
+
+        while not remote.empty():
+            pl, fn = remote.get()
+            for p in pl:
+                for f in fn:
+                    if os.path.isdir(f):
+                        disp.adddir((f, p))
+                    else:
+                        disp.addfile((f, p))
+            disp.refresh()
+
+
 def main(stdscr):
     db = musicdb.Musicdb(keys.DBPATH, keys.LIBPATH)
 
     play = player.Player()
     disp = init_windows(db, play, stdscr)
 
-    socket_thread.start_socket(disp)
-
-    disp.main_loop()
+    main_loop(disp)
 
     
 if __name__ == "__main__":
@@ -83,5 +101,7 @@ if __name__ == "__main__":
         curses.nocbreak()
         stdscr.keypad(0)
         
-        os.remove(keys.SOCKET)
+        if os.path.exists(keys.SOCKET):
+            os.remove(keys.SOCKET)
+
         curses.endwin()

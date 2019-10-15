@@ -11,6 +11,8 @@ import playlist
 
 import keys
 
+import debug
+
 class Player_disp(display.Display):
     def __init__(self, wins, stdscr, db, player):
         super().__init__(wins, stdscr)
@@ -56,14 +58,6 @@ class Player_disp(display.Display):
 
         self.stdscr.refresh()
 
-
-    def main_loop(self):
-        while True:
-            self.refresh()
-            key = self.getkey()
-
-            if key in self.actions:
-                self.actions[key]()
 
     def __init_actions(self):
         pairs = [
@@ -287,8 +281,6 @@ class Player_disp(display.Display):
         else:
             self.err_print('Invalid command: ' + spl[0])
 
-            
-
 
     def adddir(self, args):
         """
@@ -311,6 +303,7 @@ class Player_disp(display.Display):
         
         newdir = args[0]
         pl.insert_dir(newdir)
+
         self[1].disp()
 
 
@@ -335,6 +328,7 @@ class Player_disp(display.Display):
 
         newfile = args[0]
         pl.insert(newfile)
+
         self[1].disp()
 
         
@@ -362,7 +356,6 @@ class Player_disp(display.Display):
             
         self[0].disp()
 
-        self[1].data = self[0].highlighted().data
         self[1].disp()
 
                 

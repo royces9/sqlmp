@@ -99,8 +99,8 @@ class Menu(Window):
             self.cursor -= 1
         elif self.offset > 0:
             self.offset -= 1
-
             self.win.scroll(-1)
+
             if self.offset < len(self.data):
                 formatted_list = self.form(self.data[self.offset])
                 self.print_col(0, 0, formatted_list)
