@@ -74,15 +74,13 @@ class Player:
             fp = fn['path']
             
             #convert input file to pcm data
-            try:
-                wav, _ = (ffmpeg
-                          .input(fp)
-                          .output('-', format='s16le', acodec='pcm_s16le')
-                          .overwrite_output()
-                          .run(capture_stdout=True, capture_stderr=True)
-                )
-            except Exception as e:
-                debug.debug(e)
+            wav, _ = (ffmpeg
+                      .input(fp)
+                      .output('-', format='s16le', acodec='pcm_s16le')
+                      .overwrite_output()
+                      .run(capture_stdout=True, capture_stderr=True)
+            )
+
             #grab stream data for the pyaudio stream
             prob = ffmpeg.probe(fp)
             self.rate = int(prob['streams'][0]['sample_rate'])
