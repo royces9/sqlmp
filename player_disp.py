@@ -520,7 +520,9 @@ class Player_disp(display.Display):
         """
         return a string with formatted song info
         """
-        info = [song[key] for key in ['artist', 'title', 'album'] if song[key] is not '']
+        info = [song[key]
+                for key in ['artist', 'title', 'album']
+                if song[key] is not '']
         return ' - '.join(info)
 
 

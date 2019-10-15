@@ -69,9 +69,16 @@ class Musicdb:
         if not out:
             return None
 
-        song_dict = {key: out[key][0].replace("'", "''") if key in out.keys() else "" for key in key_list}
+        song_dict = {
+            key: out[key][0].replace("'", "''") if key in out.keys()
+            else ""
+            for key in key_list
+        }
 
-        attr_out = {attr: getattr(out.info, attr) if hasattr(out.info, attr) else 0 for attr in attr_list} if hasattr(out, 'info') else {attr: 0 for attr in attr_list}
+        attr_out = {
+            attr: getattr(out.info, attr) if hasattr(out.info, attr) else 0
+            for attr in attr_list} if hasattr(out, 'info')\
+            else {attr: 0 for attr in attr_list}
                     
         return tuple(song_dict.values(),) + tuple(attr_out.values(),)
 
@@ -133,9 +140,11 @@ class Musicdb:
 
     def update(self):
         #this gets every file
-        all_files = [os.path.join(root,ff).replace("'", "''")\
-                     for root, subdirs, files in os.walk(self.lib)\
-                     for ff in files]
+        all_files = [
+            os.path.join(root,ff).replace("'", "''")
+            for root, subdirs, files in os.walk(self.lib)
+            for ff in files
+        ]
 
         q = "('" + "','".join(all_files) + "')"
         #this gets every file in the db

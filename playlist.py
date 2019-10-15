@@ -76,10 +76,16 @@ class Playlist:
                     
     def get_songs(self):
         #dict comprehension in a list comprehension (yikes)
-        return [{tag: data if not isinstance(data, str) else data.replace("''", "'")\
-                 for tag, data in zip(self.tags, song)}
-                for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path IN\
-                (SELECT path FROM pl_song WHERE plname=?);", (self.name,))]
+        return [
+            {
+                tag: data if not isinstance(data, str)
+                else data.replace("''", "'")
+                for tag, data in zip(self.tags, song)
+            }
+            for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path IN\
+            (SELECT path FROM pl_song WHERE plname=?);", (self.name,))
+        ]
+
 
     def get_val(self, val):
         self.exe(f"SELECT {val} FROM playlists WHERE plname=?;", (self.name,))
@@ -137,8 +143,13 @@ class Playlist:
         if path in self:
             return
         
-        self.data += [{tag: data for tag, data in zip(self.tags, song)}
-                      for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path=?;", (path,))]
+        self.data += [
+            {
+                tag: data
+                for tag, data in zip(self.tags, song)
+            }
+            for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path=?;", (path,))
+        ]
 
         #add file to library table if it's not already
         self.db.add_to_lib(path)
