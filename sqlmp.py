@@ -62,14 +62,13 @@ def main_loop(disp):
             disp.actions[key]()
 
         while not remote.empty():
-            pl, fn = remote.get()
+            pl, fn = remote.get_nowait()
             for p in pl:
                 for f in fn:
                     if os.path.isdir(f):
                         disp.adddir((f, p))
                     else:
                         disp.addfile((f, p))
-            disp.refresh()
 
 
 def main(stdscr):

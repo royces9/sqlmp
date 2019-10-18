@@ -14,6 +14,19 @@ Update:
 - I'm pretty sure db.update() still doesn't work
 - good way to test is create a dummy library I guess
 
+remote queue:
+- because disp.getkey() blocks, the queue stuff isn't executed until AFTER a key is pressed and executed
+- possible problems:
+  - remote doesn't execute/changes aren't visible, until a key is pressed
+  - the remote issues a command that becomes obsolute because the user
+    inputs something before the remote's command can be executed
+    - quick 'n' ez solution: execute AFTER the remote's stuff gets executed
+      - problem is we run into the same issue, but the other way around
+
+- possible solution?:
+  - run getkey() without blocking, instead, check if there was an input, and push it onto the queue
+  - even worse version: have another thread with a blocking getkey call, have it push onto the queue
+    the queue can block with get() in the main loop
 
 Bugs:
 - when entering a command (with :), the cursor moves next to the current time playing
