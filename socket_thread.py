@@ -8,10 +8,10 @@ import keys
 
 import debug
 
-class Remote:
+class Remote(queue.Queue):
     def __init__(self, disp):
+        super().__init__()
         self.disp = disp
-        self.queue = queue.Queue(0)
         self.thread = threading.Thread(target=self.__socket, daemon=True)
         self.thread.start()
 
@@ -26,15 +26,9 @@ class Remote:
                     data = conn.recv(1024)
                     if data != b' \n\n ':
                         pl, fn = data.decode('utf-8').split('\n\n')
-                        self.queue.put_nowait((pl.split('\n'), fn.split('\n')))
+                        self.put_nowait((pl.split('\n'), fn.split('\n')))
                         
                     js = json.loads(json.dumps(self.disp.cur_song))
                     js['status'] = format(self.disp.player.state)                
                     js = json.dumps(js)
                     conn.send(js.encode())
-
-    def get(self):
-        return self.queue.get_nowait()
-
-    def empty(self):
-        return self.queue.empty()

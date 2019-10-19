@@ -52,6 +52,7 @@ def init_windows(db, play, stdscr):
     return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db, play)
 
 
+
 def main_loop(disp):
     remote = socket_thread.Remote(disp)
     while True:
@@ -69,6 +70,34 @@ def main_loop(disp):
                         disp.adddir((f, p))
                     else:
                         disp.addfile((f, p))
+"""
+def __inp(disp, qq):
+    while True:
+        key = disp.getkey()
+        if key in disp.actions:
+            qq.put_nowait((key))
+
+import threading
+def main_loop(disp):
+    remote = socket_thread.Remote(disp)
+    inp_thread = threading.Thread(target=__inp, args=(disp,remote,), daemon=True)
+    inp_thread.start()
+
+    while True:
+        disp.refresh()
+        item = remote.get()
+            
+        if item in disp.actions:
+            disp.actions[item]()            
+        else:
+            pl, fn = item
+            for p in pl:
+                for f in fn:
+                    if os.path.isdir(f):
+                        disp.adddir((f, p))
+                    else:
+                        disp.addfile((f, p))
+"""
 
 
 def main(stdscr):
