@@ -17,16 +17,17 @@ def parse_args(argv):
         else:
             args[-1].append(arg)
 
-    pl = ''
-    fn = ''
+    pl = []
+    fn = []
 
+    cwd = os.getcwd()
     for arg in args:
         if arg[0] == '-p':
             #playlist
-            pl = [p for p in arg[1:]]
+            pl += [p for p in arg[1:]]
         elif arg[0] == '-f':
             #files or dir
-            fn = [f for f in arg[1:]]
+            fn += ['/'.join([cwd, f]) for f in arg[1:]]
         else:
             break
 

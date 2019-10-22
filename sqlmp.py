@@ -52,7 +52,6 @@ def init_windows(db, play, stdscr):
     return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db, play)
 
 
-
 def main_loop(disp):
     remote = socket_thread.Remote(disp)
     while True:

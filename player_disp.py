@@ -22,6 +22,7 @@ class Player_disp(display.Display):
         self.conn = db.conn
         self.curs = db.curs
 
+        #typed commands
         self.commands = {
             'adddir': self.adddir,
             'addfile': self.addfile,
@@ -33,6 +34,8 @@ class Player_disp(display.Display):
             'sort': self.sort,
             'update': self.update,
         }
+
+        #hotkeys, from keys.py
         self.actions = {}
         self.__init_actions()
 
@@ -48,8 +51,12 @@ class Player_disp(display.Display):
                          'length': 0,
                          'bitrate': 0}
 
+        #currently playing playlist
         self.cur_pl = None
 
+        #amount of time in between drawing
+        #not really a frame time but w/e
+        self.frame_time = 0.1
         self.info = threading.Thread(target=self.__info_print, daemon=True)
         self.info.start()
 
@@ -98,6 +105,7 @@ class Player_disp(display.Display):
             self[1].cursor = 0
             self[1].offset = 0
             self[1].disp()
+
 
     def down(self, arg=None):
         """
@@ -433,7 +441,6 @@ class Player_disp(display.Display):
         self[0].insert(newpl)
         self[0].disp()
 
-        
 
     def playmode(self, args):
         """
@@ -501,10 +508,23 @@ class Player_disp(display.Display):
         update db
         """
         self.db.update()
+
     
     """
     Utility functions
     """
+    def __enqueue(self):
+        """
+        add a new song onto the player queue
+        """
+        self.player.append(self.cur_pl._next())
+
+        
+    def err_print(self, err):
+        self[2].print_blank(3)
+        self[2].print_line(err, y=3)
+
+
     def pl_exists(self, name):
         """
         check if pl exists and return its index in list
@@ -516,7 +536,24 @@ class Player_disp(display.Display):
         return -1
 
 
-    def __song_str_info(self, song):
+    def __print_cur_playing(self):
+        """
+        print currently playing song/playlist in bottom window with highlight
+        """
+        song = self.__song_info(self.cur_song)
+
+        if self.player.is_paused():
+            song += ' *PAUSED*'
+
+        self[2].print_line(song)
+
+        if self.cur_pl:
+            self[2].print_right_justified(' ' + self.cur_pl.name + ' ')
+            
+        self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
+
+
+    def __song_info(self, song):
         """
         return a string with formatted song info
         """
@@ -526,16 +563,27 @@ class Player_disp(display.Display):
         return ' - '.join(info)
 
 
+    def __song_length(self, len_s):
+        """
+        return formatted string for time given a value in seconds
+        """
+        m, s = divmod(int(len_s), 60)
+        s = str(s) if s > 9 else '0' + str(s)
+        return ':'.join([str(m), s])
+
+
     #stuff for bottom window
     def __info_print(self):
         """
         function that runs on separate thread
         prints information onto bottom window
+        also checks if a new songs needs to be
+        queued
         """
         while True:
             start = time.time()
-            time_str = self.str_song_length(self.player.cur_time())
-            total_time_str = self.str_song_length(self.cur_song['length'])
+            time_str = self.__song_length(self.player.cur_time())
+            total_time_str = self.__song_length(self.cur_song['length'])
 
             info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
             
@@ -556,51 +604,7 @@ class Player_disp(display.Display):
             self.__print_cur_playing()
 
             self[2].refresh()
+
             diff = time.time() - start
-            if diff < 0.1:
-                time.sleep(0.1 - diff)
-
-
-
-    def __enqueue(self):
-        """
-        add a new song onto the player queue
-        """
-        self.player.append(self.cur_pl._next())
-
-        
-    def __print_cur_playing(self):
-        """
-        print currently playing song/playlist in bottom window with highlight
-        """
-        song = self.__song_str_info(self.cur_song)
-
-        if self.player.is_paused():
-            song += ' *PAUSED*'
-
-        self[2].print_line(song)
-
-        if self.cur_pl:
-            self[2].print_right_justified(' ' + self.cur_pl.name + ' ')
-
-
-            
-        self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
-
-
-    def err_print(self, err):
-        self[2].print_blank(3)
-        self[2].print_line(err, y=3)
-
-
-    def str_song_length(self, len_s):
-        """
-        return formatted string for time given a value in seconds
-        """
-        m = str(int(len_s // 60))
-        s = int(len_s % 60)
-
-        s = str(s) if s > 9 else '0' + str(s)
-
-        return ':'.join([m, s])
-
+            if diff < self.frame_time:
+                time.sleep(self.frame_time - diff)
