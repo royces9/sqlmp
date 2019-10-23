@@ -3,8 +3,6 @@ import sqlite3
 
 import mutagen
 
-import time
-
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
 key_list = ['title',
             'artist',
@@ -42,6 +40,7 @@ class Musicdb:
 
     def __del__(self):
         self.conn.close()
+
 
     def exe(self, query, args=()):
         try:
@@ -115,6 +114,7 @@ class Musicdb:
         list_all = self.dir_files(di)
         if list_all:
             self.add_multi(list_all)
+
 
     def dir_files(self, di):
         list_all = []

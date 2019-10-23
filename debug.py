@@ -7,7 +7,6 @@ def debug(err):
         else:
             for e in err:
                 print(str(e), file=fp)
-                                                        
 
             
 def trace():

@@ -46,8 +46,10 @@ class Player:
         self.channels = 0
         self.width = 2
 
+        #current count of the
+        #chunk that is currently
+        #playing
         self.iterator = 0
-
 
         self.playq = queue.Queue(0)
         self.curq = queue.Queue(0)
@@ -126,6 +128,7 @@ class Player:
         
     def is_paused(self):
         return self.state == Play_state.paused
+
 
     def is_playing(self):
         return self.state == Play_state.playing
