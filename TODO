@@ -27,6 +27,17 @@ remote queue:
   - run getkey() without blocking, instead, check if there was an input, and push it onto the queue
   - even worse version: have another thread with a blocking getkey call, have it push onto the queue
     the queue can block with get() in the main loop
+    - these don't seem to work with resize, because the resize event gets triggered, things draw on screen,
+      then the screen actually gets resized, causing a crash
+
+
+jumping to current playing track
+- it works but the algorithm is linear, which might be bad for longer playlists
+  - O(lg(n)) alg is easy to implement (binary search), but O(1) is possible so go for that
+    - probably just put another variable into player_disp that holds the current index (ugly...)
+- as of now, the screen jumps s.t. the top element is the current playing track, it's
+  probably better to make it so that currently playing tracks near the bottom of the
+  screen don't make the pl look empty
 
 Bugs:
 - when entering a command (with :), the cursor moves next to the current time playing
