@@ -5,7 +5,6 @@ import debug
 
 def init_pl(name, db):
     if name in {'library', 'playlists'}:
-        print("Can't name playlist 'library' or 'playlists'.")
         return
 
     try:
@@ -14,7 +13,8 @@ def init_pl(name, db):
         db.commit()
 
     except Exception as err:
-        print(str(err))
+        raise err
+
 
 def del_pl(name, db):
     try:
@@ -24,7 +24,7 @@ def del_pl(name, db):
 
         db.commit()
     except Exception as err:
-        print(str(err))
+        raise err
 
 class Playlist:
     def __init__(self, name, db):

@@ -15,6 +15,7 @@ class Remote(queue.Queue):
         self.thread = threading.Thread(target=self.__socket, daemon=True)
         self.thread.start()
 
+
     def __socket(self):
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
             s.bind(keys.SOCKET)

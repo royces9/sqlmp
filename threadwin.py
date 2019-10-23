@@ -12,6 +12,7 @@ def decorator(func):
 
     return inner
 
+
 class Threadwin:
     def __init__(self, *args, **kwargs):
         self.__win = curses.newwin(*args, **kwargs)
