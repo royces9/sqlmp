@@ -22,7 +22,7 @@ SELECT={'\n'}
 HIGHLIGHT={' '}
 TRANSFER={'y'}
 DELETE={'D'}
-
+CUR_PLAY={'i'}
 
 #volume
 DEFAULT_VOLUME=10

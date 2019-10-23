@@ -16,6 +16,7 @@ def init_pl(name, db):
     except Exception as err:
         print(str(err))
 
+
 def del_pl(name, db):
     try:
         db.exe("DELETE FROM playlists WHERE plname=?;", (name,))
@@ -25,6 +26,7 @@ def del_pl(name, db):
         db.commit()
     except Exception as err:
         print(str(err))
+
 
 class Playlist:
     def __init__(self, name, db):
@@ -67,12 +69,14 @@ class Playlist:
             return s[0]
         """
         return self.data[ind]
+
             
     def exe(self, query, args=()):
         try:
             return self.db.exe(query, args)
         except Exception as err:
             raise err
+
                     
     def get_songs(self):
         #dict comprehension in a list comprehension (yikes)
@@ -95,15 +99,19 @@ class Playlist:
 
         return None
 
+
     def shuffle(self):
         self.order = list(range(len(self.data)))
         random.shuffle(self.order)
 
+
     def inorder(self):
         self.order = list(range(len(self.data)))
 
+
     def single(self):
         self.order = [self.cur] * len(self.data)
+
 
     def sort(self):
         if self.sort_key in {'path', 'artist', 'album', 'title'}:
@@ -113,8 +121,10 @@ class Playlist:
 
         self.data.sort(key=key)
 
+
     def set_order(self):
         self.playmode_list[self.playmode]()
+
 
     def _next(self):
         if not self.data:
@@ -127,6 +137,7 @@ class Playlist:
             self.ind = 0
 
         return self.data[self.order[self.ind]]
+
 
     def remove(self, path):
         delsong = list(filter(lambda x: x['path'] == path, self.data))[:1]
@@ -181,6 +192,7 @@ class Playlist:
         self.insert_path_list(path_list)
         self.sort()
 
+
     def insert_from_file(self, path):
         with open(path, "r") as fp:
             path_list = [p.rstrip().replace("'", "''") for p in fp]
@@ -202,6 +214,7 @@ class Playlist:
         self.data += self.get_songs()
         self.commit()
 
+
     def change_sort(self, sort):
         self.sort_key = sort
         self.sort()
@@ -209,12 +222,14 @@ class Playlist:
         self.exe("UPDATE playlists SET sort=? WHERE plname=?;", (sort, self.name,))
         self.commit()
 
+
     def change_playmode(self, play):
         self.playmode = play
         self.set_order()
         
         self.exe("UPDATE playlists SET playmode=? WHERE plname=?;", (play, self.name,))
         self.commit()
+
 
     def rename(self, newname):
         self.exe("UPDATE TABLE pl_song SET plname=? WHERE plname=?;", (newname, self.name,))

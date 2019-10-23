@@ -57,6 +57,7 @@ class Player_disp(display.Display):
         #amount of time in between drawing
         #not really a frame time but w/e
         self.frame_time = 0.1
+
         self.info = threading.Thread(target=self.__info_print, daemon=True)
         self.info.start()
 
@@ -82,6 +83,7 @@ class Player_disp(display.Display):
             [keys.HIGHLIGHT, self.highlight],
             [keys.TRANSFER, self.transfer],
             [keys.DELETE, self.delete],
+            [keys.CUR_PLAY, self.jump_cur_play],
             [['KEY_RESIZE'], self.resize],
         ]
         
@@ -92,21 +94,27 @@ class Player_disp(display.Display):
     """
     Functions called from key press/events
     """
-    def up(self, arg=None):
+    def delete(self, arg=None):
         """
-        scroll up on the menu
-        also update the right window's data if the left window is scrolled up
+        delete songs from playlists
         """
-        self.curwin().up()
-
         if self.cur == 0:
-            self[1].data = self[0].highlighted().data
-            self[1].highlight_list = []
-            self[1].cursor = 0
-            self[1].offset = 0
-            self[1].disp()
+            self.delpl([])
+        elif self.cur == 1:
+            curpl = self[0].highlighted()
+            cursong = self[1].highlighted()
 
+            curpl.remove(cursong['path'])
+            self[1].delete(cursong)
 
+            if not self[1].data:
+                self.cur = 0
+                self.wins[0].cursor_colour = keys.FOCUSED[0]
+                self.wins[1].cursor_colour = keys.CURSOR[0]
+            
+        self.curwin().disp()
+
+            
     def down(self, arg=None):
         """
         same as up, but down (?)
@@ -121,27 +129,6 @@ class Player_disp(display.Display):
             self[1].disp()
 
         
-    def switch_view(self, arg=None):
-        """
-        switch focus from left to right, and vice versa
-        """
-        if not self[1].data:
-            return
-
-        if self.cur == 1:
-            self.cur = 0
-            self.wins[0].cursor_colour = keys.FOCUSED[0]
-            self.wins[1].cursor_colour = keys.CURSOR[0]
-
-        else:
-            self.cur = 1
-            self.wins[1].cursor_colour = keys.FOCUSED[0]
-            self.wins[0].cursor_colour = keys.CURSOR[0]
-            
-        self[0].disp()
-        self[1].disp()
-        
-
     def grab_input(self, arg=None):
         """
         grab a command input when ':' is pressed
@@ -171,71 +158,20 @@ class Player_disp(display.Display):
             self[1].down()
         elif self.cur == 0:
             self[0].highlight()
-
-
-    def transfer(self, arg=None):
-        """
-        move songs around playlists
-        """
-        if not self.wins[0].highlight_list:
-            return
-
-        curpl = self[0].highlighted()
-        cursong = self[1].highlighted()
-        if not cursong:
-            return
-        
-        for pl in self[0].highlight_list:
-            if pl is not curpl:
-                pl.insert(cursong['path'])
-
-        self[1].down()
-
-
-    def delete(self, arg=None):
-        """
-        delete songs from playlists
-        """
-        if self.cur == 0:
-            self.delpl([])
-        elif self.cur == 1:
-            curpl = self[0].highlighted()
-            cursong = self[1].highlighted()
-
-            curpl.remove(cursong['path'])
-            self[1].delete(cursong)
-
-            if not self[1].data:
-                self.cur = 0
-                self.wins[0].cursor_colour = keys.FOCUSED[0]
-                self.wins[1].cursor_colour = keys.CURSOR[0]
             
-        self.curwin().disp()
 
-            
-    def select(self, arg=None):
-        """
-        play a song in a playlist
-        """
-        self.cur_pl = self[0].highlighted()
-
-        if self.cur == 1:
-            next_song = self[1].highlighted()
-
-        elif self.cur == 0:
-            next_song = self.cur_pl._next()
-        
-        if not next_song:
+    def jump_cur_play(self, arg=None):
+        if self.cur == 0 or self.player.is_not_playing():
             return
 
-        self.player.play(next_song);
-
-        self.cur_pl.cur = self[1].highlighted_ind()
-        self.cur_pl.ind = 0
-        self.cur_pl.set_order()
-
-        self.__enqueue()
-
+        #O(n) :grimacing:
+        for i, song in enumerate(self[1].data):
+            if song is self.cur_song:
+                self[1].cursor = 0
+                self[1].offset = i
+                self[1].disp()
+                break
+        
 
     def resize(self):
         """
@@ -270,6 +206,85 @@ class Player_disp(display.Display):
 
         self.__print_cur_playing()
         
+
+    def select(self, arg=None):
+        """
+        play a song in a playlist
+        """
+        self.cur_pl = self[0].highlighted()
+
+        if self.cur == 1:
+            next_song = self[1].highlighted()
+
+        elif self.cur == 0:
+            next_song = self.cur_pl._next()
+        
+        if not next_song:
+            return
+
+        self.player.play(next_song);
+
+        self.cur_pl.cur = self[1].highlighted_ind()
+        self.cur_pl.ind = 0
+        self.cur_pl.set_order()
+
+        self.__enqueue()
+
+
+    def switch_view(self, arg=None):
+        """
+        switch focus from left to right, and vice versa
+        """
+        if not self[1].data:
+            return
+
+        if self.cur == 1:
+            self.cur = 0
+            self.wins[0].cursor_colour = keys.FOCUSED[0]
+            self.wins[1].cursor_colour = keys.CURSOR[0]
+
+        else:
+            self.cur = 1
+            self.wins[1].cursor_colour = keys.FOCUSED[0]
+            self.wins[0].cursor_colour = keys.CURSOR[0]
+            
+        self[0].disp()
+        self[1].disp()
+        
+
+    def transfer(self, arg=None):
+        """
+        move songs around playlists
+        """
+        if not self.wins[0].highlight_list:
+            return
+
+        curpl = self[0].highlighted()
+        cursong = self[1].highlighted()
+        if not cursong:
+            return
+        
+        for pl in self[0].highlight_list:
+            if pl is not curpl:
+                pl.insert(cursong['path'])
+
+        self[1].down()
+
+
+    def up(self, arg=None):
+        """
+        scroll up on the menu
+        also update the right window's data if the left window is scrolled up
+        """
+        self.curwin().up()
+
+        if self.cur == 0:
+            self[1].data = self[0].highlighted().data
+            self[1].highlight_list = []
+            self[1].cursor = 0
+            self[1].offset = 0
+            self[1].disp()
+
 
     """
     Functions called from exec_inp

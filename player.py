@@ -131,6 +131,9 @@ class Player:
         return self.state == Play_state.playing
 
 
+    def is_not_playing(self):
+        return self.state == Play_state.not_playing
+
     def vol_up(self):
         self.vol += keys.VOL_STEP
         if self.vol > 100:
