@@ -28,11 +28,11 @@ def init_colours():
 
 
 def init_windows(db, play, stdscr):
-    hh, ww, bottom_bar, ll, cc = keys.set_size(stdscr)
+    hh, ww, bottom_bar, cc = keys.set_size(stdscr)
 
     leftwin = menu.Menu(0, 0, ww, hh,
                         data=[playlist.Playlist(name=pl, db=db) for pl in db.list_pl()],
-                        form=lambda x: ((x.name, 1),), 
+                        form=lambda x: ((x.name, 1),),
                         cursor_colour=keys.FOCUSED[0],
                         highlight_colour=keys.FOCUSED[0],
                         normal_colour=keys.NORMAL[0])
@@ -107,7 +107,7 @@ def main(stdscr):
 
     main_loop(disp)
 
-    
+
 if __name__ == "__main__":
     if os.path.exists(keys.SOCKET):
         sys.exit('sqlmp socket already open')
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         curses.echo()
         curses.nocbreak()
         stdscr.keypad(0)
-        
+
         if os.path.exists(keys.SOCKET):
             os.remove(keys.SOCKET)
 

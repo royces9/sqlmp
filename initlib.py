@@ -21,8 +21,8 @@ plfile = 'pl_list'
 with open(plfile, 'r') as fp:
     pl_list = [line.rstrip() for line in fp.readlines()]
 
-conn = sqlite3.connect(dbpath);
-curs = conn.cursor();
+conn = sqlite3.connect(dbpath)
+curs = conn.cursor()
 db = musicdb.Musicdb(dbpath, libpath)
 
 print('Creating database')
@@ -39,4 +39,3 @@ for pl in pl_list:
 
     plclass = playlist.Playlist(plname, db)
     plclass.insert_from_file(pl)
-                                        

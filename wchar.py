@@ -7,8 +7,7 @@ def wcwidth(c):
     return width of character, if string inputted, only the first character
     """
     inp = ctypes.c_wchar(c[0])
-    out = libc.wcwidth(inp);
-    return out
+    return libc.wcwidth(inp)
 
 
 def wcswidth(s):
@@ -17,9 +16,7 @@ def wcswidth(s):
     """
     n = len(s)
     inp = ctypes.c_wchar_p(s)
-    out = libc.wcswidth(inp, n)
-
-    return out, n
+    return libc.wcswidth(inp, n), n
 
 
 def set_width(s, n):

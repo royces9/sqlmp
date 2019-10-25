@@ -1,3 +1,4 @@
+import audioop
 import enum
 import os
 import queue
@@ -6,7 +7,6 @@ import threading
 
 import ffmpeg
 import pyaudio
-import audioop
 
 import keys
 
@@ -22,7 +22,7 @@ class Play_state(enum.Enum):
     def __format__(self, form):
         return self.name
 
-    
+
 class Player:
     def __init__(self):
         self.pyaudio_init()
@@ -68,20 +68,19 @@ class Player:
 
             #change state to playing
             self.state = Play_state.playing
-            
+
             #push song onto play queue to signal that playback is starting
             self.curq.put_nowait(fn)
 
             #grab path
             fp = fn['path']
-            
+
             #convert input file to pcm data
             wav, _ = (ffmpeg
                       .input(fp)
                       .output('-', format='s16le', acodec='pcm_s16le')
                       .overwrite_output()
-                      .run(capture_stdout=True, capture_stderr=True)
-            )
+                      .run(capture_stdout=True, capture_stderr=True))
 
             #grab stream data for the pyaudio stream
             prob = ffmpeg.probe(fp)
@@ -98,7 +97,8 @@ class Player:
             )
             #bytes = len * rate * width * channels
             self.step = int(self.play_len * self.rate * self.width * self.channels)
-            self.seek_delta_c = self.seek_delta * self.rate * self.width * self.channels // self.step
+            self.seek_delta_c = self.seek_delta * self.rate *\
+                self.width * self.channels // self.step
             self.iterator = 0
 
             wav_chunks = [wav[i:i+self.step] for i in range(0, len(wav), self.step)]
@@ -107,10 +107,10 @@ class Player:
                 if self.is_paused():
                     while self.is_paused():
                         self.pauseq.get(block=True, timeout=None)
-                        
+
                 elif self.state in {Play_state.new, Play_state.end}:
                     break
-                
+
                 adjust = audioop.mul(wav_chunks[self.iterator], self.width, self.vol/100)
                 stream.write(adjust)
                 self.iterator += 1
@@ -125,7 +125,7 @@ class Player:
             #set stream to not playing after playback ends
             self.state = Play_state.not_playing
 
-        
+
     def is_paused(self):
         return self.state == Play_state.paused
 
@@ -137,12 +137,13 @@ class Player:
     def is_not_playing(self):
         return self.state == Play_state.not_playing
 
+
     def vol_up(self):
         self.vol += keys.VOL_STEP
         if self.vol > 100:
             self.vol = 100
 
-    
+
     def vol_down(self):
         self.vol -= keys.VOL_STEP
         if self.vol < 0:
@@ -169,7 +170,7 @@ class Player:
         elif self.state == Play_state.paused:
             self.unpause()
 
-            
+
     def pause(self, *args):
         self.state = Play_state.paused
 
@@ -178,7 +179,7 @@ class Player:
         self.state = Play_state.playing
         self.pauseq.put_nowait(())
 
-        
+
     def seek_forward(self, *args):
         self.iterator += self.seek_delta_c
 
@@ -192,7 +193,7 @@ class Player:
     def cur_time(self, *args):
         d = self.width * self.channels * self.rate
         n = self.step * self.iterator
-        return n / d if d is not 0 else 0
+        return n / d if d != 0 else 0
 
 
     def curplay(self):
@@ -209,7 +210,7 @@ class Player:
 
         with open(os.devnull, 'w') as devnull:
             os.dup2(devnull.fileno(), og_err)
-        
+
         self.pyaudio = pyaudio.PyAudio()
 
         os.dup2(cp_err, og_err)

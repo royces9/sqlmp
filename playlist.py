@@ -1,6 +1,7 @@
 import os
 import random
 
+import musicdb
 import debug
 
 def init_pl(name, db):
@@ -39,7 +40,7 @@ class Playlist:
 
         self.sort_key = self.get_val('sort')
         self.tags = ['path', 'title', 'artist', 'album', 'length', 'bitrate', 'playcount']
-        self.joined_tag = ",".join(self.tags)
+        self.joined_tag = ','.join(self.tags)
         self.data = self.get_songs()
 
         self.sort()
@@ -48,13 +49,14 @@ class Playlist:
         self.playmode_list = {'shuffle': self.shuffle,
                               'inorder': self.inorder,
                               'single': self.single}
+        self.order = []
         self.set_order()
 
 
     def __contains__(self, path):
         return any(filter(lambda x: x['path'] == path, self.data))
 
-    
+
     def __len__(self):
         return len(self.data)
 
@@ -70,20 +72,20 @@ class Playlist:
         """
         return self.data[ind]
 
-            
+
     def exe(self, query, args=()):
         try:
             return self.db.exe(query, args)
         except Exception as err:
             raise err
 
-                    
+
     def get_songs(self):
         #dict comprehension in a list comprehension (yikes)
         return [
             {
                 tag: data if not isinstance(data, str)
-                else data.replace("''", "'")
+                     else data.replace("''", "'")
                 for tag, data in zip(self.tags, song)
             }
             for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path IN\
@@ -126,10 +128,10 @@ class Playlist:
         self.playmode_list[self.playmode]()
 
 
-    def _next(self):
+    def next_(self):
         if not self.data:
             return None
-        
+
         self.ind += 1
 
         if self.ind >= len(self.data):
@@ -153,7 +155,7 @@ class Playlist:
     def insert(self, path):
         if path in self:
             return
-        
+
         self.data += [
             {
                 tag: data
@@ -176,18 +178,19 @@ class Playlist:
     def insert_dir(self, di):
         list_all = []
         path_list = []
-        for root, subdirs, files in os.walk(di):
+        for root, _, files in os.walk(di):
             for ff in files:
                 path = os.path.join(root, ff).replace("'", "''")
                 if path not in self.db:
-                    out = self.db.extract_metadata(path)
+                    out = musicdb.extract_metadata(path)
                     if out:
-                        (title, artist, album,length, bitrate) = out
-                        list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
+                        (title, artist, album, length, bitrate) = out
+                        list_all.append(
+                            f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)"
+                        )
                 if path not in self:
                     path_list.append(path)
-                    
-        
+
         self.db.add_multi(list_all)
         self.insert_path_list(path_list)
         self.sort()
@@ -200,7 +203,7 @@ class Playlist:
         self.insert_path_list(path_list)
         self.sort()
 
-        
+
     def insert_path_list(self, path_list):
         path_join = "'),('".join(path_list)
 
@@ -218,7 +221,7 @@ class Playlist:
     def change_sort(self, sort):
         self.sort_key = sort
         self.sort()
-        
+
         self.exe("UPDATE playlists SET sort=? WHERE plname=?;", (sort, self.name,))
         self.commit()
 
@@ -226,7 +229,7 @@ class Playlist:
     def change_playmode(self, play):
         self.playmode = play
         self.set_order()
-        
+
         self.exe("UPDATE playlists SET playmode=? WHERE plname=?;", (play, self.name,))
         self.commit()
 

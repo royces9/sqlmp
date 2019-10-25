@@ -8,6 +8,6 @@ def debug(err):
             for e in err:
                 print(str(e), file=fp)
 
-            
+
 def trace():
     debug([line for line in traceback.format_stack()])

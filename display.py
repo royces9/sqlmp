@@ -6,26 +6,26 @@ class Display:
         self.wins = wins
         self.stdscr = stdscr
 
-            
+
     def __len__(self):
         return len(self.wins)
 
 
     def __getitem__(self, ind):
         return self.wins[ind]
-    
+
 
     def append(self, arg):
         self.wins.append(arg)
 
-        
+
     def refresh(self):
         for win in self.wins:
             win.refresh()
 
         self.stdscr.refresh()
 
-            
+
     def getkey(self):
         curses.flushinp()
         return self.stdscr.getkey()

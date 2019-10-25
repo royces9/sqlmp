@@ -6,17 +6,40 @@ import mutagen
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
 key_list = ['title',
             'artist',
-            'album',
-]
+            'album',]
 attr_list = ['length',
-             'bitrate',
-]
+             'bitrate',]
 
 def init_db(db):
     db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, bitrate INT, playcount INT);")
     db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
     db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
     db.commit()
+
+
+def extract_metadata(path):
+    ext = os.path.splitext(path)[1]
+    if ext not in ext_list:
+        return None
+
+    try:
+        out = mutagen.File(path, easy=True)
+    except:
+        return None
+
+    if not out:
+        return None
+
+    song_dict = {
+        key: out[key][0].replace("'", "''") if key in out.keys()
+             else "" for key in key_list}
+
+    attr_out = {
+        attr: getattr(out.info, attr) if hasattr(out.info, attr) else 0
+        for attr in attr_list} if hasattr(out, 'info')\
+            else {attr: 0 for attr in attr_list}
+
+    return tuple(song_dict.values(),) + tuple(attr_out.values(),)
 
 
 class Musicdb:
@@ -30,12 +53,12 @@ class Musicdb:
 
         self.commit = self.conn.commit
 
-        
+
     #only check library, not anything else like playlists
     def __contains__(self, path):
         path = path.replace("'", "''")
         self.exe("SELECT path FROM library WHERE path=? LIMIT 1;", (path,))
-        return True if self.curs.fetchone() else False
+        return bool(self.curs.fetchone())
 
 
     def __del__(self):
@@ -49,54 +72,27 @@ class Musicdb:
             raise err
 
 
-    def in_table(path, table):
+    def in_table(self, path, table):
         path = path.replace("'", "''")
         self.exe("SELECT path FROM ? WHERE path=? LIMIT 1;", (table, path,))
-        return True if self.curs.fetchone() else False
-
-
-    def extract_metadata(self, path):
-        ext = os.path.splitext(path)[1]
-        if ext not in ext_list:
-            return None
-
-        try:
-            out = mutagen.File(path, easy=True)
-        except:
-            return None
-
-        if not out:
-            return None
-
-        song_dict = {
-            key: out[key][0].replace("'", "''") if key in out.keys()
-            else ""
-            for key in key_list
-        }
-
-        attr_out = {
-            attr: getattr(out.info, attr) if hasattr(out.info, attr) else 0
-            for attr in attr_list} if hasattr(out, 'info')\
-            else {attr: 0 for attr in attr_list}
-                    
-        return tuple(song_dict.values(),) + tuple(attr_out.values(),)
+        return bool(self.curs.fetchone())
 
 
     def add_to_lib(self, path):
         if path in self:
             return
 
-        out = self.extract_metadata(path)
+        out = extract_metadata(path)
         if not out:
             return
         (title, artist, album, length, bitrate) = out
-        
+
         path = path.replace("'", "''")
 
         self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,0);", (path, title, artist, album, length, bitrate,))
         self.commit()
 
-        
+
     def remove_from_lib(self, path):
         if path not in self:
             return
@@ -119,18 +115,18 @@ class Musicdb:
     def dir_files(self, di):
         list_all = []
 
-        for root, subdirs, files in os.walk(di):
+        for root, _, files in os.walk(di):
             for ff in files:
                 path = os.path.join(root, ff).replace("'", "''")
 
                 if path not in self:
-                    out = self.extract_metadata(path)
+                    out = extract_metadata(path)
                     if out:
-                        (title, artist, album,length, bitrate) = out
+                        (title, artist, album, length, bitrate) = out
                         list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
         return list_all
 
-    
+
     def add_multi(self, li):
         if li:
             joined = ",".join(li)
@@ -141,8 +137,8 @@ class Musicdb:
     def update(self):
         #this gets every file
         all_files = [
-            os.path.join(root,ff).replace("'", "''")
-            for root, subdirs, files in os.walk(self.lib)
+            os.path.join(root, ff).replace("'", "''")
+            for root, _, files in os.walk(self.lib)
             for ff in files
         ]
 
@@ -155,12 +151,12 @@ class Musicdb:
 
         new_files = []
         for path in new_file_paths:
-            out = self.extract_metadata(path)
+            out = extract_metadata(path)
             if out and path not in self:
-                (title, artist, album,length, bitrate) = out
+                (title, artist, album, length, bitrate) = out
                 new_files.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
         return
-        #list of files that aren't in the db        
+        #list of files that aren't in the db
         #new_files = self.dir_files(self.lib)
 
         #add new files
@@ -174,5 +170,3 @@ class Musicdb:
 
     def list_pl(self):
         return [pl[0] for pl in self.exe("SELECT plname FROM playlists;")]
-
-    

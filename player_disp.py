@@ -13,6 +13,16 @@ import keys
 
 import debug
 
+def song_info(song):
+    """
+    return a string with formatted song info
+    """
+    info = [song[key]
+            for key in ['artist', 'title', 'album']
+            if song[key]]
+    return ' - '.join(info)
+
+
 class Player_disp(display.Display):
     def __init__(self, wins, stdscr, db, player):
         super().__init__(wins, stdscr)
@@ -43,8 +53,8 @@ class Player_disp(display.Display):
         self.textwin = self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
         self[2].win.leaveok(True)
-        
-        #init a blank song 
+
+        #init a blank song
         self.cur_song = {'title': 'Nothing currently playing',
                          'artist': '',
                          'album': '',
@@ -86,7 +96,7 @@ class Player_disp(display.Display):
             [keys.CUR_PLAY, self.jump_cur_play],
             [['KEY_RESIZE'], self.resize],
         ]
-        
+
         for key, val in pairs:
             self.actions.update(dict.fromkeys(key, val))
 
@@ -111,10 +121,10 @@ class Player_disp(display.Display):
                 self.cur = 0
                 self.wins[0].cursor_colour = keys.FOCUSED[0]
                 self.wins[1].cursor_colour = keys.CURSOR[0]
-            
+
         self.curwin().disp()
 
-            
+
     def down(self, arg=None):
         """
         same as up, but down (?)
@@ -128,13 +138,12 @@ class Player_disp(display.Display):
             self[1].offset = 0
             self[1].disp()
 
-        
+
     def grab_input(self, arg=None):
         """
         grab a command input when ':' is pressed
         """
         self[2].print_blank(2)
-        
         self[2].win.move(2, 1)
         self[2].win.addstr(2, 0, ":")
         self[2].refresh()
@@ -148,7 +157,7 @@ class Player_disp(display.Display):
         self.exec_inp(inp)
         self[2].print_blank(2)
 
-    
+
     def highlight(self, arg=None):
         """
         highlight an entry to do stuff with
@@ -158,7 +167,7 @@ class Player_disp(display.Display):
             self[1].down()
         elif self.cur == 0:
             self[0].highlight()
-            
+
 
     def jump_cur_play(self, arg=None):
         if self.cur == 0 or self.player.is_not_playing():
@@ -171,13 +180,13 @@ class Player_disp(display.Display):
                 self[1].offset = i
                 self[1].disp()
                 break
-        
+
 
     def resize(self):
         """
         handle resize event
         """
-        hh, ww, bottom_bar, ll, cc = keys.set_size(self.stdscr)
+        hh, ww, bottom_bar, cc = keys.set_size(self.stdscr)
 
         xx = [0, ww, 0]
         yy = [0, 0, hh]
@@ -205,7 +214,7 @@ class Player_disp(display.Display):
         self.stdscr.refresh()
 
         self.__print_cur_playing()
-        
+
 
     def select(self, arg=None):
         """
@@ -215,14 +224,13 @@ class Player_disp(display.Display):
 
         if self.cur == 1:
             next_song = self[1].highlighted()
-
         elif self.cur == 0:
-            next_song = self.cur_pl._next()
-        
+            next_song = self.cur_pl.next_()
+
         if not next_song:
             return
 
-        self.player.play(next_song);
+        self.player.play(next_song)
 
         self.cur_pl.cur = self[1].highlighted_ind()
         self.cur_pl.ind = 0
@@ -242,15 +250,14 @@ class Player_disp(display.Display):
             self.cur = 0
             self.wins[0].cursor_colour = keys.FOCUSED[0]
             self.wins[1].cursor_colour = keys.CURSOR[0]
-
         else:
             self.cur = 1
             self.wins[1].cursor_colour = keys.FOCUSED[0]
             self.wins[0].cursor_colour = keys.CURSOR[0]
-            
+
         self[0].disp()
         self[1].disp()
-        
+
 
     def transfer(self, arg=None):
         """
@@ -263,7 +270,7 @@ class Player_disp(display.Display):
         cursong = self[1].highlighted()
         if not cursong:
             return
-        
+
         for pl in self[0].highlight_list:
             if pl is not curpl:
                 pl.insert(cursong['path'])
@@ -295,9 +302,9 @@ class Player_disp(display.Display):
         """
         spl = shlex.split(inp)
         if not spl:
-            self.err_print("")            
+            self.err_print("")
             return
-        
+
         if spl[0] in self.commands:
             self.err_print("")
             self.commands[spl[0]](spl[1:])
@@ -323,7 +330,7 @@ class Player_disp(display.Display):
                 return
 
             pl = self[0].data[ind]
-        
+
         newdir = args[0]
         pl.insert_dir(newdir)
 
@@ -354,7 +361,7 @@ class Player_disp(display.Display):
 
         self[1].disp()
 
-        
+
     def delpl(self, args):
         """
         delete a playlist
@@ -376,12 +383,11 @@ class Player_disp(display.Display):
 
         self[0].delete(pl)
         playlist.del_pl(plname, self.db)
-            
-        self[0].disp()
 
+        self[0].disp()
         self[1].disp()
 
-                
+
     def export(self, args):
         """
         export a playlist
@@ -391,12 +397,10 @@ class Player_disp(display.Display):
         if not args:
             self.err_print('One argument required')
             return
-
         elif len(args) == 1:
             pl = self[0].highlighted()
             plname = pl.name
             dest = args[0]
-
         else:
             plname = args[0]
             dest = args[1]
@@ -427,7 +431,6 @@ class Player_disp(display.Display):
         if not args:
             self.err_print('One argument required')
             return
-            
         elif len(args) == 1:
             plname = args[0]
 
@@ -437,14 +440,13 @@ class Player_disp(display.Display):
 
             playlist.init_pl(plname, self.db)
             newpl = playlist.Playlist(name=plname, db=self.db)
-
         else:
             plfile = args[0]
             plname = args[1]
             if not os.path.isfile(plfile):
                 self.err_print(f'File does not exist: {plfile}.')
                 return
-            
+
             if self.pl_exists(plname) >= 0:
                 self.err_print(f'Playlist "{plname}" already exists')
                 return
@@ -452,7 +454,7 @@ class Player_disp(display.Display):
             playlist.init_pl(plname, self.db)
             newpl = playlist.Playlist(name=plname, db=self.db)
             newpl.insert_from_file(plfile)
-            
+
         self[0].insert(newpl)
         self[0].disp()
 
@@ -482,24 +484,22 @@ class Player_disp(display.Display):
         if not args:
             self.err_print('One argument required')
             return
-
         elif len(args) == 1:
             ind = self[0].highlighted_ind()
             newname = args[0]
-
         else:
             curname = args[0]
             newname = args[1]
             ind = self.pl_exists(curname)
 
             if ind < 0:
-                self.err_print(f'Playlist "{plname}" doesn\'t exist')
+                self.err_print(f'Playlist "{curname}" doesn\'t exist')
                 return
 
         self[0].data[ind].rename(newname)
         self[0].disp()
 
-        
+
     def sort(self, args):
         """
         sort the playlist according to some key
@@ -524,7 +524,7 @@ class Player_disp(display.Display):
         """
         self.db.update()
 
-    
+
     """
     Utility functions
     """
@@ -532,9 +532,9 @@ class Player_disp(display.Display):
         """
         add a new song onto the player queue
         """
-        self.player.append(self.cur_pl._next())
+        self.player.append(self.cur_pl.next_())
 
-        
+
     def err_print(self, err):
         self[2].print_blank(3)
         self[2].print_line(err, y=3)
@@ -555,7 +555,7 @@ class Player_disp(display.Display):
         """
         print currently playing song/playlist in bottom window with highlight
         """
-        song = self.__song_info(self.cur_song)
+        song = song_info(self.cur_song)
 
         if self.player.is_paused():
             song += ' *PAUSED*'
@@ -564,27 +564,8 @@ class Player_disp(display.Display):
 
         if self.cur_pl:
             self[2].print_right_justified(' ' + self.cur_pl.name + ' ')
-            
+
         self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
-
-
-    def __song_info(self, song):
-        """
-        return a string with formatted song info
-        """
-        info = [song[key]
-                for key in ['artist', 'title', 'album']
-                if song[key] is not '']
-        return ' - '.join(info)
-
-
-    def __song_length(self, len_s):
-        """
-        return formatted string for time given a value in seconds
-        """
-        m, s = divmod(int(len_s), 60)
-        s = str(s) if s > 9 else '0' + str(s)
-        return ':'.join([str(m), s])
 
 
     #stuff for bottom window
@@ -597,15 +578,15 @@ class Player_disp(display.Display):
         """
         while True:
             start = time.time()
-            time_str = self.__song_length(self.player.cur_time())
-            total_time_str = self.__song_length(self.cur_song['length'])
+            time_str = keys.song_length(self.player.cur_time())
+            total_time_str = keys.song_length(self.cur_song['length'])
 
             info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
-            
-            self[2].print_line(info_str, y=1)
-            
             playmode = self[0].highlighted().playmode
+
+            self[2].print_line(info_str, y=1)
             self[2].print_right_justified(' ' + playmode + ' ', y=1)
+
             if not self.player.curempty():
                 player_event = self.player.curplay()
                 #check if the event is for playback starting or ending

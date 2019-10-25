@@ -24,4 +24,3 @@ class Threadwin:
                     setattr(self, attr, decorator(getattr(self.__win, attr)))
                 else:
                     setattr(self, attr, getattr(self.__win, attr))
-                    

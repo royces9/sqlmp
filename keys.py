@@ -2,44 +2,51 @@ import curses
 import os
 
 #database path
-DBPATH='lib.db'
-LIBPATH=os.getenv('HOME') + '/Music/'
+DBPATH = 'lib.db'
+LIBPATH = os.getenv('HOME') + '/Music/'
 
-SOCKET='/tmp/sqlmp.sock'
+SOCKET = '/tmp/sqlmp.sock'
 
 #key bindings
-UP={'KEY_UP', 'l'}
-DOWN={'KEY_DOWN', 'k'}
-LEFT={'KEY_LEFT', 'j'}
-RIGHT={'KEY_RIGHT', ';'}
-VOLUP={']'}
-VOLDOWN={'['}
-PLAYPAUSE={'c'}
-QUIT={'q'}
-SWITCH={'\t'}
-COMMAND={':'}
-SELECT={'\n'}
-HIGHLIGHT={' '}
-TRANSFER={'y'}
-DELETE={'D'}
-CUR_PLAY={'i'}
+UP = {'KEY_UP', 'l'}
+DOWN = {'KEY_DOWN', 'k'}
+LEFT = {'KEY_LEFT', 'j'}
+RIGHT = {'KEY_RIGHT', ';'}
+VOLUP = {']'}
+VOLDOWN = {'['}
+PLAYPAUSE = {'c'}
+QUIT = {'q'}
+SWITCH = {'\t'}
+COMMAND = {':'}
+SELECT = {'\n'}
+HIGHLIGHT = {' '}
+TRANSFER = {'y'}
+DELETE = {'D'}
+CUR_PLAY = {'i'}
 
 #volume
-DEFAULT_VOLUME=10
-VOL_STEP=1
+DEFAULT_VOLUME = 10
+VOL_STEP = 1
 
 
 #display
+def song_length(len_s):
+    """
+    return formatted string for time given a value in seconds
+    """
+    m, s = divmod(int(len_s), 60)
+    s = str(s) if s > 9 else '0' + str(s)
+    return ':'.join([str(m), s])
+
+
 def song_format(ll):
     title = ll['title']
     album = ll['album']
     artist = ll['artist']
     bitrate = str(int(ll['bitrate']/1000))
 
-    m, s = divmod(int(ll['length']), 60)
-    s = str(s) if s > 9 else '0' + str(s)
-    length = ':'.join([str(m), s])
-    
+    length = song_length(ll['length'])
+
     return (
         (artist, 1/4),
         (title, 3/8),
@@ -49,7 +56,7 @@ def song_format(ll):
     )
 
 
-SONG_DISP=song_format
+SONG_DISP = song_format
 
 
 #colours
@@ -57,10 +64,10 @@ SONG_DISP=song_format
 #0: curses colour, use None if you want a different colour scheme
 #1: fg colour
 #1: bg colour
-FOCUSED=[None, 219, 9]
-CURSOR=[curses.A_STANDOUT, 0, 0]
-HIGHLIGHT_COLOUR=[curses.A_REVERSE, 0, 0]
-NORMAL=[curses.A_NORMAL, 0, 0]
+FOCUSED = [None, 219, 9]
+CURSOR = [curses.A_STANDOUT, 0, 0]
+HIGHLIGHT_COLOUR = [curses.A_REVERSE, 0, 0]
+NORMAL = [curses.A_NORMAL, 0, 0]
 
 
 def set_size(stdscr):
@@ -68,7 +75,7 @@ def set_size(stdscr):
     bottom = 4
 
     #cur term size
-    lines, cols  = stdscr.getmaxyx()
+    lines, cols = stdscr.getmaxyx()
 
     #height of the left and right windows
     height = lines - bottom
@@ -76,4 +83,4 @@ def set_size(stdscr):
     #width of the left window
     width = cols // 6
 
-    return height, width, bottom, lines, cols
+    return height, width, bottom, cols

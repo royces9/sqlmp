@@ -4,7 +4,7 @@ import threadwin
 import wchar
 
 class Window:
-    def __init__(self, x = 0, y = 0, w = 0, h = 0):
+    def __init__(self, x=0, y=0, w=0, h=0):
         self.x = x
         self.y = y
         self.w = w
@@ -13,7 +13,7 @@ class Window:
 
         self.blank = ' ' * (self.w - 1)
 
-        
+
     def print_blank(self, y=0, x=0):
         self.win.addnstr(y, x, self.blank, self.w - x)
 
@@ -35,7 +35,7 @@ class Window:
 
 
 class Menu(Window):
-    def __init__(self, x = 0, y = 0, w = 0, h = 0, data = [],
+    def __init__(self, x=0, y=0, w=0, h=0, data=None,
                  form=lambda ll: ((str(ll), 1),),
                  cursor_colour=curses.A_STANDOUT,
                  highlight_colour=curses.A_REVERSE,
@@ -73,7 +73,7 @@ class Menu(Window):
 
     def highlight(self):
         newitem = self.highlighted()
-        
+
         if newitem not in self.highlight_list:
             self.highlight_list.append(newitem)
         else:
@@ -92,10 +92,10 @@ class Menu(Window):
     def highlighted_ind(self):
         return self.cursor + self.offset
 
-    
+
     def up(self):
         self.paint_cursor(self.normal_colour)
-        
+
         at_top = self.cursor < 1
 
         if not at_top:
@@ -131,7 +131,7 @@ class Menu(Window):
         self.paint_highlight(self.highlight_colour)
         self.paint_cursor(self.cursor_colour)
 
-        
+
     def disp(self):
         for ii in range(self.h):
             self.print_blank(ii)
@@ -154,7 +154,7 @@ class Menu(Window):
         if self.data:
             self.win.chgat(self.cursor, 0, self.w - 1, colour)
 
-        
+
     def print_col(self, x, y, datas):
         for string, fraction in datas:
             width = int(self.w * fraction)
