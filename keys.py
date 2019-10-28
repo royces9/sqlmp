@@ -55,8 +55,13 @@ def song_format(ll):
         (length, 1/16),
     )
 
-
+#how songs are formatted on the right window
 SONG_DISP = song_format
+
+#what info is displayed on the bottom window
+#info like bitrate and length might need to be
+#tinkered with
+SONG_INFO = ['artist', 'title', 'album']
 
 
 #colours

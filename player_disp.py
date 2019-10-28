@@ -17,8 +17,7 @@ def song_info(song):
     """
     return a string with formatted song info
     """
-    info = [song[key]
-            for key in ['artist', 'title', 'album']
+    info = [str(song[key]) for key in keys.SONG_INFO
             if song[key]]
     return ' - '.join(info)
 

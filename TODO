@@ -12,6 +12,7 @@ Display:
 
 Update:
 - I'm pretty sure db.update() still doesn't work
+  - update definitely does not work
 - good way to test is create a dummy library I guess
 
 remote queue:
@@ -39,5 +40,12 @@ jumping to current playing track
   probably better to make it so that currently playing tracks near the bottom of the
   screen don't make the pl look empty
 
+updating metadata of songs
+- need a way to update song metadata singly
+
 Bugs:
 - when entering a command (with :), the cursor moves next to the current time playing
+
+- if mutagen fails, the playlist that is being added to, doubles up its songs, this appears to be purely visual
+  - more pressing: if mutagen fails, how do you know haha
+
