@@ -178,7 +178,6 @@ class Playlist:
     def insert_dir(self, di):
         list_all = []
         path_list = []
-        debug.debug('in insert_dir')
         for root, _, files in os.walk(di):
             for ff in files:
                 path = os.path.join(root, ff).replace("'", "''")
