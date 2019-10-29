@@ -36,7 +36,6 @@ class Playlist:
         self.commit = self.db.commit
 
         self.ind = 0
-        self.cur = 0
 
         self.sort_key = self.get_val('sort')
         self.tags = ['path', 'title', 'artist', 'album', 'length', 'bitrate', 'playcount']
@@ -49,16 +48,11 @@ class Playlist:
         self.playmode_list = {'shuffle': self.shuffle,
                               'inorder': self.inorder,
                               'single': self.single}
-        self.order = []
-        self.set_order()
+        self.gen = self.playmode_list[self.playmode]()
 
 
     def __contains__(self, path):
         return any(filter(lambda x: x['path'] == path, self.data))
-
-
-    def __len__(self):
-        return len(self.data)
 
 
     def __getitem__(self, ind):
@@ -71,6 +65,18 @@ class Playlist:
             return s[0]
         """
         return self.data[ind]
+
+    def __len__(self):
+        return len(self.data)
+
+
+    def __next__(self):
+        if not self.data:
+            return None
+        
+        return next(self.gen)
+        #gen = self.playmode_list[self.playmode]()
+        #return next(self.playmode_list[self.playmode]())
 
 
     def exe(self, query, args=()):
@@ -103,16 +109,37 @@ class Playlist:
 
 
     def shuffle(self):
-        self.order = list(range(len(self.data)))
-        random.shuffle(self.order)
+        order = list(range(len(self.data)))
+        random.shuffle(order)
+        i = 0
+
+        while True:
+            if i >= len(order):
+                order = list(range(len(self.data)))
+                random.shuffle(order)
+                i = 0
+                
+            yield self.data[order[i]]
+            i += 1
 
 
     def inorder(self):
-        self.order = list(range(len(self.data)))
+        order = list(range(len(self.data)))
+        i = 0
+
+        while True:
+            if i >= len(order):
+                order = list(range(len(self.data)))
+                i = 0
+                
+            yield self.data[order[i]]
+            i += 1
 
 
     def single(self):
-        self.order = [self.cur] * len(self.data)
+        same = self.data[self.ind]
+        while True:
+            yield same
 
 
     def sort(self):
@@ -122,23 +149,6 @@ class Playlist:
             key = lambda x: x[self.sort_key]
 
         self.data.sort(key=key)
-
-
-    def set_order(self):
-        self.playmode_list[self.playmode]()
-
-
-    def next_(self):
-        if not self.data:
-            return None
-
-        self.ind += 1
-
-        if self.ind >= len(self.data):
-            self.set_order()
-            self.ind = 0
-
-        return self.data[self.order[self.ind]]
 
 
     def remove(self, path):
@@ -228,7 +238,7 @@ class Playlist:
 
     def change_playmode(self, play):
         self.playmode = play
-        self.set_order()
+        self.gen = self.playmode_list[self.playmode]()
 
         self.exe("UPDATE playlists SET playmode=? WHERE plname=?;", (play, self.name,))
         self.commit()

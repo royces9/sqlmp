@@ -220,20 +220,16 @@ class Player_disp(display.Display):
         play a song in a playlist
         """
         self.cur_pl = self[0].highlighted()
-
         if self.cur == 1:
             next_song = self[1].highlighted()
         elif self.cur == 0:
-            next_song = self.cur_pl.next_()
-
+            next_song = next(self.cur_pl)
+            
         if not next_song:
             return
-
+        
         self.player.play(next_song)
-
-        self.cur_pl.cur = self[1].highlighted_ind()
-        self.cur_pl.ind = self.cur_pl.cur
-        self.cur_pl.set_order()
+        self.cur_pl.ind = self[1].highlighted_ind()        
 
         self.__enqueue()
 
@@ -531,7 +527,7 @@ class Player_disp(display.Display):
         """
         add a new song onto the player queue
         """
-        self.player.append(self.cur_pl.next_())
+        self.player.append(next(self.cur_pl))
 
 
     def err_print(self, err):
