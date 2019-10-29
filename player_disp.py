@@ -232,7 +232,7 @@ class Player_disp(display.Display):
         self.player.play(next_song)
 
         self.cur_pl.cur = self[1].highlighted_ind()
-        self.cur_pl.ind = 0
+        self.cur_pl.ind = self.cur_pl.cur
         self.cur_pl.set_order()
 
         self.__enqueue()
