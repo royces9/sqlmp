@@ -101,14 +101,20 @@ class Playlist:
         return None
 
 
-    def shuffle(self):
+    def __set_order(self, playmode):
         order = list(range(len(self.data)))
-        random.shuffle(order)
-        self.ind += 1
+        if playmode == 'shuffle':
+            random.shuffle(order)
+            
+        return order
+
+
+    def shuffle(self):
+        order = self.__set_order('shuffle')
+
         while True:
-            if self.ind >= len(order):
-                order = list(range(len(self.data)))
-                random.shuffle(order)
+            if self.ind >= len(self.data):
+                order = self.__set_order('shuffle')
                 self.ind = 0
 
             yield self.data[order[self.ind]]
@@ -116,16 +122,16 @@ class Playlist:
 
 
     def inorder(self):
-        order = list(range(len(self.data)))
+        order = self.__set_order('inorder')
         self.ind += 1
+
         while True:
-            if self.ind >= len(order):
-                order = list(range(len(self.data)))
+            if self.ind >= len(self.data):
+                order = self.__set_order('inorder')
                 self.ind = 0
 
             yield self.data[order[self.ind]]
             self.ind += 1
->>>>>>> cd18ecd767768163879d25be88e835066b08f67a
 
 
     def single(self):

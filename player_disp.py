@@ -224,12 +224,10 @@ class Player_disp(display.Display):
             next_song = self[1].highlighted()
         elif self.cur == 0:
             next_song = next(self.cur_pl)
-=======
-            
+
         if next_song:
             self.player.play(next_song)
             self.cur_pl.ind = self[1].highlighted_ind()
->>>>>>> cd18ecd767768163879d25be88e835066b08f67a
 
 
     def switch_view(self, arg=None):
