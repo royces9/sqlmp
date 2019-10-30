@@ -225,13 +225,9 @@ class Player_disp(display.Display):
         elif self.cur == 0:
             next_song = next(self.cur_pl)
             
-        if not next_song:
-            return
-        
-        self.player.play(next_song)
-        self.cur_pl.ind = self[1].highlighted_ind()        
-
-        self.__enqueue()
+        if next_song:
+            self.player.play(next_song)
+            self.cur_pl.ind = self[1].highlighted_ind()
 
 
     def switch_view(self, arg=None):

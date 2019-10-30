@@ -17,7 +17,6 @@ def init_pl(name, db):
         raise err
 
 
-
 def del_pl(name, db):
     try:
         db.exe("DELETE FROM playlists WHERE plname=?;", (name,))
@@ -41,6 +40,7 @@ class Playlist:
         self.tags = ['path', 'title', 'artist', 'album', 'length', 'bitrate', 'playcount']
         self.joined_tag = ','.join(self.tags)
         self.data = self.get_songs()
+        self.cur_song = None
 
         self.sort()
 
@@ -48,6 +48,8 @@ class Playlist:
         self.playmode_list = {'shuffle': self.shuffle,
                               'inorder': self.inorder,
                               'single': self.single}
+
+
         self.gen = self.playmode_list[self.playmode]()
 
 
@@ -56,15 +58,8 @@ class Playlist:
 
 
     def __getitem__(self, ind):
-        """
-        I don't think I need this but I'll keep it here just cause
-        if isinstance(ind, str):
-            s = list(filter(lambda x: x['path'] == ind, self.data))[:1]
-            if not s:
-                return None
-            return s[0]
-        """
         return self.data[ind]
+
 
     def __len__(self):
         return len(self.data)
@@ -73,10 +68,8 @@ class Playlist:
     def __next__(self):
         if not self.data:
             return None
-        
+        #self.ind += 1
         return next(self.gen)
-        #gen = self.playmode_list[self.playmode]()
-        #return next(self.playmode_list[self.playmode]())
 
 
     def exe(self, query, args=()):
@@ -111,29 +104,27 @@ class Playlist:
     def shuffle(self):
         order = list(range(len(self.data)))
         random.shuffle(order)
-        i = 0
-
+        self.ind += 1
         while True:
-            if i >= len(order):
+            if self.ind >= len(order):
                 order = list(range(len(self.data)))
                 random.shuffle(order)
-                i = 0
-                
-            yield self.data[order[i]]
-            i += 1
+                self.ind = 0
+
+            yield self.data[order[self.ind]]
+            self.ind += 1
 
 
     def inorder(self):
         order = list(range(len(self.data)))
-        i = 0
-
+        self.ind += 1
         while True:
-            if i >= len(order):
+            if self.ind >= len(order):
                 order = list(range(len(self.data)))
-                i = 0
-                
-            yield self.data[order[i]]
-            i += 1
+                self.ind = 0
+
+            yield self.data[order[self.ind]]
+            self.ind += 1
 
 
     def single(self):
