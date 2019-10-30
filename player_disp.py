@@ -224,12 +224,12 @@ class Player_disp(display.Display):
             next_song = self[1].highlighted()
         elif self.cur == 0:
             next_song = next(self.cur_pl)
-            
+
         if not next_song:
             return
-        
+
         self.player.play(next_song)
-        self.cur_pl.ind = self[1].highlighted_ind()        
+        self.cur_pl.ind = self[1].highlighted_ind()
 
         self.__enqueue()
 

@@ -73,10 +73,8 @@ class Playlist:
     def __next__(self):
         if not self.data:
             return None
-        
+
         return next(self.gen)
-        #gen = self.playmode_list[self.playmode]()
-        #return next(self.playmode_list[self.playmode]())
 
 
     def exe(self, query, args=()):
@@ -118,7 +116,7 @@ class Playlist:
                 order = list(range(len(self.data)))
                 random.shuffle(order)
                 i = 0
-                
+
             yield self.data[order[i]]
             i += 1
 
@@ -131,7 +129,7 @@ class Playlist:
             if i >= len(order):
                 order = list(range(len(self.data)))
                 i = 0
-                
+
             yield self.data[order[i]]
             i += 1
 
