@@ -222,7 +222,7 @@ class Playlist:
         self.exe(f"INSERT INTO {self.name} VALUES (?);", (path_join,))
         self.exe(f"INSERT INTO pl_song VALUES {combined};")
 
-        self.data += self.get_songs()
+        self.data = self.get_songs()
         self.commit()
 
 
