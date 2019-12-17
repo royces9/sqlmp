@@ -6,7 +6,6 @@ import sys
 
 import menu
 import musicdb
-import player
 import player_disp
 import playlist
 import socket_thread
@@ -27,7 +26,7 @@ def init_colours():
             c[0] = curses.color_pair(i)
 
 
-def init_windows(db, play, stdscr):
+def init_windows(db, stdscr):
     hh, ww, bottom_bar, cc = keys.set_size(stdscr)
 
     leftwin = menu.Menu(0, 0, ww, hh,
@@ -49,7 +48,7 @@ def init_windows(db, play, stdscr):
     sys.stdout.write("\x1b]2;sqlmp\x07")
     sys.stdout.flush()
 
-    return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db, play)
+    return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db)
 
 
 def main_loop(disp):
@@ -102,8 +101,7 @@ def main_loop(disp):
 def main(stdscr):
     db = musicdb.Musicdb(keys.DBPATH, keys.LIBPATH)
 
-    play = player.Player()
-    disp = init_windows(db, play, stdscr)
+    disp = init_windows(db, stdscr)
 
     main_loop(disp)
 

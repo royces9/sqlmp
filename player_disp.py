@@ -7,6 +7,7 @@ import threading
 import time
 
 import display
+import player
 import playlist
 
 import keys
@@ -23,10 +24,10 @@ def song_info(song):
 
 
 class Player_disp(display.Display):
-    def __init__(self, wins, stdscr, db, player):
+    def __init__(self, wins, stdscr, db):
         super().__init__(wins, stdscr)
 
-        self.player = player
+        self.player = player.Player()
         self.db = db
         self.conn = db.conn
         self.curs = db.curs
