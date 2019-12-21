@@ -50,6 +50,9 @@ Bugs:
 
 - sometimes the generator for playlist gets an out of bounds index, I'm not quite sure what the problem is yet
 
-- it seems that deleting stuff during playback still messes with the playlist ordering
+- during inorder playback, deleting a song sorted before the currently playing song will skip the next song
+  - the index of all the songs after the deleted one jumps up one, so the index for the NEXT song
+   is what the current song is during playback, 
 
 - When closing the window, without closing sqlmp, the socket doesn't delete properly
+  - this might not have a nice simple solution, not off the top of my head anyway
