@@ -6,6 +6,19 @@ import sys
 
 import keys
 
+"""
+how to use:
+$ remote -f $(file) -p $(playlist)
+
+$(file) can be a directory or files or a list of files
+$(playlist) is a playlist or a list of playlists
+
+Warning:
+$ remote -f song_1.mp3 -p play_1 -f song_2.mp3 -p play_2
+
+will add both song_1.mp3 and song_2.mp3 to both play_1 and play_2
+"""
+
 def parse_args(argv):
     if not argv[0].startswith('-'):
         return '', ''
