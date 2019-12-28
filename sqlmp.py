@@ -10,7 +10,7 @@ import player_disp
 import playlist
 import socket_thread
 
-import keys
+import config
 import debug
 
 
@@ -18,7 +18,7 @@ def init_colours():
     curses.start_color()
     curses.use_default_colors()
 
-    colours = [keys.FOCUSED, keys.CURSOR, keys.HIGHLIGHT_COLOUR, keys.NORMAL]
+    colours = [config.FOCUSED, config.CURSOR, config.HIGHLIGHT_COLOUR, config.NORMAL]
 
     for i, c in enumerate(colours, 1):
         if c[0] is None:
@@ -27,21 +27,21 @@ def init_colours():
 
 
 def init_windows(db, stdscr):
-    hh, ww, bottom_bar, cc = keys.set_size(stdscr)
+    hh, ww, bottom_bar, cc = config.set_size(stdscr)
 
     leftwin = menu.Menu(0, 0, ww, hh,
                         data=[playlist.Playlist(name=pl, db=db) for pl in db.list_pl()],
                         form=lambda x: ((x.name, 1),),
-                        cursor_colour=keys.FOCUSED[0],
-                        highlight_colour=keys.FOCUSED[0],
-                        normal_colour=keys.NORMAL[0])
+                        cursor_colour=config.FOCUSED[0],
+                        highlight_colour=config.FOCUSED[0],
+                        normal_colour=config.NORMAL[0])
 
     rightwin = menu.Menu(ww, 0, cc - ww, hh,
                          data=leftwin.data[0].data,
-                         form=keys.SONG_DISP,
-                         cursor_colour=keys.CURSOR[0],
-                         highlight_colour=keys.HIGHLIGHT_COLOUR[0],
-                         normal_colour=keys.NORMAL[0])
+                         form=config.SONG_DISP,
+                         cursor_colour=config.CURSOR[0],
+                         highlight_colour=config.HIGHLIGHT_COLOUR[0],
+                         normal_colour=config.NORMAL[0])
 
     botwin = menu.Window(0, hh, cc, bottom_bar)
 
@@ -52,7 +52,7 @@ def init_windows(db, stdscr):
 
 
 def main_loop(disp):
-    remote = socket_thread.Remote(disp)
+    remote = socket_thread.Remote(disp, config.SOCKET)
     while True:
         disp.refresh()
         key = disp.getkey()
@@ -99,7 +99,7 @@ def main_loop(disp):
 
 
 def main(stdscr):
-    db = musicdb.Musicdb(keys.DBPATH, keys.LIBPATH)
+    db = musicdb.Musicdb(config.DBPATH, config.LIBPATH)
 
     disp = init_windows(db, stdscr)
 
@@ -107,7 +107,7 @@ def main(stdscr):
 
 
 if __name__ == "__main__":
-    if os.path.exists(keys.SOCKET):
+    if os.path.exists(config.SOCKET):
         sys.exit('sqlmp socket already open')
     try:
         stdscr = curses.initscr()
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         curses.nocbreak()
         stdscr.keypad(0)
 
-        if os.path.exists(keys.SOCKET):
-            os.remove(keys.SOCKET)
+        if os.path.exists(config.SOCKET):
+            os.remove(config.SOCKET)
 
         curses.endwin()

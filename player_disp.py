@@ -10,7 +10,7 @@ import display
 import player
 import playlist
 
-import keys
+import config
 
 import debug
 
@@ -18,7 +18,7 @@ def song_info(song):
     """
     return a string with formatted song info
     """
-    info = [str(song[key]) for key in keys.SONG_INFO
+    info = [str(song[key]) for key in config.SONG_INFO
             if song[key]]
     return ' - '.join(info)
 
@@ -27,7 +27,7 @@ class Player_disp(display.Display):
     def __init__(self, wins, stdscr, db):
         super().__init__(wins, stdscr)
 
-        self.player = player.Player()
+        self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
         self.db = db
         self.conn = db.conn
         self.curs = db.curs
@@ -79,21 +79,21 @@ class Player_disp(display.Display):
 
     def __init_actions(self):
         pairs = [
-            [keys.UP, self.up],
-            [keys.DOWN, self.down],
-            [keys.LEFT, self.player.seek_backward],
-            [keys.RIGHT, self.player.seek_forward],
-            [keys.VOLUP, self.player.vol_up],
-            [keys.VOLDOWN, self.player.vol_down],
-            [keys.PLAYPAUSE, self.player.play_pause],
-            [keys.QUIT, sys.exit],
-            [keys.SWITCH, self.switch_view],
-            [keys.COMMAND, self.grab_input],
-            [keys.SELECT, self.select],
-            [keys.HIGHLIGHT, self.highlight],
-            [keys.TRANSFER, self.transfer],
-            [keys.DELETE, self.delete],
-            [keys.CUR_PLAY, self.jump_cur_play],
+            [config.UP, self.up],
+            [config.DOWN, self.down],
+            [config.LEFT, self.player.seek_backward],
+            [config.RIGHT, self.player.seek_forward],
+            [config.VOLUP, self.player.vol_up],
+            [config.VOLDOWN, self.player.vol_down],
+            [config.PLAYPAUSE, self.player.play_pause],
+            [config.QUIT, sys.exit],
+            [config.SWITCH, self.switch_view],
+            [config.COMMAND, self.grab_input],
+            [config.SELECT, self.select],
+            [config.HIGHLIGHT, self.highlight],
+            [config.TRANSFER, self.transfer],
+            [config.DELETE, self.delete],
+            [config.CUR_PLAY, self.jump_cur_play],
             [['KEY_RESIZE'], self.resize],
         ]
 
@@ -119,8 +119,8 @@ class Player_disp(display.Display):
 
             if not self[1].data:
                 self.cur = 0
-                self.wins[0].cursor_colour = keys.FOCUSED[0]
-                self.wins[1].cursor_colour = keys.CURSOR[0]
+                self.wins[0].cursor_colour = config.FOCUSED[0]
+                self.wins[1].cursor_colour = config.CURSOR[0]
 
         self.curwin().disp()
 
@@ -186,7 +186,7 @@ class Player_disp(display.Display):
         """
         handle resize event
         """
-        hh, ww, bottom_bar, cc = keys.set_size(self.stdscr)
+        hh, ww, bottom_bar, cc = config.set_size(self.stdscr)
 
         xx = [0, ww, 0]
         yy = [0, 0, hh]
@@ -227,6 +227,7 @@ class Player_disp(display.Display):
             next_song = next(self.cur_pl)
 
         if next_song:
+            self.player.status = player.Play_state.new
             self.player.play(next_song)
             self.cur_pl.ind = self[1].highlighted_ind()
 
@@ -240,12 +241,12 @@ class Player_disp(display.Display):
 
         if self.cur == 1:
             self.cur = 0
-            self.wins[0].cursor_colour = keys.FOCUSED[0]
-            self.wins[1].cursor_colour = keys.CURSOR[0]
+            self.wins[0].cursor_colour = config.FOCUSED[0]
+            self.wins[1].cursor_colour = config.CURSOR[0]
         else:
             self.cur = 1
-            self.wins[1].cursor_colour = keys.FOCUSED[0]
-            self.wins[0].cursor_colour = keys.CURSOR[0]
+            self.wins[1].cursor_colour = config.FOCUSED[0]
+            self.wins[0].cursor_colour = config.CURSOR[0]
 
         self[0].disp()
         self[1].disp()
@@ -557,7 +558,7 @@ class Player_disp(display.Display):
         if self.cur_pl:
             self[2].print_right_justified(' ' + self.cur_pl.name + ' ')
 
-        self[2].win.chgat(0, 0, self[2].w, keys.FOCUSED[0])
+        self[2].win.chgat(0, 0, self[2].w, config.FOCUSED[0])
 
 
     #stuff for bottom window
@@ -570,8 +571,8 @@ class Player_disp(display.Display):
         """
         while True:
             start = time.time()
-            time_str = keys.song_length(self.player.cur_time())
-            total_time_str = keys.song_length(self.cur_song['length'])
+            time_str = config.song_length(self.player.cur_time())
+            total_time_str = config.song_length(self.cur_song['length'])
 
             info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
             playmode = self[0].highlighted().playmode

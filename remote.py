@@ -4,7 +4,7 @@ import os
 import socket
 import sys
 
-import keys
+import config
 
 """
 how to use:
@@ -47,12 +47,12 @@ def parse_args(argv):
     return pl, fn
 
 def main():
-    if not os.path.exists(keys.SOCKET):
+    if not os.path.exists(config.SOCKET):
         print('', end='')
         return
 
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
-        s.connect(keys.SOCKET)
+        s.connect(config.SOCKET)
         if len(sys.argv) > 1:
             pl, fn = parse_args(sys.argv[1:])
             s.send('\n'.join(pl).encode())

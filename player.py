@@ -8,8 +8,6 @@ import threading
 import ffmpeg
 import pyaudio
 
-import keys
-
 import debug
 
 class Play_state(enum.Enum):
@@ -24,9 +22,10 @@ class Play_state(enum.Enum):
 
 
 class Player:
-    def __init__(self):
+    def __init__(self, vol, step):
         self.pyaudio_init()
-        self.vol = keys.DEFAULT_VOLUME
+        self.vol = vol
+        self.vol_step = step
 
         #the length of time (s) each chunk of playback is
         #the play call blocks during this time, so the
@@ -104,16 +103,16 @@ class Player:
             wav_chunks = [wav[i:i+self.step] for i in range(0, len(wav), self.step)]
 
             while self.iterator < len(wav_chunks):
-                if self.is_paused():
-                    while self.is_paused():
-                        self.pauseq.get(block=True, timeout=None)
+                while self.is_paused():
+                    self.pauseq.get(block=True, timeout=None)
 
-                elif self.state in {Play_state.new, Play_state.end}:
+                if self.state in {Play_state.new, Play_state.end}:
                     break
 
                 adjust = audioop.mul(wav_chunks[self.iterator], self.width, self.vol/100)
                 stream.write(adjust)
                 self.iterator += 1
+
 
             #resource clean up
             stream.stop_stream()
@@ -139,13 +138,13 @@ class Player:
 
 
     def vol_up(self):
-        self.vol += keys.VOL_STEP
+        self.vol += self.vol_step
         if self.vol > 100:
             self.vol = 100
 
 
     def vol_down(self):
-        self.vol -= keys.VOL_STEP
+        self.vol -= self.vol_step
         if self.vol < 0:
             self.vol = 0
 

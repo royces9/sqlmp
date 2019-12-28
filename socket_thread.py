@@ -3,21 +3,20 @@ import queue
 import socket
 import threading
 
-import keys
-
 import debug
 
 class Remote(queue.Queue):
-    def __init__(self, disp):
+    def __init__(self, disp, socket):
         super().__init__()
         self.disp = disp
+        self.socket = socket
         self.thread = threading.Thread(target=self.__socket, daemon=True)
         self.thread.start()
 
 
     def __socket(self):
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
-            s.bind(keys.SOCKET)
+            s.bind(self.socket)
             s.listen()
 
             while True:
