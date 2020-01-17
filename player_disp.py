@@ -59,7 +59,11 @@ class Player_disp(display.Display):
                          'artist': '',
                          'album': '',
                          'length': 0,
-                         'bitrate': 0}
+                         'samplerate': 0,
+                         'channels': 0,
+                         'bitrate': 0,
+                         'playcount': 0
+        }
 
         #currently playing playlist
         self.cur_pl = None

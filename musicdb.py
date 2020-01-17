@@ -1,17 +1,12 @@
 import os
 import sqlite3
 
-import mutagen
+import ffmpeg
 
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
-key_list = ['title',
-            'artist',
-            'album',]
-attr_list = ['length',
-             'bitrate',]
 
 def init_db(db):
-    db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, bitrate INT, playcount INT);")
+    db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
     db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
     db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
     db.commit()
@@ -22,24 +17,27 @@ def extract_metadata(path):
     if ext not in ext_list:
         return None
 
-    try:
-        out = mutagen.File(path, easy=True)
-    except:
-        return None
+    #ffmpeg
+    prob = ffmpeg.probe(path)
+    
+    tags_out = ['title', 'artist', 'album']
+    if 'tags' in {prob['format'], prob['streams'][0]}:
+        if 'tags' in prob['format']:
+            tmp = prob['format']
+        elif 'tags' in prob['streams'][0]:
+            tmp = prob['streams'][0]
 
-    if not out:
-        return None
+        tmp['tags'] = {k.lower(): i for k, i in tmp['tags'].items()}
+        tags = [tmp['tags'][t].replace("'", "''") if t in tmp['tags'] else '' for t in tags_out]
+    else:
+        tags = [''] * len(tags_out)
+        
+    attr = [a[1](prob['streams'][0][a[0]])
+                for a in [('duration', float), ('sample_rate', int), ('channels', int)]]
+        
+    bitrate = int(prob['format']['bit_rate'])
 
-    song_dict = {
-        key: out[key][0].replace("'", "''") if key in out.keys()
-             else "" for key in key_list}
-
-    attr_out = {
-        attr: getattr(out.info, attr) if hasattr(out.info, attr) else 0
-        for attr in attr_list} if hasattr(out, 'info')\
-            else {attr: 0 for attr in attr_list}
-
-    return tuple(song_dict.values(),) + tuple(attr_out.values(),)
+    return tuple(tags) + tuple(attr) + tuple([bitrate])
 
 
 class Musicdb:
@@ -85,11 +83,11 @@ class Musicdb:
         out = extract_metadata(path)
         if not out:
             return
-        (title, artist, album, length, bitrate) = out
+        (title, artist, album, length, samplerate, channels, bitrate) = out
 
         path = path.replace("'", "''")
 
-        self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,0);", (path, title, artist, album, length, bitrate,))
+        self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,0);", (path, title, artist, album, length, samplerate, channels, bitrate,))
         self.commit()
 
 
@@ -117,27 +115,27 @@ class Musicdb:
 
         for root, _, files in os.walk(di):
             for ff in files:
-                path = os.path.join(root, ff).replace("'", "''")
+                path = os.path.join(root, ff)
 
                 if path not in self:
                     out = extract_metadata(path)
                     if out:
-                        (title, artist, album, length, bitrate) = out
-                        list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
+                        path = path.replace("'", "''")
+                        (title, artist, album, length, samplerate, channels, bitrate) = out
+                        list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {samplerate}, {channels}, {bitrate}, 0)")
         return list_all
 
 
     def add_multi(self, li):
-        if li:
-            joined = ",".join(li)
-            self.exe(f"INSERT INTO library VALUES {joined}")
-            self.commit()
+        joined = ",".join(li)
+        self.exe(f"INSERT INTO library VALUES {joined}")
+        self.commit()
 
 
     def update(self):
         #this gets every file
         all_files = [
-            os.path.join(root, ff).replace("'", "''")
+            os.path.join(root, ff)
             for root, _, files in os.walk(self.lib)
             for ff in files
         ]
@@ -153,8 +151,9 @@ class Musicdb:
         for path in new_file_paths:
             out = extract_metadata(path)
             if out and path not in self:
-                (title, artist, album, length, bitrate) = out
-                new_files.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)")
+                path = path.replace("'", "''")
+                (title, artist, album, length, samplerate, channels, bitrate) = out
+                new_files.append(f"('{path}','{title}','{artist}','{album}',{length},{samplerate},{channels},{bitrate},0)")
         return
         #list of files that aren't in the db
         #new_files = self.dir_files(self.lib)

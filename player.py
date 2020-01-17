@@ -82,9 +82,8 @@ class Player:
                       .run(capture_stdout=True, capture_stderr=True))
 
             #grab stream data for the pyaudio stream
-            prob = ffmpeg.probe(fp)
-            self.rate = int(prob['streams'][0]['sample_rate'])
-            self.channels = int(prob['streams'][0]['channels'])
+            self.rate = fn['samplerate']
+            self.channels = fn['channels']
             self.width = 2
 
             #open a pyaudio stream

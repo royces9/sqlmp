@@ -2,7 +2,7 @@ import curses
 import os
 
 #database path
-DBPATH = 'lib.db'
+DBPATH = 'newlib.db'
 LIBPATH = os.getenv('HOME') + '/Music/'
 
 SOCKET = '/tmp/sqlmp.sock'

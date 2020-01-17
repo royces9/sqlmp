@@ -37,7 +37,7 @@ class Playlist:
         self.ind = 0
 
         self.sort_key = self.get_val('sort')
-        self.tags = ['path', 'title', 'artist', 'album', 'length', 'bitrate', 'playcount']
+        self.tags = ['path', 'title', 'artist', 'album', 'length', 'samplerate', 'channels', 'bitrate', 'playcount']
         self.joined_tag = ','.join(self.tags)
         self.data = self.get_songs()
         self.cur_song = None
@@ -188,18 +188,21 @@ class Playlist:
         path_list = []
         for root, _, files in os.walk(di):
             for ff in files:
-                path = os.path.join(root, ff).replace("'", "''")
+                path = os.path.join(root, ff)
                 if path not in self.db:
                     out = musicdb.extract_metadata(path)
                     if out:
-                        (title, artist, album, length, bitrate) = out
+                        path = path.replace("'", "''")
+                        (title, artist, album, length, samplerate, channels, bitrate) = out
                         list_all.append(
-                            f"('{path}', '{title}', '{artist}', '{album}', {length}, {bitrate}, 0)"
+                            f"('{path}', '{title}', '{artist}', '{album}', {length}, {samplerate}, {channels}, {bitrate}, 0)"
                         )
                 if path not in self:
                     path_list.append(path)
 
-        self.db.add_multi(list_all)
+                    
+        if list_all:
+            self.db.add_multi(list_all)
         self.insert_path_list(path_list)
         self.sort()
 
