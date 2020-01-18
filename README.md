@@ -7,12 +7,12 @@ ffmpeg-python
 
 PyAudio
 
-
+### Use:
 ##### initlib.py:
-use this when starting, initializes the database with your music library and playlists
+Use this when starting, initializes the database with your music library and playlists
 
 ##### remote.py:
-allows one to add songs to a playlist through the shell
+Allows one to add songs to a playlist through the shell
 
 ##### sqlmp.py:
-the actual player
+The actual player
