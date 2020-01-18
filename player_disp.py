@@ -89,6 +89,7 @@ class Player_disp(display.Display):
             [config.RIGHT, self.player.seek_forward],
             [config.VOLUP, self.player.vol_up],
             [config.VOLDOWN, self.player.vol_down],
+            [config.MUTE, self.mute],
             [config.PLAYPAUSE, self.player.play_pause],
             [config.QUIT, sys.exit],
             [config.SWITCH, self.switch_view],
@@ -185,6 +186,9 @@ class Player_disp(display.Display):
                 self[1].disp()
                 break
 
+
+    def mute(self, arg=None):
+        self.player.toggle_mute()
 
     def resize(self):
         """
@@ -579,6 +583,8 @@ class Player_disp(display.Display):
             total_time_str = config.song_length(self.cur_song['length'])
 
             info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
+            if self.player.mute:
+                info_str += ' [M]'
             playmode = self[0].highlighted().playmode
 
             self[2].print_line(info_str, y=1)

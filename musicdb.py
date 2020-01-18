@@ -21,14 +21,14 @@ def extract_metadata(path):
     prob = ffmpeg.probe(path)
     
     tags_out = ['title', 'artist', 'album']
-    if 'tags' in {prob['format'], prob['streams'][0]}:
-        if 'tags' in prob['format']:
-            tmp = prob['format']
-        elif 'tags' in prob['streams'][0]:
-            tmp = prob['streams'][0]
-
-        tmp['tags'] = {k.lower(): i for k, i in tmp['tags'].items()}
-        tags = [tmp['tags'][t].replace("'", "''") if t in tmp['tags'] else '' for t in tags_out]
+    if 'tags' in prob['format']:
+        tmp = prob['format']['tags']
+        tmp = {k.lower(): i for k, i in tmp.items()}
+        tags = [tmp[t].replace("'", "''") if t in tmp else '' for t in tags_out]
+    elif 'tags' in prob['streams'][0]:
+        tmp = prob['streams'][0]['tags']
+        tmp = {k.lower(): i for k, i in tmp.items()}
+        tags = [tmp[t].replace("'", "''") if t in tmp else '' for t in tags_out]
     else:
         tags = [''] * len(tags_out)
         
@@ -137,34 +137,22 @@ class Musicdb:
         all_files = [
             os.path.join(root, ff)
             for root, _, files in os.walk(self.lib)
-            for ff in files
+            for ff in files if os.path.splitext(ff)[1] in ext_list
         ]
 
-        q = "('" + "','".join(all_files) + "')"
-        #this gets every file in the db
-        in_db = self.exe("SELECT path FROM library WHERE path IN " + q)
-
-        #files that are not in db
-        new_file_paths = list(set(all_files) - set(in_db))
-
         new_files = []
-        for path in new_file_paths:
-            out = extract_metadata(path)
-            if out and path not in self:
+        for path in all_files:
+            if path not in self:
+                out = extract_metadata(path)
+                if not out:
+                    continue
+                
                 path = path.replace("'", "''")
                 (title, artist, album, length, samplerate, channels, bitrate) = out
                 new_files.append(f"('{path}','{title}','{artist}','{album}',{length},{samplerate},{channels},{bitrate},0)")
+
+        self.add_multi(new_files)
         return
-        #list of files that aren't in the db
-        #new_files = self.dir_files(self.lib)
-
-        #add new files
-        if new_files:
-            self.add_multi(new_files)
-
-        for path in self.exe("SELECT path FROM library"):
-            if not os.path.exists(path[0]):
-                self.remove_from_lib(path[0])
 
 
     def list_pl(self):

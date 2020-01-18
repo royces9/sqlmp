@@ -14,6 +14,7 @@ LEFT = {'KEY_LEFT', 'j'}
 RIGHT = {'KEY_RIGHT', ';'}
 VOLUP = {']'}
 VOLDOWN = {'['}
+MUTE = {'m'}
 PLAYPAUSE = {'c'}
 QUIT = {'q'}
 SWITCH = {'\t'}

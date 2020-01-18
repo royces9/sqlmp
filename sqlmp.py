@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
+import atexit
 import curses
 import os
+import signal
 import sys
 
 import menu
@@ -98,6 +100,17 @@ def main_loop(disp):
 """
 
 
+def cleanup(stdscr):
+    curses.echo()
+    curses.nocbreak()
+    stdscr.keypad(0)
+
+    if os.path.exists(config.SOCKET):
+        os.remove(config.SOCKET)
+
+    curses.endwin()
+    
+
 def main(stdscr):
     db = musicdb.Musicdb(config.DBPATH, config.LIBPATH)
 
@@ -109,8 +122,13 @@ def main(stdscr):
 if __name__ == "__main__":
     if os.path.exists(config.SOCKET):
         sys.exit('sqlmp socket already open')
+
     try:
         stdscr = curses.initscr()
+
+        #atexit.register(cleanup, stdscr)
+        signal.signal(signal.SIGTERM, lambda: cleanup(stdscr))
+
         curses.noecho()
         curses.cbreak()
         curses.curs_set(0)
@@ -121,12 +139,12 @@ if __name__ == "__main__":
         stdscr.keypad(True)
         main(stdscr)
 
-    finally:
-        curses.echo()
-        curses.nocbreak()
-        stdscr.keypad(0)
+    except Exception as e:
+        cleanup(stdscr)
+        import traceback
+        print(traceback.format_exc())
 
-        if os.path.exists(config.SOCKET):
-            os.remove(config.SOCKET)
+        print("Error: " + str(e))
+        sys.exit()
 
-        curses.endwin()
+    cleanup(stdscr)

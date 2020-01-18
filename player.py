@@ -26,6 +26,7 @@ class Player:
         self.pyaudio_init()
         self.vol = vol
         self.vol_step = step
+        self.mute = False
 
         #the length of time (s) each chunk of playback is
         #the play call blocks during this time, so the
@@ -108,7 +109,7 @@ class Player:
                 if self.state in {Play_state.new, Play_state.end}:
                     break
 
-                adjust = audioop.mul(wav_chunks[self.iterator], self.width, self.vol/100)
+                adjust = audioop.mul(wav_chunks[self.iterator], self.width, (not self.mute) * self.vol/100)
                 stream.write(adjust)
                 self.iterator += 1
 
@@ -187,6 +188,9 @@ class Player:
         if self.iterator < 0:
             self.iterator = 0
 
+
+    def toggle_mute(self, *args):
+        self.mute = not self.mute
 
     def cur_time(self, *args):
         d = self.width * self.channels * self.rate

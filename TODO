@@ -3,9 +3,6 @@ Things that I want to implement:
 Play count:
 - increment play count when something is done playing, 
 
-Mute:
-- maybe a mute option? i'll think about it, easy to implement so w/e right?
-
 Display:
 - Need to find a way to make columns cleaner, it's kinda ugly right now
 - also maybe consider putting bars or something to separate windows
@@ -46,13 +43,8 @@ updating metadata of songs
 Bugs:
 - when entering a command (with :), the cursor moves next to the current time playing
 
-- if mutagen fails, how do you know haha
-
 - sometimes the generator for playlist gets an out of bounds index, I'm not quite sure what the problem is yet
 
 - during inorder playback, deleting a song sorted before the currently playing song will skip the next song
   - the index of all the songs after the deleted one jumps up one, so the index for the NEXT song
    is what the current song is during playback, 
-
-- When closing the window, without closing sqlmp, the socket doesn't delete properly
-  - this might not have a nice simple solution, not off the top of my head anyway
