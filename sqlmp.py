@@ -126,7 +126,7 @@ if __name__ == "__main__":
     try:
         stdscr = curses.initscr()
 
-        #atexit.register(cleanup, stdscr)
+        atexit.register(cleanup, stdscr)
         signal.signal(signal.SIGTERM, lambda: cleanup(stdscr))
 
         curses.noecho()
@@ -146,5 +146,3 @@ if __name__ == "__main__":
 
         print("Error: " + str(e))
         sys.exit()
-
-    cleanup(stdscr)
