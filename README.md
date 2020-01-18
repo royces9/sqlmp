@@ -4,7 +4,9 @@ Similar to cmus since I like how cmus works
 
 ### Dependencies:
 ffmpeg-python
+
 PyAudio
+
 
 ##### initlib.py:
 use this when starting, initializes the database with your music library and playlists
