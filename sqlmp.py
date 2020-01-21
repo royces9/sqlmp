@@ -55,7 +55,8 @@ def init_windows(db, stdscr):
 
 def main_loop(disp):
     remote = socket_thread.Remote(disp, config.SOCKET)
-    while True:
+
+    while not disp.die:
         disp.refresh()
         key = disp.getkey()
 
@@ -101,33 +102,23 @@ def main_loop(disp):
 
 
 def cleanup(stdscr):
+    if os.path.exists(config.SOCKET):
+        os.remove(config.SOCKET)
+
     curses.echo()
     curses.nocbreak()
     stdscr.keypad(0)
 
-    if os.path.exists(config.SOCKET):
-        os.remove(config.SOCKET)
-
     curses.endwin()
-    
-
-def main(stdscr):
-    db = musicdb.Musicdb(config.DBPATH, config.LIBPATH)
-
-    disp = init_windows(db, stdscr)
-
-    main_loop(disp)
 
 
-if __name__ == "__main__":
+def main():
     if os.path.exists(config.SOCKET):
         sys.exit('sqlmp socket already open')
-
+    
     try:
         stdscr = curses.initscr()
-
-        atexit.register(cleanup, stdscr)
-        signal.signal(signal.SIGTERM, lambda: cleanup(stdscr))
+        signal.signal(signal.SIGTERM, lambda a, b: cleanup(stdscr))
 
         curses.noecho()
         curses.cbreak()
@@ -136,13 +127,20 @@ if __name__ == "__main__":
         if curses.has_colors():
             init_colours()
 
-        stdscr.keypad(True)
-        main(stdscr)
+        db = musicdb.Musicdb(config.DBPATH, config.LIBPATH)
+        
+        disp = init_windows(db, stdscr)
+
+        main_loop(disp)
+        cleanup(stdscr)
 
     except Exception as e:
         cleanup(stdscr)
         import traceback
         print(traceback.format_exc())
+        return
 
-        print("Error: " + str(e))
-        sys.exit()
+
+if __name__ == "__main__":
+    main()
+

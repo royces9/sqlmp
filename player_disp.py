@@ -78,10 +78,15 @@ class Player_disp(display.Display):
         self[0].disp()
         self[1].disp()
 
+        self.die = False
         self.stdscr.refresh()
 
 
+    def set_die(self):
+        self.die = True
+
     def __init_actions(self):
+        import signal
         pairs = [
             [config.UP, self.up],
             [config.DOWN, self.down],
@@ -91,7 +96,7 @@ class Player_disp(display.Display):
             [config.VOLDOWN, self.player.vol_down],
             [config.MUTE, self.mute],
             [config.PLAYPAUSE, self.player.play_pause],
-            [config.QUIT, sys.exit],
+            [config.QUIT, self.set_die],
             [config.SWITCH, self.switch_view],
             [config.COMMAND, self.grab_input],
             [config.SELECT, self.select],
