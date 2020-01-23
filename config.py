@@ -26,7 +26,7 @@ DELETE = {'D'}
 CUR_PLAY = {'i'}
 
 #volume
-DEFAULT_VOLUME = 10
+DEFAULT_VOLUME = 55
 VOL_STEP = 1
 
 
@@ -55,6 +55,7 @@ def song_format(ll):
         (bitrate, 1/16),
         (length, 1/16),
     )
+
 
 #how songs are formatted on the right window
 SONG_DISP = song_format
