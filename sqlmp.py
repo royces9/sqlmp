@@ -12,7 +12,7 @@ import player_disp
 import playlist
 import socket_thread
 
-import config
+from loadconf import config as config
 import debug
 
 

@@ -10,7 +10,7 @@ import display
 import player
 import playlist
 
-import config
+from loadconf import config as config
 
 import debug
 

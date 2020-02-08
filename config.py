@@ -1,9 +1,11 @@
+#move to ~/.config/sqlmp/ to use
+
 import curses
 import os
 
 #database path
-DBPATH = 'newlib.db'
-LIBPATH = os.getenv('HOME') + '/Music/'
+DBPATH = os.path.expanduser('~/.config/sqlmp/lib.db')
+LIBPATH = os.path.expanduser('~/Music/')
 
 SOCKET = '/tmp/sqlmp.sock'
 
