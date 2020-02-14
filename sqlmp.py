@@ -1,17 +1,17 @@
 #!/usr/bin/python
 
-import atexit
 import curses
 import os
 import signal
 import sys
+import traceback
 
 import menu
 import musicdb
 import player_disp
 import playlist
 import socket_thread
-
+            
 from loadconf import config as config
 import debug
 
@@ -47,8 +47,6 @@ def init_windows(db, stdscr):
 
     botwin = menu.Window(0, hh, cc, bottom_bar)
 
-    sys.stdout.write("\x1b]2;sqlmp\x07")
-    sys.stdout.flush()
 
     return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db)
 
@@ -71,74 +69,62 @@ def main_loop(disp):
                         disp.adddir((f, p))
                     else:
                         disp.addfile((f, p))
-"""
-def __inp(disp, qq):
-    while True:
-        key = disp.getkey()
-        if key in disp.actions:
-            qq.put_nowait((key))
-
-import threading
-def main_loop(disp):
-    remote = socket_thread.Remote(disp)
-    inp_thread = threading.Thread(target=__inp, args=(disp,remote,), daemon=True)
-    inp_thread.start()
-
-    while True:
-        disp.refresh()
-        item = remote.get()
-            
-        if item in disp.actions:
-            disp.actions[item]()            
-        else:
-            pl, fn = item
-            for p in pl:
-                for f in fn:
-                    if os.path.isdir(f):
-                        disp.adddir((f, p))
-                    else:
-                        disp.addfile((f, p))
-"""
 
 
-def cleanup(stdscr):
+def cleanup(stdscr, exit_f=False):
     if os.path.exists(config.SOCKET):
         os.remove(config.SOCKET)
-
+    
     curses.echo()
     curses.nocbreak()
     stdscr.keypad(0)
 
     curses.endwin()
 
+    if exit_f:
+        sys.exit()
 
+        
 def main():
     if os.path.exists(config.SOCKET):
         sys.exit('sqlmp socket already open')
     
     try:
         stdscr = curses.initscr()
-        signal.signal(signal.SIGTERM, lambda a, b: cleanup(stdscr))
 
         curses.noecho()
         curses.cbreak()
         curses.curs_set(0)
 
+        sys.stdout.write("\x1b]2;sqlmp\x07")
+        sys.stdout.flush()
+
         if curses.has_colors():
             init_colours()
+    except:
+        cleanup(stdscr)
+        print('curses error:')
+        print(traceback.format_exc())
+        return
 
+    try:
         db = musicdb.Musicdb(config.DBPATH, config.LIBPATH)
-        
-        disp = init_windows(db, stdscr)
+    except Exception as e:
+        print('db error:')
+        print(e)
+        print(traceback.format_exc())
 
+    try:
+        signal.signal(signal.SIGINT, lambda a, b: cleanup(stdscr, True))
+        disp = init_windows(db, stdscr)
         main_loop(disp)
         cleanup(stdscr)
 
     except Exception as e:
         cleanup(stdscr)
-        import traceback
+        print('error: ')
         print(traceback.format_exc())
-        return
+
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import importlib.util
 import os
 
-confdir = os.path.expanduser('~/.config/sqlmp/config.py')
+confdir = os.path.expanduser('config.py')
 
 spec = importlib.util.spec_from_file_location("config", confdir)
 config = importlib.util.module_from_spec(spec)

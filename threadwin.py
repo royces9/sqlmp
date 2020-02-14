@@ -5,9 +5,9 @@ global_lock = threading.Lock()
 
 def decorator(func):
     def inner(*args, **kwargs):
-        global_lock.acquire()
-        out = func(*args, **kwargs)
-        global_lock.release()
+        with global_lock:
+            out = func(*args, **kwargs)
+
         return out
 
     return inner

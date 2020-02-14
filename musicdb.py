@@ -43,7 +43,11 @@ def extract_metadata(path):
 class Musicdb:
     def __init__(self, path, lib):
         #assume that the db exists
-        self.path = path
+        if os.path.exists(path):
+            self.path = path
+        else:
+            raise FileNotFoundError(f'{path} does not exist')
+        
         self.lib = lib
 
         self.conn = sqlite3.connect(self.path)

@@ -4,10 +4,10 @@ import curses
 import os
 
 #database path
-DBPATH = os.path.expanduser('~/.config/sqlmp/lib.db')
+DBPATH = os.path.expanduser('lib.db')
 LIBPATH = os.path.expanduser('~/Music/')
 
-SOCKET = '/tmp/sqlmp.sock'
+SOCKET = 'test_sqlmp.sock'
 
 #key bindings
 UP = {'KEY_UP', 'l'}
