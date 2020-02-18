@@ -1,5 +1,17 @@
 Things that I want to implement:
 
+jumpto:
+- so you don't have to scroll through long playlists
+- usage:
+  :jumpto asdf
+
+  will scroll down to the first instance of asdf in the column that is being used to sort by
+  if there is no instance, do nothing, maybe add a way to jump to a specific tag as well?
+  - eg
+    :jumpto asdf artist
+
+    jumps to first instance of asdf in artist column
+
 Play count:
 - increment play count when something is done playing, 
 
