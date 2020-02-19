@@ -38,6 +38,7 @@ class Player_disp(display.Display):
             'addfile': self.addfile,
             'delpl': self.delpl,
             'export': self.export,
+            'jumpto': self.jumpto, 
             'newpl': self.newpl,
             'playmode': self.playmode,
             'renamepl': self.renamepl,
@@ -427,6 +428,43 @@ class Player_disp(display.Display):
         with open('/'.join([dest, plname]), 'w+') as fp:
             for d in pl.data:
                 print(d['path'], file=fp)
+
+
+    def jumpto(self, args):
+        """
+        jump to a song with the matching arguments
+        1 args: jump to the first song that matches the arg by the current sorting key
+        2 args: jump to the first song that matches the arg by the given key
+        """
+        ind = -1
+        if not args:
+            self.err_print('One argument required')
+            return
+
+        elif len(args) == 1:
+            term = args[0]
+            curpl = self[0].highlighted()
+            for ii, item in enumerate(curpl.data):
+                if item[curpl.sort_key] == term:
+                    ind = ii
+                    break
+
+        elif len(args) == 2:
+            term = args[0]
+            key = args[1]
+            curpl = self[0].highlighted()
+            if key  in curpl.tags:
+                for ii, item in enumerate(curpl.data):
+                    if item[key] == term:
+                        ind = ii
+                        break
+
+        if ind < 0:
+            return
+        
+        self[1].cursor = 0
+        self[1].offset = ind
+        self[1].disp()
 
 
     def newpl(self, args):
