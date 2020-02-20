@@ -459,6 +459,9 @@ class Player_disp(display.Display):
             key = curpl.sort_key
         elif len(args) == 2:
             key = args[1]
+            if key not in curpl.tags:
+                self.err_print('Invalid key: ' + key)
+                return
 
         ind = -1
         for ii, item in enumerate(curpl.data):
