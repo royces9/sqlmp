@@ -28,7 +28,7 @@ DELETE = {'D'}
 CUR_PLAY = {'i'}
 
 #volume
-DEFAULT_VOLUME = 55
+DEFAULT_VOLUME = 0
 VOL_STEP = 1
 
 

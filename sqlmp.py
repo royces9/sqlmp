@@ -15,6 +15,8 @@ import socket_thread
 from loadconf import config as config
 import debug
 
+import locale
+locale.setlocale(locale.LC_ALL, '')
 
 def init_colours():
     curses.start_color()
