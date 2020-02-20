@@ -38,7 +38,7 @@ class Player_disp(display.Display):
             'addfile': self.addfile,
             'delpl': self.delpl,
             'export': self.export,
-            'jumpto': self.jumpto, 
+            'find': self.find, 
             'newpl': self.newpl,
             'playmode': self.playmode,
             'renamepl': self.renamepl,
@@ -87,7 +87,6 @@ class Player_disp(display.Display):
         self.die = True
 
     def __init_actions(self):
-        import signal
         pairs = [
             [config.UP, self.up],
             [config.DOWN, self.down],
@@ -181,16 +180,21 @@ class Player_disp(display.Display):
 
 
     def jump_cur_play(self, arg=None):
-        if self.cur == 0 or self.player.is_not_playing():
+        if self.player.is_not_playing():
             return
 
+        ind = -1
         #O(n) :grimacing:
-        for i, song in enumerate(self[1].data):
+        for ii, song in enumerate(self[1].data):
             if song is self.cur_song:
-                self[1].cursor = 0
-                self[1].offset = i
-                self[1].disp()
+                ind = ii
                 break
+
+        self.jump_to_ind(ind, len(self[1].data))
+        self.switch_view_right()
+
+        self[0].disp()
+        self[1].disp()
 
 
     def mute(self, arg=None):
@@ -255,17 +259,26 @@ class Player_disp(display.Display):
             return
 
         if self.cur == 1:
-            self.cur = 0
-            self.wins[0].cursor_colour = config.FOCUSED[0]
-            self.wins[1].cursor_colour = config.CURSOR[0]
+            self.switch_view_left()
         else:
-            self.cur = 1
-            self.wins[1].cursor_colour = config.FOCUSED[0]
-            self.wins[0].cursor_colour = config.CURSOR[0]
+            self.switch_view_right()
 
         self[0].disp()
         self[1].disp()
 
+        
+    def switch_view_right(self):
+        self.cur = 1
+        self.wins[1].cursor_colour = config.FOCUSED[0]
+        self.wins[0].cursor_colour = config.CURSOR[0]
+
+
+    def switch_view_left(self):
+        self.cur = 0
+        self.wins[0].cursor_colour = config.FOCUSED[0]
+        self.wins[1].cursor_colour = config.CURSOR[0]
+
+        
 
     def transfer(self, arg=None):
         """
@@ -430,40 +443,36 @@ class Player_disp(display.Display):
                 print(d['path'], file=fp)
 
 
-    def jumpto(self, args):
+    def find(self, args):
         """
-        jump to a song with the matching arguments
+        find a song with the matching arguments
         1 args: jump to the first song that matches the arg by the current sorting key
         2 args: jump to the first song that matches the arg by the given key
         """
-        ind = -1
         if not args:
             self.err_print('One argument required')
             return
 
-        elif len(args) == 1:
-            term = args[0]
-            curpl = self[0].highlighted()
-            for ii, item in enumerate(curpl.data):
-                if item[curpl.sort_key] == term:
-                    ind = ii
-                    break
-
+        term = args[0]
+        curpl = self[0].highlighted()
+        if len(args) == 1:
+            key = curpl.sort_key
         elif len(args) == 2:
-            term = args[0]
             key = args[1]
-            curpl = self[0].highlighted()
-            if key  in curpl.tags:
-                for ii, item in enumerate(curpl.data):
-                    if item[key] == term:
-                        ind = ii
-                        break
+
+        ind = -1
+        for ii, item in enumerate(curpl.data):
+            if item[key] == term:
+                ind = ii
+                break
 
         if ind < 0:
             return
-        
-        self[1].cursor = 0
-        self[1].offset = ind
+
+        self.jump_to_ind(ind, len(curpl.data))
+
+        self.switch_view_right()
+        self[0].disp()
         self[1].disp()
 
 
@@ -583,6 +592,19 @@ class Player_disp(display.Display):
     def err_print(self, err):
         self[2].print_blank(3)
         self[2].print_line(err, y=3)
+
+
+    def jump_to_ind(self, ind, data_len):
+        offset = ind - int(self[1].h / 2)
+        if offset < 0:
+            #for the case that the found index is near the top
+            offset = 0
+        elif offset >= data_len - self[1].h:
+            #for the case that the found index is near the bottom
+            offset = data_len - self[1].h
+
+        self[1].cursor = ind - offset
+        self[1].offset = offset
 
 
     def pl_exists(self, name):
