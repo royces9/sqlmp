@@ -1,17 +1,5 @@
 Things that I want to implement:
 
-jumpto:
-- so you don't have to scroll through long playlists
-- usage:
-  :jumpto asdf
-
-  will scroll down to the first instance of asdf in the column that is being used to sort by
-  if there is no instance, do nothing, maybe add a way to jump to a specific tag as well?
-  - eg
-    :jumpto asdf artist
-
-    jumps to first instance of asdf in artist column
-
 Play count:
 - increment play count when something is done playing, 
 
@@ -45,9 +33,6 @@ jumping to current playing track
 - it works but the algorithm is linear, which might be bad for longer playlists
   - O(lg(n)) alg is easy to implement (binary search), but O(1) is possible so go for that
     - probably just put another variable into player_disp that holds the current index (ugly...)
-- as of now, the screen jumps s.t. the top element is the current playing track, it's
-  probably better to make it so that currently playing tracks near the bottom of the
-  screen don't make the pl look empty
 
 updating metadata of songs
 - need a way to update song metadata singly
