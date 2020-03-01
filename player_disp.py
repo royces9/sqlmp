@@ -235,8 +235,9 @@ class Player_disp(display.Display):
                 ind = ii
                 break
 
-        self.jump_to_ind(ind, len(self[1].data))
-        self.switch_view_right()
+        if ind >= 0:
+            self.jump_to_ind(ind, len(self[1].data))
+            self.switch_view_right()
 
         self[0].disp()
         self[1].disp()
@@ -515,6 +516,7 @@ class Player_disp(display.Display):
                 break
 
         if ind < 0:
+            self.err_print('"term" not found.')
             return
 
         self.jump_to_ind(ind, len(curpl.data))
@@ -580,8 +582,8 @@ class Player_disp(display.Display):
     def renamepl(self, args):
         """
         rename a playlist
-        0 args: rename highlighted playlist
-        1 arg : rename the named playlist
+        1 arg : rename highlighted playlist
+        2 args: rename the named playlist
         """
         if not args:
             self.err_print('One argument required')
