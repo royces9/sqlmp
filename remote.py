@@ -19,6 +19,18 @@ $ remote -f song_1.mp3 -p play_1 -f song_2.mp3 -p play_2
 will add both song_1.mp3 and song_2.mp3 to both play_1 and play_2
 """
 
+help_text = '\n'.join([
+    '-h, --help     help',
+    '-f             directory, file, or list of files',
+    '-p             playlist or a list of playlists',
+    '',
+    'Warning:',
+    '$ remote -f song_1.mp3 -p play_1 -f song_2.mp3 -p play_2',
+    'will add both song_1.mp3 and song_2.mp3 to both play_1 and play_2',
+    ])
+    
+
+
 def parse_args(argv):
     if not argv[0].startswith('-'):
         return '', ''
@@ -47,6 +59,10 @@ def parse_args(argv):
     return pl, fn
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] in {'-h', '--help'}:
+        print(help_text)
+        return
+    
     if not os.path.exists(config.SOCKET):
         print('', end='')
         return
