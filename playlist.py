@@ -9,7 +9,7 @@ def init_pl(name, db):
         return
 
     try:
-        db.exe(f"CREATE TABLE {name} (path);")
+        db.exe(f"CREATE TABLE '{name}' (path);")
         db.exe(f"INSERT INTO playlists VALUES ('{name}', 'artist', 'shuffle');")
         db.commit()
 

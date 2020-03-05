@@ -161,7 +161,7 @@ class Player_disp(display.Display):
         self.tb.win.move(0, 0)
 
         curses.curs_set(2)
-        inp = self.tb.edit(self.test)
+        inp = self.tb.edit()
         curses.curs_set(0)
 
         self.exec_inp(inp)
