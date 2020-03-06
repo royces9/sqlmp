@@ -183,16 +183,18 @@ class Player_disp(display.Display):
         if self.player.is_not_playing():
             return
 
-        ind = -1
-        #TODO: O(n) :grimacing:
-        for ii, song in enumerate(self[1].data):
-            if song is self.cur_song:
-                ind = ii
-                break
+        if self.cur_pl is self[0].highlighted():
+            #TODO: O(n) :grimacing:
+            if self.cur_song in self[1].data:
+                ind = self[1].data.index(self.cur_song)
+                self.__jump_to_ind(ind, len(self[1].data), 1)
+                self.switch_view_right()
+        else:
+            ind = self[0].data.index(self.cur_pl)
+            self.__jump_to_ind(ind, len(self[0].data), 0)
 
-        if ind >= 0:
-            self.__jump_to_ind(ind, len(self[1].data))
-            self.switch_view_right()
+            self[1].data = self[0].highlighted().data
+            self[1].highlight_list = []
 
         self[0].disp()
         self[1].disp()
@@ -474,7 +476,7 @@ class Player_disp(display.Display):
             self.err_print('"term" not found.')
             return
 
-        self.__jump_to_ind(ind, len(curpl.data))
+        self.__jump_to_ind(ind, len(curpl.data), 1)
 
         self.switch_view_right()
         self[0].disp()
@@ -599,17 +601,17 @@ class Player_disp(display.Display):
         self[2].print_line(err, y=3)
 
 
-    def __jump_to_ind(self, ind, data_len):
-        offset = ind - int(self[1].h / 2)
+    def __jump_to_ind(self, ind, data_len, window):
+        offset = ind - int(self[window].h / 2)
         if offset < 0:
             #for the case that the found index is near the top
             offset = 0
-        elif offset >= data_len - self[1].h:
+        elif offset >= data_len - self[window].h:
             #for the case that the found index is near the bottom
-            offset = data_len - self[1].h
+            offset = data_len - self[window].h
 
-        self[1].cursor = ind - offset
-        self[1].offset = offset
+        self[window].cursor = ind - offset
+        self[window].offset = offset
 
 
     def pl_exists(self, name):
