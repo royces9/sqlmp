@@ -184,14 +184,14 @@ class Player_disp(display.Display):
             return
 
         ind = -1
-        #O(n) :grimacing:
+        #TODO: O(n) :grimacing:
         for ii, song in enumerate(self[1].data):
             if song is self.cur_song:
                 ind = ii
                 break
 
         if ind >= 0:
-            self.jump_to_ind(ind, len(self[1].data))
+            self.__jump_to_ind(ind, len(self[1].data))
             self.switch_view_right()
 
         self[0].disp()
@@ -247,8 +247,8 @@ class Player_disp(display.Display):
             next_song = next(self.cur_pl)
 
         if next_song:
-            self.player.status = player.Play_state.new
             self.player.play(next_song)
+            self.cur_pl.remake_gen()
             self.cur_pl.ind = self[1].highlighted_ind()
 
 
@@ -474,7 +474,7 @@ class Player_disp(display.Display):
             self.err_print('"term" not found.')
             return
 
-        self.jump_to_ind(ind, len(curpl.data))
+        self.__jump_to_ind(ind, len(curpl.data))
 
         self.switch_view_right()
         self[0].disp()
@@ -599,7 +599,7 @@ class Player_disp(display.Display):
         self[2].print_line(err, y=3)
 
 
-    def jump_to_ind(self, ind, data_len):
+    def __jump_to_ind(self, ind, data_len):
         offset = ind - int(self[1].h / 2)
         if offset < 0:
             #for the case that the found index is near the top

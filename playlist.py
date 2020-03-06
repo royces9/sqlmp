@@ -40,10 +40,9 @@ class Playlist:
         self.tags = ['path', 'title', 'artist', 'album', 'length', 'samplerate', 'channels', 'bitrate', 'playcount']
         self.joined_tag = ','.join(self.tags)
         self.data = self.get_songs()
-        self.cur_song = None
 
         self.sort()
-
+        
         self.playmode = self.get_val('playmode')
         self.playmode_list = {'shuffle': self.shuffle,
                               'inorder': self.inorder,
@@ -101,6 +100,9 @@ class Playlist:
         return None
 
 
+    def remake_gen(self):
+        self.gen = self.playmode_list[self.playmode]()
+
     def __set_order(self, playmode):
         order = list(range(len(self.data)))
         if playmode == 'shuffle':
@@ -111,9 +113,11 @@ class Playlist:
 
     def shuffle(self):
         order = self.__set_order('shuffle')
+        old_len = len(self.data)
 
         while True:
-            if self.ind >= len(self.data):
+            if old_len != len(self.data):
+                old_len = len(self.data)
                 order = self.__set_order('shuffle')
                 self.ind = 0
 
@@ -121,17 +125,24 @@ class Playlist:
             self.ind += 1
 
 
+    #TODO: my god this is horrid
+    #this can be improved, but i think that
+    #requires a change in design too, i have
+    #to think about it more
     def inorder(self):
         order = self.__set_order('inorder')
-        self.ind += 1
+        cur_song = self.data[order[self.ind]]
 
         while True:
+            if cur_song in self.data:
+                self.ind = self.data.index(cur_song) + 1
+                
             if self.ind >= len(self.data):
-                order = self.__set_order('inorder')
                 self.ind = 0
 
-            yield self.data[order[self.ind]]
-            self.ind += 1
+            cur_song = self.data[order[self.ind]]
+
+            yield cur_song
 
 
     def single(self):

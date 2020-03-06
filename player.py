@@ -39,6 +39,7 @@ class Player:
         #seconds to skip when seeking
         self.seek_delta = 5
         #number of chunks to skip when seeking
+        #calculated and set for each song
         self.seek_delta_c = 0
 
         #music info
@@ -160,6 +161,9 @@ class Player:
             self.pauseq.put_nowait(())
 
         self.append(arg)
+
+        #set state to new so the loop
+        #in __play_loop will break
         self.state = Play_state.new
 
 
@@ -191,6 +195,7 @@ class Player:
 
     def toggle_mute(self, *args):
         self.mute = not self.mute
+
 
     def cur_time(self, *args):
         d = self.width * self.channels * self.rate
