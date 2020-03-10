@@ -1,6 +1,6 @@
 import traceback
 
-def debug(err):
+def debug(err=''):
     with open('debug.txt', 'a+') as fp:
         if not isinstance(err, list):
             print(str(err), file=fp)

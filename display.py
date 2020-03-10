@@ -27,9 +27,10 @@ class Display:
 
 
     def getkey(self):
+        out = self.stdscr.getkey()
         curses.flushinp()
-        return self.stdscr.getkey()
-
+        return out
+    
 
     def curwin(self):
         return self.wins[self.cur]

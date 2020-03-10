@@ -40,8 +40,4 @@ updating metadata of songs
 Bugs:
 - when entering a command (with :), the cursor moves next to the current time playing
 
-- sometimes the generator for playlist gets an out of bounds index, I'm not quite sure what the problem is yet
-
-- during inorder playback, deleting a song sorted before the currently playing song will skip the next song
-  - the index of all the songs after the deleted one jumps up one, so the index for the NEXT song
-   is what the current song is during playback, 
+- there was a crash after pressing tab randomly, not sure what that is yet

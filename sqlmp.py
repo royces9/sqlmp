@@ -59,7 +59,7 @@ def main_loop(disp):
     while not disp.die:
         disp.refresh()
         key = disp.getkey()
-
+        
         if key in disp.actions:
             disp.actions[key]()
 
@@ -97,6 +97,7 @@ def main():
         curses.noecho()
         curses.cbreak()
         curses.curs_set(0)
+        stdscr.keypad(1)
 
         sys.stdout.write("\x1b]2;sqlmp\x07")
         sys.stdout.flush()
