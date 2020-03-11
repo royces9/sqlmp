@@ -235,8 +235,6 @@ class Player_disp(display.Display):
 
         self.stdscr.refresh()
 
-        self.__print_cur_playing()
-
 
     def select(self, arg=None):
         """
