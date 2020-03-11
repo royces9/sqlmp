@@ -13,6 +13,7 @@ import playlist
 from loadconf import config as config
 import debug
 
+import queue
 
 def song_info(song):
     """
@@ -21,6 +22,7 @@ def song_info(song):
     info = [str(song[key]) for key in config.SONG_INFO
             if song[key]]
     return ' - '.join(info)
+
 
 
 class Player_disp(display.Display):
@@ -71,16 +73,46 @@ class Player_disp(display.Display):
 
         #amount of time in between drawing
         #not really a frame time but w/e
-        self.frame_time = 0.1
+        self.frame_time = 0.0167
 
-        self.info = threading.Thread(target=self.__info_print, daemon=True)
-        self.info.start()
+        #draw stuff
+        self.assign_deco()
+        self.draw_q = queue.Queue(0)
 
         self[0].disp()
         self[1].disp()
-
+        self.__info_print()
+        
         self.die = False
         self.stdscr.refresh()
+
+
+    def assign_deco(self):
+        def deco(func):
+            def inner(*args, **kwargs):
+                self.draw_q.put_nowait((func, args, kwargs))
+
+            return inner
+
+        for i in range(0, 3):
+            self[i].print_blank = deco(self[i].print_blank)
+            self[i].print_line = deco(self[i].print_line)
+            self[i].print_right_justified = deco(self[i].print_right_justified)
+
+        for i in range(0, 2):
+            self[i].paint_highlight = deco(self[i].paint_highlight)
+            self[i].paint_cursor = deco(self[i].paint_cursor)
+            self[i].print_col = deco(self[i].print_col)
+
+
+    def draw(self):
+        while not self.draw_q.empty():
+            out = self.draw_q.get_nowait()
+            if out:
+                out[0](*out[1])
+
+        self.__info_print()
+        self.refresh()
 
 
     def set_die(self):
@@ -235,7 +267,7 @@ class Player_disp(display.Display):
 
         self.stdscr.refresh()
 
-        self.__print_cur_playing()
+        #self.__print_cur_playing()
 
 
     def select(self, arg=None):
@@ -637,45 +669,30 @@ class Player_disp(display.Display):
 
         if self.cur_pl:
             self[2].print_right_justified(' ' + self.cur_pl.name + ' ')
-
+        
         self[2].win.chgat(0, 0, self[2].w, config.FOCUSED[0])
 
 
-    #stuff for bottom window
     def __info_print(self):
-        """
-        function that runs on separate thread
-        prints information onto bottom window
-        also checks if a new songs needs to be
-        queued
-        """
-        while True:
-            start = time.time()
-            time_str = config.song_length(self.player.cur_time())
-            total_time_str = config.song_length(self.cur_song['length'])
+        time_str = config.song_length(self.player.cur_time())
+        total_time_str = config.song_length(self.cur_song['length'])
 
-            info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
-            if self.player.mute:
-                info_str += ' [M]'
-            playmode = self[0].highlighted().playmode
+        info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
+        if self.player.mute:
+            info_str += ' [M]'
+        playmode = self[0].highlighted().playmode
 
-            self[2].print_line(info_str, y=1)
-            self[2].print_right_justified(' ' + playmode + ' ', y=1)
+        self[2].print_line(info_str, y=1)
+        self[2].print_right_justified(' ' + playmode + ' ', y=1)
 
-            if not self.player.curempty():
-                player_event = self.player.curplay()
-                #check if the event is for playback starting or ending
-                if player_event:
-                    #playback started, print information to bottom window
-                    self.cur_song = player_event
-                else:
-                    #playback ended, queue another song
-                    self.__enqueue()
+        if not self.player.curempty():
+            player_event = self.player.curplay()
+            #check if the event is for playback starting or ending
+            if player_event:
+                #playback started, print information to bottom window
+                self.cur_song = player_event
+            else:
+                #playback ended, queue another song
+                self.__enqueue()
 
-            self.__print_cur_playing()
-
-            self[2].refresh()
-
-            diff = time.time() - start
-            if diff < self.frame_time:
-                time.sleep(self.frame_time - diff)
+        self.__print_cur_playing()

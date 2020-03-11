@@ -2,8 +2,11 @@
 
 import curses
 import os
+import queue
 import signal
 import sys
+import threading
+import time
 import traceback
 
 import menu
@@ -53,24 +56,40 @@ def init_windows(db, stdscr):
     return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db)
 
 
+def __inp(disp, qq):
+    while True:
+        key = disp.getkey()
+        if key in disp.actions:
+            qq.put_nowait((key))
+
+
+
 def main_loop(disp):
     remote = socket_thread.Remote(disp, config.SOCKET)
 
-    while not disp.die:
-        disp.refresh()
-        key = disp.getkey()
-        
-        if key in disp.actions:
-            disp.actions[key]()
+    inp_thread = threading.Thread(target=__inp, args=(disp,remote,), daemon=True)
+    inp_thread.start()
 
-        while not remote.empty():
-            pl, fn = remote.get_nowait()
+    while not disp.die:
+        start = time.time()
+        item = remote.get_nowait() if not remote.empty() else None
+
+        if item in disp.actions:
+            disp.actions[item]()
+        elif item:
+            pl, fn = item
             for p in pl:
                 for f in fn:
                     if os.path.isdir(f):
                         disp.adddir((f, p))
                     else:
                         disp.addfile((f, p))
+
+        disp.draw()
+        diff = time.time() - start
+
+        if diff < disp.frame_time:
+            time.sleep(disp.frame_time - diff)
 
 
 def cleanup(stdscr, exit_f=False):
