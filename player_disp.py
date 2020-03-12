@@ -157,15 +157,62 @@ class Player_disp(display.Display):
         self[2].win.move(2, 1)
         self[2].win.addstr(2, 0, ":")
         self[2].refresh()
-
+        
         self.tb.win.move(0, 0)
-
+        
         curses.curs_set(2)
-        inp = self.tb.edit()
+        #try to make my own input function
+        #that supports unicode
+        #and editable buffer and all that jazz.....
+        #replace this function with grab_tb_input()
+        #self.grab_tb_input()
+        inp = self.tb.edit(self.test)
         curses.curs_set(0)
-
+        
         self.exec_inp(inp)
         self[2].print_blank(2)
+        
+        
+    def grab_tb_input(self):
+        buff = []
+        char = 0
+        curses.echo()
+        
+        while char != '\n':
+            char = self.tb.win.getch()
+            debug.debug(char)
+            debug.debug(type(char))
+            if char < 256:
+                buff.append(char)
+            elif char == 263:
+                pass
+            
+    curses.noecho()
+
+
+    def test(self, param):
+        if param < 128:
+            return param
+        debug.debug(self.unicount)
+        if self.unicount == 0:
+            if not ((param & 0xE0) ^ 0xC0):
+                self.unicount = 1
+            elif not ((param & 0xF0) ^ 0xE0):
+                self.unicount = 2
+            elif not ((param & 0xF8) ^ 0xF0):
+                self.unicount = 3
+                
+            self.templist.append(param)
+                
+        elif not (param & 0xC0) ^ 0x80:
+                self.templist.append(param)
+                self.unicount -= 1
+                if self.unicount == 0:
+                    out = bytes(self.templist).decode('utf-8')
+                    self.unicount = 0
+                    self.templist = []
+                    
+                    return out
 
 
     def highlight(self, arg=None):
