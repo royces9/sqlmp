@@ -119,8 +119,10 @@ class Playlist:
             if old_len != len(self.data):
                 old_len = len(self.data)
                 order = self.__set_order('shuffle')
+            
+            if self.ind >= len(self.data):
                 self.ind = 0
-
+                
             yield self.data[order[self.ind]]
             self.ind += 1
 
