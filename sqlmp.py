@@ -99,6 +99,9 @@ def main():
         curses.curs_set(0)
         stdscr.keypad(1)
 
+        sys.stdout.write("\x1b]2;sqlmp\x07")
+        sys.stdout.flush()
+
         if curses.has_colors():
             init_colours()
     except:
