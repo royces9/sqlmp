@@ -13,6 +13,17 @@ def decorator(func):
     return inner
 
 
+def exception_deco(func):
+    def inner(*args, **kwargs):
+        try:
+            out = func(*args, **kwargs)
+            return out
+        except:
+            pass
+        
+    return inner
+
+
 class Threadwin:
     def __init__(self, *args, **kwargs):
         self.__win = curses.newwin(*args, **kwargs)
@@ -24,3 +35,6 @@ class Threadwin:
                     setattr(self, attr, decorator(getattr(self.__win, attr)))
                 else:
                     setattr(self, attr, getattr(self.__win, attr))
+
+        setattr(self, 'addnstr', exception_deco(getattr(self.__win, 'addnstr')))
+        

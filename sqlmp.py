@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
 import curses
-import os
 import signal
 import sys
+import threading
 import traceback
 
 import menu
@@ -49,28 +49,36 @@ def init_windows(db, stdscr):
 
     botwin = menu.Window(0, hh, cc, bottom_bar)
 
-
     return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db)
+
+
+def __inp(disp, qq):
+    while True:
+        key = disp.getkey()
+        if key in disp.actions:
+            qq.put_nowait((key))
+
+            if key in config.COMMAND:
+                qq.join()
 
 
 def main_loop(disp):
     remote = socket_thread.Remote(disp, config.SOCKET)
 
-    while not disp.die:
-        disp.refresh()
-        key = disp.getkey()
-        
-        if key in disp.actions:
-            disp.actions[key]()
+    inp_thread = threading.Thread(target=__inp, args=(disp,remote,), daemon=True)
+    inp_thread.start()
 
-        while not remote.empty():
-            pl, fn = remote.get_nowait()
-            for p in pl:
-                for f in fn:
-                    if os.path.isdir(f):
-                        disp.adddir((f, p))
-                    else:
-                        disp.addfile((f, p))
+    disp.draw()
+    while not disp.die:
+        item = remote.get()
+
+        if type(item) is tuple:
+            remote.add_item(item)
+        elif item in disp.actions:
+            disp.actions[item]()
+            remote.task_done()
+        
+        disp.draw()
 
 
 def cleanup(stdscr, exit_f=False):

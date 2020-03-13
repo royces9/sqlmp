@@ -10,6 +10,7 @@ class Window:
         self.y = y
         self.w = w
         self.h = h
+
         self.win = threadwin.Threadwin(h, w, y, x)
 
         self.blank = ' ' * (self.w - 1)
@@ -20,7 +21,7 @@ class Window:
 
 
     def print_line(self, line, y=0, x=0):
-        self.print_blank(y, x)
+        self.win.addnstr(y, x, self.blank, self.w - x)
         trunc_line = wchar.set_width(line, self.w - x)
         self.win.addnstr(y, x, trunc_line, self.w - x)
 
@@ -58,7 +59,7 @@ class Menu(Window):
 
         self.highlight_list = []
 
-        self.paint_cursor(self.cursor_colour)
+        self.paint_cursor(self.cursor_colour, self.cursor)
 
         self.win.idlok(True)
         self.win.scrollok(True)
@@ -80,7 +81,7 @@ class Menu(Window):
         else:
             self.highlight_list.remove(newitem)
 
-        self.paint_highlight(self.highlight_colour)
+        self.paint_highlight(self.highlight_colour, self.offset)
 
 
     def highlighted(self):
@@ -95,42 +96,42 @@ class Menu(Window):
 
 
     def up(self):
-        self.paint_cursor(self.normal_colour)
-
         at_top = self.cursor < 1
 
         if not at_top:
+            self.paint_cursor(self.normal_colour, self.cursor)
             self.cursor -= 1
         elif self.offset > 0:
             self.offset -= 1
             self.win.scroll(-1)
+            self.paint_cursor(self.normal_colour, self.cursor + 1)
 
             if self.offset < len(self.data):
                 formatted_list = self.form(self.data[self.offset])
                 self.print_col(0, 0, formatted_list)
 
-        self.paint_highlight(self.highlight_colour)
-        self.paint_cursor(self.cursor_colour)
+        self.paint_highlight(self.highlight_colour, self.offset)
+        self.paint_cursor(self.cursor_colour, self.cursor)
 
 
     def down(self):
-        self.paint_cursor(self.normal_colour)
-
         if (self.offset + self.cursor) < (len(self.data) - 1):
             at_bot = self.cursor >= (self.h - 1)
             if at_bot:
                 self.offset += 1
                 self.win.scroll(1)
+                self.paint_cursor(self.normal_colour, self.cursor - 1)
 
                 if (self.h - 1 + self.offset) < len(self.data):
                     formatted_list = self.form(self.data[(self.h - 1) + self.offset])
                     self.print_col(0, self.h - 1, formatted_list)
 
             else:
+                self.paint_cursor(self.normal_colour, self.cursor)
                 self.cursor += 1
 
-        self.paint_highlight(self.highlight_colour)
-        self.paint_cursor(self.cursor_colour)
+        self.paint_highlight(self.highlight_colour, self.offset)
+        self.paint_cursor(self.cursor_colour, self.cursor)
 
 
     def disp(self):
@@ -140,26 +141,27 @@ class Menu(Window):
                 formatted_list = self.form(self.data[ii + self.offset])
                 self.print_col(0, ii, formatted_list)
 
-        self.paint_highlight(self.highlight_colour)
-        self.paint_cursor(self.cursor_colour)
+        self.paint_highlight(self.highlight_colour, self.offset)
+        self.paint_cursor(self.cursor_colour, self.cursor)
 
 
-    def paint_highlight(self, colour):
+    def paint_highlight(self, colour, offset):
         for hl in self.highlight_list:
-            newind = self.data.index(hl) - self.offset
+            newind = self.data.index(hl) - offset
             if 0 <= newind < self.w:
                 self.win.chgat(newind, 0, self.w - 1, colour)
 
 
-    def paint_cursor(self, colour):
+    def paint_cursor(self, colour, cursor):
         if self.data:
-            self.win.chgat(self.cursor, 0, self.w - 1, colour)
+            self.win.chgat(cursor, 0, self.w - 1, colour)
 
 
     def print_col(self, x, y, datas):
         for string, fraction in datas:
             width = int(self.w * fraction)
             self.win.addnstr(y, x, wchar.set_width(string, width), self.w)
+
             x += width
 
 
