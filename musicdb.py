@@ -16,6 +16,9 @@ def extract_metadata(path):
     ext = os.path.splitext(path)[1]
     if ext not in ext_list:
         return None
+    
+    if not os.path.exists(path):
+        return None
 
     #ffmpeg
     prob = ffmpeg.probe(path)
@@ -42,7 +45,6 @@ def extract_metadata(path):
 
 class Musicdb:
     def __init__(self, path, lib):
-        #assume that the db exists
         if os.path.exists(path):
             self.path = path
         else:

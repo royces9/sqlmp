@@ -10,6 +10,7 @@ class Window:
         self.y = y
         self.w = w
         self.h = h
+
         self.win = threadwin.Threadwin(h, w, y, x)
 
         self.blank = ' ' * (self.w - 1)
@@ -104,6 +105,7 @@ class Menu(Window):
             self.offset -= 1
             self.win.scroll(-1)
             self.paint_cursor(self.normal_colour, self.cursor + 1)
+
             if self.offset < len(self.data):
                 formatted_list = self.form(self.data[self.offset])
                 self.print_col(0, 0, formatted_list)
@@ -159,6 +161,7 @@ class Menu(Window):
         for string, fraction in datas:
             width = int(self.w * fraction)
             self.win.addnstr(y, x, wchar.set_width(string, width), self.w)
+
             x += width
 
 

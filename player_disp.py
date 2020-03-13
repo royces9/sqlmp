@@ -15,14 +15,15 @@ import debug
 
 import queue
 
+
 def song_info(song):
     """
     return a string with formatted song info
     """
     info = [str(song[key]) for key in config.SONG_INFO
             if song[key]]
-    return ' - '.join(info)
 
+    return ' - '.join(info)
 
 
 class Player_disp(display.Display):
@@ -73,50 +74,17 @@ class Player_disp(display.Display):
 
         #amount of time in between drawing
         #not really a frame time but w/e
-        self.frame_time = 0.0167
+        self.frame_time = 0.1
 
-        #draw stuff
-        self.assign_deco()
-        self.draw_q = queue.Queue(0)
+        self.info = threading.Thread(target=self.__info_print_loop, daemon=True)
+        self.info.start()
 
-        self[0].disp()
-        self[1].disp()
-        self.__info_print()
-        
         self.die = False
-        self.stdscr.refresh()
-
-
-    def assign_deco(self):
-        def deco(func):
-            def inner(*args, **kwargs):
-                self.draw_q.put_nowait((func, args, kwargs))
-
-            return inner
-
-        for i in range(0, 3):
-            self[i].print_blank = deco(self[i].print_blank)
-            self[i].print_line = deco(self[i].print_line)
-            self[i].print_right_justified = deco(self[i].print_right_justified)
-
-        for i in range(0, 2):
-            self[i].paint_highlight = deco(self[i].paint_highlight)
-            self[i].paint_cursor = deco(self[i].paint_cursor)
-            self[i].print_col = deco(self[i].print_col)
-
-
-    def draw(self):
-        while not self.draw_q.empty():
-            out = self.draw_q.get_nowait()
-            if out:
-                out[0](*out[1])
-
-        self.__info_print()
-        self.refresh()
 
 
     def set_die(self):
         self.die = True
+
 
     def __init_actions(self):
         pairs = [
@@ -187,7 +155,7 @@ class Player_disp(display.Display):
         """
         self[2].print_blank(2)
         self[2].win.move(2, 1)
-        self[2].win.addstr(2, 0, ":")
+        self[2].win.addnstr(2, 0, ":", 1)
         self[2].refresh()
 
         self.tb.win.move(0, 0)
@@ -263,9 +231,8 @@ class Player_disp(display.Display):
                 prev = win.cursor + win.offset
                 win.cursor = win.h - 1
                 win.offset = prev - win.cursor
-            win.disp()
 
-        self.stdscr.refresh()
+        self.draw()
 
 
     def select(self, arg=None):
@@ -619,6 +586,12 @@ class Player_disp(display.Display):
     """
     Utility functions
     """
+    def draw(self):
+        self[0].disp()
+        self[1].disp()
+        self.refresh()
+
+
     def __enqueue(self):
         """
         add a new song onto the player queue
@@ -694,3 +667,14 @@ class Player_disp(display.Display):
                 self.__enqueue()
 
         self.__print_cur_playing()
+
+    def __info_print_loop(self):
+        while True:
+            start = time.time()
+            self.__info_print()
+            diff = time.time() - start
+
+            self[2].refresh()
+
+            if diff < self.frame_time:
+                time.sleep(self.frame_time - diff)

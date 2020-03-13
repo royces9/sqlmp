@@ -1,5 +1,6 @@
 import json
 import queue
+import os
 import socket
 import threading
 
@@ -31,3 +32,14 @@ class Remote(queue.Queue):
                     js['status'] = format(self.disp.player.state)
                     js = json.dumps(js)
                     conn.send(js.encode())
+
+    def add_item(self, item):
+        debug.debug(item)
+        pl, fn = item
+        for p in pl:
+            for f in fn:
+                if os.path.isdir(f):
+                    self.disp.adddir((f, p))
+                else:
+                    self.disp.addfile((f, p))
+                                                                                                        
