@@ -13,6 +13,7 @@ def decorator(func):
     return inner
 
 
+#TODO im not gonna lie, this is really disgusting
 def exception_deco(func):
     def inner(*args, **kwargs):
         try:
