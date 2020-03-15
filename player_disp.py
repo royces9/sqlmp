@@ -321,7 +321,12 @@ class Player_disp(display.Display):
         """
         executes the actual command from grab_inp
         """
-        spl = shlex.split(inp)
+        try:
+            spl = shlex.split(inp)
+        except:
+            self.err_print('Mismatched quotations.')
+            return
+        
         if not spl:
             self.err_print("")
             return

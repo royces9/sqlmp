@@ -25,4 +25,3 @@ Bugs:
 - when entering a command (with :), the cursor moves next to the current time playing
 
 - there was a crash after pressing tab randomly, not sure what that is yet
-
