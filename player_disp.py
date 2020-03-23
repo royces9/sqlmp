@@ -37,6 +37,7 @@ class Player_disp(display.Display):
 
         #typed commands
         self.commands = {
+            'add': self.add,
             'adddir': self.adddir,
             'addfile': self.addfile,
             'delpl': self.delpl,
@@ -338,6 +339,36 @@ class Player_disp(display.Display):
             self.err_print('Invalid command: ' + spl[0])
 
 
+    def add(self, args):
+        """
+        add a directory or file to a playlist
+        1 arg : add arg to highlighted playlist
+        2 args: add arg to named playlist
+
+        """
+        if not args:
+            self.err_print('One argument required')
+            return
+
+        if len(args) == 1:
+            pl = self[0].highlighted()
+        else:
+            ind = self.pl_exists(args[1])
+            if ind < 0:
+                return
+
+            pl = self[0].data[ind]
+
+        newitem = args[0]
+        if os.path.isfile(newitem):
+            pl.insert(newitem)
+        elif os.path.isdir(newitem):
+
+            pl.insert_dir(newitem)
+
+        self[1].disp()
+
+
     def adddir(self, args):
         """
         add a directory to a playlist, this also adds new directories to the db
@@ -440,7 +471,7 @@ class Player_disp(display.Display):
             pl = self[0].data[ind]
 
         if not os.path.exists(dest):
-            self.err_print(f'Directory "{dest}" doesn\'t exists')
+            self.err_print(f'Directory "{dest}" doesn\'t exist')
             return
 
         with open('/'.join([dest, plname]), 'w+') as fp:

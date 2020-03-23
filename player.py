@@ -110,7 +110,7 @@ class Player:
                 if self.state in {Play_state.new, Play_state.end}:
                     break
 
-                adjust = audioop.mul(wav_chunks[self.iterator], self.width, (not self.mute) * self.vol/500)
+                adjust = audioop.mul(wav_chunks[self.iterator], self.width, (not self.mute) * self.vol / 500)
                 stream.write(adjust)
                 self.iterator += 1
 

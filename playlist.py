@@ -235,8 +235,8 @@ class Playlist:
         if not combined:
             combined = '(0, 0)'
 
-        self.exe(f"INSERT INTO {self.name} VALUES (?);", (path_join,))
-        self.exe(f"INSERT INTO pl_song VALUES {combined};")
+        self.exe(f"INSERT INTO {self.name} VALUES ('{path_join}');")
+        self.exe(f"INSERT INTO pl_song (path, plname) VALUES {combined};")
 
         self.data = self.get_songs()
         self.commit()

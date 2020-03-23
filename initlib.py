@@ -10,7 +10,7 @@ import playlist
 #only run this once
 
 #location of database file
-dbpath = 'newlib.db'
+dbpath = 'lib.db'
 
 #Folder to recursively search through
 libpath = os.getenv('HOME') + '/Music/'
