@@ -1,3 +1,4 @@
+import time as tm
 import traceback
 
 def debug(err=''):
@@ -11,3 +12,6 @@ def debug(err=''):
 
 def trace():
     debug([line for line in traceback.format_stack()])
+
+def time():
+    return tm.time()

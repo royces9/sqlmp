@@ -1,6 +1,8 @@
 import os
 import sqlite3
 
+import debug
+
 import ffmpeg
 
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
@@ -112,6 +114,7 @@ class Musicdb:
 
     def add_dir(self, di):
         list_all = self.dir_files(di)
+
         if list_all:
             self.add_multi(list_all)
 
@@ -129,6 +132,7 @@ class Musicdb:
                         path = path.replace("'", "''")
                         (title, artist, album, length, samplerate, channels, bitrate) = out
                         list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {samplerate}, {channels}, {bitrate}, 0)")
+
         return list_all
 
 
