@@ -48,7 +48,6 @@ class Playlist:
                               'inorder': self.inorder,
                               'single': self.single}
 
-
         self.gen = self.playmode_list[self.playmode]()
 
 

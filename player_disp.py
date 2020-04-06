@@ -54,6 +54,8 @@ class Player_disp(display.Display):
         self.actions = {}
         self.__init_actions()
 
+        self.find_list = None
+        
         #text window for information
         self.textwin = self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
@@ -81,7 +83,8 @@ class Player_disp(display.Display):
         self.info.start()
 
         self.die = False
-
+        self.command_event = threading.Event()
+        self.command_event.set()
 
     def set_die(self):
         self.die = True
@@ -154,6 +157,8 @@ class Player_disp(display.Display):
         """
         grab a command input when ':' is pressed
         """
+        self.command_event.clear()
+
         self[2].print_blank(2)
         self[2].win.move(2, 1)
         self[2].win.addnstr(2, 0, ":", 1)
@@ -167,7 +172,7 @@ class Player_disp(display.Display):
 
         self.exec_inp(inp)
         self[2].print_blank(2)
-
+        self.command_event.set()
 
     def highlight(self, arg=None):
         """
@@ -363,7 +368,6 @@ class Player_disp(display.Display):
         if os.path.isfile(newitem):
             pl.insert(newitem)
         elif os.path.isdir(newitem):
-
             pl.insert_dir(newitem)
 
         self[1].disp()
@@ -485,28 +489,33 @@ class Player_disp(display.Display):
         1 args: jump to the first song that matches the arg by the current sorting key
         2 args: jump to the first song that matches the arg by the given key
         """
-        if not args:
-            self.err_print('One argument required')
-            return
-
-        term = args[0]
         curpl = self[0].highlighted()
-        if len(args) == 1:
-            key = curpl.sort_key
-        elif len(args) == 2:
-            key = args[1]
-            if key not in curpl.tags:
-                self.err_print('Invalid key: ' + key)
+        if not args:
+            if not self.find_list:
+                self.err_print('At least one argument required')
                 return
+        else:
+            term = args[0]
+            if len(args) == 1:
+                key = curpl.sort_key
+            elif len(args) == 2:
+                key = args[1]
+                if key not in curpl.tags:
+                    self.err_print('Invalid key: ' + key)
+                    return
+            """
+            ind = -1
+            for ii, item in enumerate(curpl.data):
+                if item[key] == term:
+                    ind = ii
+                    break
+            """
+            self.find_list = (ii for ii, item in enumerate(curpl.data) if item[key] == term)
 
-        ind = -1
-        for ii, item in enumerate(curpl.data):
-            if item[key] == term:
-                ind = ii
-                break
-
-        if ind < 0:
-            self.err_print('"term" not found.')
+        try:
+            ind = next(self.find_list)
+        except StopIteration:
+            self.err_print('Not found.')
             return
 
         self.__jump_to_ind(ind, len(curpl.data), 1)

@@ -55,31 +55,25 @@ def init_windows(db, stdscr):
 
 def __inp(disp, qq):
     while True:
+        disp.command_event.wait()
         key = disp.getkey()
         if key in disp.actions:
             qq.put_nowait((key))
-
-            if key in config.COMMAND:
-                qq.join()
 
 
 def main_loop(disp):
     remote = socket_thread.Remote(disp, config.SOCKET)
 
-    inp_thread = threading.Thread(target=__inp, args=(disp,remote,), daemon=True)
-    inp_thread.start()
-
-    disp.draw()
+    threading.Thread(target=__inp, args=(disp,remote,), daemon=True).start()
     while not disp.die:
+        disp.draw()
+
         item = remote.get()
 
         if type(item) is tuple:
             remote.add_item(item)
         elif item in disp.actions:
             disp.actions[item]()
-            remote.task_done()
-        
-        disp.draw()
 
 
 def cleanup(stdscr, exit_f=False):

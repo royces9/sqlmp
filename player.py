@@ -103,17 +103,13 @@ class Player:
 
             wav_chunks = [wav[i:i+self.step] for i in range(0, len(wav), self.step)]
 
-            while self.iterator < len(wav_chunks):
+            while (self.iterator < len(wav_chunks)) and self.state not in {Play_state.new, Play_state.end}:
                 while self.is_paused():
                     self.pauseq.get(block=True, timeout=None)
-
-                if self.state in {Play_state.new, Play_state.end}:
-                    break
 
                 adjust = audioop.mul(wav_chunks[self.iterator], self.width, (not self.mute) * self.vol / 500)
                 stream.write(adjust)
                 self.iterator += 1
-
 
             #resource clean up
             stream.stop_stream()
