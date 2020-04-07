@@ -56,10 +56,12 @@ def init_windows(db, stdscr):
 def __inp(disp, qq):
     while True:
         disp.command_event.wait()
+        
         key = disp.getkey()
         if key in disp.actions:
             qq.put_nowait((key))
-
+            if key in config.COMMAND:
+                disp.command_event.clear()
 
 def main_loop(disp):
     remote = socket_thread.Remote(disp, config.SOCKET)

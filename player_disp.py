@@ -157,7 +157,10 @@ class Player_disp(display.Display):
         """
         grab a command input when ':' is pressed
         """
-        self.command_event.clear()
+        #command_event.clear() is called from the input thread
+        #in sqlmp, this prevents a race condition where getkey
+        #gets called before the queue can execute grab_input
+        #self.command_event.clear()
 
         self[2].print_blank(2)
         self[2].win.move(2, 1)
@@ -544,8 +547,8 @@ class Player_disp(display.Display):
             playlist.init_pl(plname, self.db)
             newpl = playlist.Playlist(name=plname, db=self.db)
         else:
-            plfile = args[0]
-            plname = args[1]
+            plname = args[0]
+            plfile = args[1]
             if not os.path.isfile(plfile):
                 self.err_print(f'File does not exist: {plfile}.')
                 return
