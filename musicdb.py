@@ -1,11 +1,11 @@
+import ffmpeg
 import os
 import sqlite3
 
+
 import debug
+import song
 
-import ffmpeg
-
-ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
 
 def init_db(db):
     db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
@@ -91,11 +91,8 @@ class Musicdb:
         out = extract_metadata(path)
         if not out:
             return
-        (title, artist, album, length, samplerate, channels, bitrate) = out
 
-        path = path.replace("'", "''")
-
-        self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,0);", (path, title, artist, album, length, samplerate, channels, bitrate,))
+        self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,0);", out.tuple())
         self.commit()
 
 
@@ -127,11 +124,9 @@ class Musicdb:
                 path = os.path.join(root, ff)
 
                 if path not in self:
-                    out = extract_metadata(path)
+                    out = song.Song(path)
                     if out:
-                        path = path.replace("'", "''")
-                        (title, artist, album, length, samplerate, channels, bitrate) = out
-                        list_all.append(f"('{path}', '{title}', '{artist}', '{album}', {length}, {samplerate}, {channels}, {bitrate}, 0)")
+                        list_all.append(out.db_str())
 
         return list_all
 
@@ -153,13 +148,10 @@ class Musicdb:
         new_files = []
         for path in all_files:
             if path not in self:
-                out = extract_metadata(path)
+                out = song.Song(path)
                 if not out:
                     continue
-                
-                path = path.replace("'", "''")
-                (title, artist, album, length, samplerate, channels, bitrate) = out
-                new_files.append(f"('{path}','{title}','{artist}','{album}',{length},{samplerate},{channels},{bitrate},0)")
+                new_files.append(out.db_str())
 
         self.add_multi(new_files)
         return

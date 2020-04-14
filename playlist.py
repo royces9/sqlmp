@@ -2,7 +2,10 @@ import os
 import random
 
 import musicdb
+import song
+
 import debug
+
 
 def init_pl(name, db):
     if name in {'library', 'playlists'}:
@@ -202,16 +205,13 @@ class Playlist:
             for ff in files:
                 path = os.path.join(root, ff)
                 if path not in self.db:
-                    out = musicdb.extract_metadata(path)
+                    out = song.Song(path)
                     if out:
-                        path = path.replace("'", "''")
-                        (title, artist, album, length, samplerate, channels, bitrate) = out
-                        list_all.append(
-                            f"('{path}', '{title}', '{artist}', '{album}', {length}, {samplerate}, {channels}, {bitrate}, 0)"
-                        )
-                if path not in self:
-                    path_list.append(path)
+                        list_all.append(out.db_str())
 
+                if path not in self:
+                    path = path.replace("'", "''")
+                    path_list.append(path)
                     
         if list_all:
             self.db.add_multi(list_all)
