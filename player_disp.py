@@ -26,6 +26,15 @@ def song_info(song):
     return ' - '.join(info)
 
 
+def song_length(len_s):
+    """
+    return formatted string for time given a value in seconds
+    """
+    m, s = divmod(int(len_s), 60)
+    s = str(s) if s > 9 else '0' + str(s)
+    return ':'.join([str(m), s])
+
+
 class Player_disp(display.Display):
     def __init__(self, wins, stdscr, db):
         super().__init__(wins, stdscr)
@@ -691,10 +700,9 @@ class Player_disp(display.Display):
         
         self[2].win.chgat(0, 0, self[2].w, config.FOCUSED[0])
 
-
     def __info_print(self):
-        time_str = config.song_length(self.player.cur_time())
-        total_time_str = config.song_length(self.cur_song['length'])
+        time_str = song_length(self.player.cur_time())
+        total_time_str = song_length(self.cur_song['length'])
 
         info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
         if self.player.mute:
