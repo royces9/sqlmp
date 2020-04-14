@@ -32,6 +32,15 @@ DEFAULT_VOLUME = 0
 VOL_STEP = 1
 
 
+#display
+def song_length(len_s):
+    """
+    return formatted string for time given a value in seconds
+    """
+    m, s = divmod(int(len_s), 60)
+    s = str(s) if s > 9 else '0' + str(s)
+    return ':'.join([str(m), s])
+
 
 def song_format(ll):
     title = ll['title']

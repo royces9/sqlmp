@@ -7,7 +7,6 @@ import playlist
 
 from loadconf import config as config
 
-
 def colours():
     curses.start_color()
     curses.use_default_colors()

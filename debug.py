@@ -15,3 +15,8 @@ def trace():
 
 def time():
     return tm.time()
+
+def print_error(reason, error):
+    print(reason)
+    print(error)
+    print(traceback.format_exc())
