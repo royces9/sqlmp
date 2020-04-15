@@ -6,14 +6,8 @@ ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
 
 class Song:
     def __init__(self, path):
-        self.path = path.replace("'", "''")
+        self.path = path
         
-        if os.path.splitext(self.path)[1] not in ext_list:
-            return None
-    
-        if not os.path.exists(self.path):
-            return None
-
         prob = ffmpeg.probe(self.path)
     
         tags_out = ['title', 'artist', 'album']
@@ -41,8 +35,19 @@ class Song:
 
         self.bitrate = int(prob['format']['bit_rate'])
 
+    @classmethod
+    def from_path(cls, path):
+        if os.path.splitext(path)[1] not in ext_list:
+            return None
+    
+        if not os.path.exists(path):
+            return None
+
+        return cls(path)
+
     def tuple(self):
-        return (self.path, self.title, self.artist, self.length, self.samplerate, self.channels, self.bitrate,)
+        return (self.path, self.title, self.artist, self.album, self.length, self.samplerate, self.channels, self.bitrate,)
 
     def db_str(self):
-        return f"('{self.path}', '{self.title}', '{self.artist}', '{self.album}', {self.length}, {self.samplerate}, {self.channels}, {self.bitrate}, 0)")
+        path = self.path.replace("'", "''")
+        return f"('{path}', '{self.title}', '{self.artist}', '{self.album}', {self.length}, {self.samplerate}, {self.channels}, {self.bitrate}, 0)"

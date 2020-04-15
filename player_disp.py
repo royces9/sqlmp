@@ -42,6 +42,7 @@ class Player_disp(display.Display):
             'addfile': self.addfile,
             'delpl': self.delpl,
             'export': self.export,
+            'export_all': self.export_all,
             'find': self.find, 
             'newpl': self.newpl,
             'playmode': self.playmode,
@@ -485,6 +486,15 @@ class Player_disp(display.Display):
             for d in pl.data:
                 print(d['path'], file=fp)
 
+
+    def export_all(self, args):
+        if not args:
+            self.err_print('One argument required')
+            return
+        elif len(args) == 1:
+            dest = args[0]
+            for pl in self[0]:
+                self.export((pl.name, dest))
 
     def find(self, args):
         """

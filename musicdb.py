@@ -2,47 +2,8 @@ import ffmpeg
 import os
 import sqlite3
 
-
 import debug
 import song
-
-
-def init_db(db):
-    db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
-    db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
-    db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
-    db.commit()
-
-
-def extract_metadata(path):
-    ext = os.path.splitext(path)[1]
-    if ext not in ext_list:
-        return None
-    
-    if not os.path.exists(path):
-        return None
-
-    #ffmpeg
-    prob = ffmpeg.probe(path)
-    
-    tags_out = ['title', 'artist', 'album']
-    if 'tags' in prob['format']:
-        tmp = prob['format']['tags']
-        tmp = {k.lower(): i for k, i in tmp.items()}
-        tags = [tmp[t].replace("'", "''") if t in tmp else '' for t in tags_out]
-    elif 'tags' in prob['streams'][0]:
-        tmp = prob['streams'][0]['tags']
-        tmp = {k.lower(): i for k, i in tmp.items()}
-        tags = [tmp[t].replace("'", "''") if t in tmp else '' for t in tags_out]
-    else:
-        tags = [''] * len(tags_out)
-        
-    attr = [a[1](prob['streams'][0][a[0]])
-                for a in [('duration', float), ('sample_rate', int), ('channels', int)]]
-        
-    bitrate = int(prob['format']['bit_rate'])
-
-    return tuple(tags) + tuple(attr) + tuple([bitrate])
 
 
 class Musicdb:
@@ -50,7 +11,7 @@ class Musicdb:
         if os.path.exists(path):
             self.path = path
         else:
-            raise FileNotFoundError(f'{path} does not exist')
+            raise FileNotFoundError(f"{path} does not exist")
         
         self.lib = lib
 
@@ -62,7 +23,6 @@ class Musicdb:
 
     #only check library, not anything else like playlists
     def __contains__(self, path):
-        path = path.replace("'", "''")
         self.exe("SELECT path FROM library WHERE path=? LIMIT 1;", (path,))
         return bool(self.curs.fetchone())
 
@@ -71,15 +31,28 @@ class Musicdb:
         self.conn.close()
 
 
+    @staticmethod
+    def init_db(db):
+        db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
+        db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
+        db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
+        db.commit()
+
+
     def exe(self, query, args=()):
         try:
             return self.curs.execute(query, args)
         except Exception as err:
             raise err
 
+    def executemany(self, query, args=()):
+        try:
+            return self.curs.executemany(query, args)
+        except Exception as err:
+            raise err
+
 
     def in_table(self, path, table):
-        path = path.replace("'", "''")
         self.exe("SELECT path FROM ? WHERE path=? LIMIT 1;", (table, path,))
         return bool(self.curs.fetchone())
 
@@ -88,7 +61,7 @@ class Musicdb:
         if path in self:
             return
 
-        out = extract_metadata(path)
+        out = song.Song.from_path(path)
         if not out:
             return
 
@@ -99,11 +72,9 @@ class Musicdb:
     def remove_from_lib(self, path):
         if path not in self:
             return
-        self.exe(f"DELETE FROM library WHERE path=?;", (path,))
-        pl_all = "','".join([qq[0] for qq in self.exe("SELECT plname FROM pl_song WHERE path=?;", (path,))])
+        self.exe("DELETE FROM library WHERE path=?;", (path,))
 
         if pl_all:
-            self.exe(f"DELETE FROM {pl_all} WHERE path=?;", (path,))
             self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
 
         self.commit()
@@ -111,7 +82,6 @@ class Musicdb:
 
     def add_dir(self, di):
         list_all = self.dir_files(di)
-
         if list_all:
             self.add_multi(list_all)
 
@@ -124,16 +94,15 @@ class Musicdb:
                 path = os.path.join(root, ff)
 
                 if path not in self:
-                    out = song.Song(path)
+                    out = song.Song.from_path(path)
                     if out:
-                        list_all.append(out.db_str())
+                        list_all.append(out.tuple())
 
         return list_all
 
 
     def add_multi(self, li):
-        joined = ",".join(li)
-        self.exe(f"INSERT INTO library VALUES {joined}")
+        self.executemany("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,0);", [l for l in li])
         self.commit()
 
 
@@ -148,7 +117,7 @@ class Musicdb:
         new_files = []
         for path in all_files:
             if path not in self:
-                out = song.Song(path)
+                out = song.Song.from_path(path)
                 if not out:
                     continue
                 new_files.append(out.db_str())

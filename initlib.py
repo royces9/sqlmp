@@ -10,7 +10,7 @@ import playlist
 #only run this once
 
 #location of database file
-dbpath = 'lib.db'
+dbpath = 'newlib.db'
 
 #Folder to recursively search through
 libpath = os.getenv('HOME') + '/Music/'
@@ -26,16 +26,19 @@ curs = conn.cursor()
 db = musicdb.Musicdb(dbpath, libpath)
 
 print('Creating database')
-musicdb.init_db(db)
+musicdb.Musicdb.init_db(db)
 
+import time
 print('Adding ' + libpath)
+s = time.time()
 db.add_dir(libpath)
+print(time.time() - s)
 
 for pl in pl_list:
-    plname = os.path.splitext(os.path.basename(pl))[0].replace(' ', '')
+    plname = os.path.splitext(os.path.basename(pl))[0]
 
     print('Adding "' + plname + '"')
-    playlist.init_pl(plname, db)
+    playlist.Playlist.init_pl(plname, db)
 
     plclass = playlist.Playlist(plname, db)
     plclass.insert_from_file(pl)

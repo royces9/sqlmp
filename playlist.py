@@ -7,30 +7,6 @@ import song
 import debug
 
 
-def init_pl(name, db):
-    if name in {'library', 'playlists'}:
-        return
-
-    try:
-        db.exe(f"CREATE TABLE '{name}' (path);")
-        db.exe(f"INSERT INTO playlists VALUES ('{name}', 'artist', 'shuffle');")
-        db.commit()
-
-    except Exception as err:
-        raise err
-
-
-def del_pl(name, db):
-    try:
-        db.exe("DELETE FROM playlists WHERE plname=?;", (name,))
-        db.exe("DELETE FROM pl_song WHERE plname=?;", (name,))
-        db.exe(f"DROP TABLE '{name}';")
-
-        db.commit()
-    except Exception as err:
-        raise err
-
-
 class Playlist:
     def __init__(self, name, db):
         self.name = name
@@ -41,7 +17,6 @@ class Playlist:
 
         self.sort_key = self.get_val('sort')
         self.tags = ['path', 'title', 'artist', 'album', 'length', 'samplerate', 'channels', 'bitrate', 'playcount']
-        self.joined_tag = ','.join(self.tags)
         self.data = self.get_songs()
 
         self.sort()
@@ -73,6 +48,28 @@ class Playlist:
         return next(self.gen)
 
 
+    @staticmethod
+    def init_pl(name, db):
+        if name in {'library', 'playlists', 'pl_song'}:
+            return
+        try:
+            db.exe("INSERT INTO playlists VALUES (?, 'artist', 'shuffle');", (name,))
+            db.commit()
+
+        except Exception as err:
+            raise err
+
+    @staticmethod
+    def del_pl(name, db):
+        try:
+            db.exe("DELETE FROM playlists WHERE plname=?;", (name,))
+            db.exe("DELETE FROM pl_song WHERE plname=?;", (name,))
+
+            db.commit()
+        except Exception as err:
+            raise err
+
+
     def exe(self, query, args=()):
         try:
             return self.db.exe(query, args)
@@ -80,15 +77,20 @@ class Playlist:
             raise err
 
 
+    def executemany(self, query, args=()):
+        try:
+            return self.db.executemany(query, args)
+        except Exception as err:
+            raise err
+
     def get_songs(self):
         #dict comprehension in a list comprehension (yikes)
         return [
             {
-                tag: data if not isinstance(data, str)
-                     else data.replace("''", "'")
+                tag: data
                 for tag, data in zip(self.tags, song)
             }
-            for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path IN\
+            for song in self.exe("SELECT * FROM library WHERE path IN\
             (SELECT path FROM pl_song WHERE plname=?);", (self.name,))
         ]
 
@@ -170,8 +172,7 @@ class Playlist:
             return
 
         self.data.remove(delsong[0])
-        self.exe(f"DELETE FROM {self.name} WHERE path=?;", (path,))
-        self.exe(f"DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
+        self.exe("DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
         self.commit()
 
 
@@ -184,15 +185,13 @@ class Playlist:
                 tag: data
                 for tag, data in zip(self.tags, song)
             }
-            for song in self.exe(f"SELECT {self.joined_tag} FROM library WHERE path=?;", (path,))
+            for song in self.exe("SELECT * FROM library WHERE path=?;", (path,))
         ]
 
         #add file to library table if it's not already
         self.db.add_to_lib(path)
-        path = path.replace("'", "''")
 
         #add file into playlist table
-        self.exe(f"INSERT INTO {self.name} VALUES (?);", (path,))
         self.exe("INSERT INTO pl_song VALUES (?,?);", (path, self.name,))
 
         self.commit()
@@ -205,12 +204,11 @@ class Playlist:
             for ff in files:
                 path = os.path.join(root, ff)
                 if path not in self.db:
-                    out = song.Song(path)
+                    out = song.Song.from_path(path)
                     if out:
                         list_all.append(out.db_str())
 
                 if path not in self:
-                    path = path.replace("'", "''")
                     path_list.append(path)
                     
         if list_all:
@@ -221,21 +219,14 @@ class Playlist:
 
     def insert_from_file(self, path):
         with open(path, "r") as fp:
-            path_list = [p.rstrip().replace("'", "''") for p in fp]
+            path_list = [p.rstrip() for p in fp]
 
         self.insert_path_list(path_list)
         self.sort()
 
 
     def insert_path_list(self, path_list):
-        path_join = "'),('".join(path_list)
-
-        combined = ",".join([f"('{path}','{self.name}')" for path in path_list])
-        if not combined:
-            combined = '(0, 0)'
-
-        self.exe(f"INSERT INTO {self.name} VALUES ('{path_join}');")
-        self.exe(f"INSERT INTO pl_song (path, plname) VALUES {combined};")
+        self.executemany("INSERT INTO pl_song (?,?)", [(path,self.name) for path in path_list])
 
         self.data = self.get_songs()
         self.commit()
@@ -259,7 +250,6 @@ class Playlist:
 
     def rename(self, newname):
         self.exe("UPDATE TABLE pl_song SET plname=? WHERE plname=?;", (newname, self.name,))
-        self.exe(f"ALTER TABLE {self.name} RENAME TO {newname}")
         self.exe("UPDATE TABLE playlists SET plname=? WHERE plname=?;", (newname, self.name,))
 
         self.name = newname
