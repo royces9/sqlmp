@@ -226,7 +226,7 @@ class Playlist:
 
 
     def insert_path_list(self, path_list):
-        self.executemany("INSERT INTO pl_song (?,?)", [(path,self.name) for path in path_list])
+        self.executemany("INSERT INTO pl_song VALUES (?,?)", [(path,self.name) for path in path_list])
 
         self.data = self.get_songs()
         self.commit()
