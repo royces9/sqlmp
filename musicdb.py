@@ -57,7 +57,7 @@ class Musicdb:
         return bool(self.curs.fetchone())
 
 
-    def add_to_lib(self, path):
+    def add_song(self, path):
         if path in self:
             return
 
@@ -69,7 +69,7 @@ class Musicdb:
         self.commit()
 
 
-    def remove_from_lib(self, path):
+    def remove_song(self, path):
         if path not in self:
             return
         self.exe("DELETE FROM library WHERE path=?;", (path,))
@@ -102,7 +102,7 @@ class Musicdb:
 
 
     def add_multi(self, li):
-        self.executemany("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,0);", [l for l in li])
+        self.executemany("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,0);", li)
         self.commit()
 
 

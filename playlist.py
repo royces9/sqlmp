@@ -180,40 +180,25 @@ class Playlist:
         if path in self:
             return
 
-        self.data += [
-            {
-                tag: data
-                for tag, data in zip(self.tags, song)
-            }
-            for song in self.exe("SELECT * FROM library WHERE path=?;", (path,))
-        ]
-
         #add file to library table if it's not already
-        self.db.add_to_lib(path)
+        self.db.add_song(path)
 
         #add file into playlist table
         self.exe("INSERT INTO pl_song VALUES (?,?);", (path, self.name,))
 
+        song = self.exe("SELECT * FROM library WHERE path=?;", (path,))
+        self.data.append({tag: data for tag, data in zip(self.tags, song)})
+            
         self.commit()
 
 
     def insert_dir(self, di):
-        list_all = []
-        path_list = []
-        for root, _, files in os.walk(di):
-            for ff in files:
-                path = os.path.join(root, ff)
-                if path not in self.db:
-                    out = song.Song.from_path(path)
-                    if out:
-                        list_all.append(out.db_str())
+        new_files = self.db.dir_files(di)
+        
+        self.db.add_multi(new_files)
+        new_paths = [f[0] for f in new_files if f[0] not in self]
 
-                if path not in self:
-                    path_list.append(path)
-                    
-        if list_all:
-            self.db.add_multi(list_all)
-        self.insert_path_list(path_list)
+        self.insert_path_list(new_paths)
         self.sort()
 
 
@@ -221,14 +206,26 @@ class Playlist:
         with open(path, "r") as fp:
             path_list = [p.rstrip() for p in fp]
 
-        self.insert_path_list(path_list)
+        for p in path_list:
+            self.insert(p)
+                    
+        debug.debug(self.data)
         self.sort()
 
 
     def insert_path_list(self, path_list):
         self.executemany("INSERT INTO pl_song VALUES (?,?)", [(path,self.name) for path in path_list])
 
-        self.data = self.get_songs()
+        new_songs = [
+            {
+                tag: data
+                for tag, data in zip(self.tags, self.exe("SELECT * FROM library WHERE path=?;", (path,)))
+            }
+            for path in path_list
+        ]
+
+        self.data += new_songs
+        
         self.commit()
 
 
@@ -253,5 +250,4 @@ class Playlist:
         self.exe("UPDATE TABLE playlists SET plname=? WHERE plname=?;", (newname, self.name,))
 
         self.name = newname
-
         self.commit()

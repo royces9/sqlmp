@@ -2,6 +2,8 @@ import os
 
 import ffmpeg
 
+import debug
+
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
 
 class Song:
@@ -12,12 +14,10 @@ class Song:
     
         tags_out = ['title', 'artist', 'album']
         if 'tags' in prob['format']:
-            tmp = prob['format']['tags']
-            tmp = {k.lower(): i for k, i in tmp.items()}
+            tmp = {k.lower(): i for k, i in prob['format']['tags'].items()}
             tags = [tmp[t].replace("'", "''") if t in tmp else '' for t in tags_out]
         elif 'tags' in prob['streams'][0]:
-            tmp = prob['streams'][0]['tags']
-            tmp = {k.lower(): i for k, i in tmp.items()}
+            tmp = {k.lower(): i for k, i in prob['streams'][0]['tags'].items()}
             tags = [tmp[t].replace("'", "''") if t in tmp else '' for t in tags_out]
         else:
             tags = [''] * len(tags_out)
@@ -34,6 +34,8 @@ class Song:
         self.channels = attr[2]
 
         self.bitrate = int(prob['format']['bit_rate'])
+
+        debug.debug((tags[0], tags[1], tags[2], attr[0], attr[1], attr[2]))
 
     @classmethod
     def from_path(cls, path):

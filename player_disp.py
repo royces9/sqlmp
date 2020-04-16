@@ -38,8 +38,6 @@ class Player_disp(display.Display):
         #typed commands
         self.commands = {
             'add': self.add,
-            'adddir': self.adddir,
-            'addfile': self.addfile,
             'delpl': self.delpl,
             'export': self.export,
             'export_all': self.export_all,
@@ -377,56 +375,6 @@ class Player_disp(display.Display):
         self[1].disp()
 
 
-    def adddir(self, args):
-        """
-        add a directory to a playlist, this also adds new directories to the db
-        1 arg : add directory to highlighted playlist
-        2 args: add directory to named playlist
-        """
-        if not args:
-            self.err_print('One argument required')
-            return
-
-        if len(args) == 1:
-            pl = self[0].highlighted()
-        else:
-            ind = self.pl_exists(args[1])
-            if ind < 0:
-                return
-
-            pl = self[0].data[ind]
-
-        newdir = args[0]
-        pl.insert_dir(newdir)
-
-        self[1].disp()
-
-
-    def addfile(self, args):
-        """
-        add a file to a playlist, also adds the file to the playlist
-        1 arg : add file to highlighted playlist
-        2 args: add file to named playlist
-        """
-        if not args:
-            self.err_print('One argument required')
-            return
-
-        if len(args) == 1:
-            pl = self[0].highlighted()
-        else:
-            ind = self.pl_exists(args[1])
-            if ind < 0:
-                return
-
-            pl = self[0].data[ind]
-
-        newfile = args[0]
-        pl.insert(newfile)
-
-        self[1].disp()
-
-
     def delpl(self, args):
         """
         delete a playlist
@@ -447,7 +395,7 @@ class Player_disp(display.Display):
             pl = self[0].data[ind]
 
         self[0].delete(pl)
-        playlist.del_pl(plname, self.db)
+        playlist.Playlist.del_pl(plname, self.db)
 
         self[0].disp()
         self[1].disp()
@@ -516,13 +464,7 @@ class Player_disp(display.Display):
                 if key not in curpl.tags:
                     self.err_print('Invalid key: ' + key)
                     return
-            """
-            ind = -1
-            for ii, item in enumerate(curpl.data):
-                if item[key] == term:
-                    ind = ii
-                    break
-            """
+
             self.find_list = (ii for ii, item in enumerate(curpl.data) if item[key] == term)
 
         try:
@@ -554,7 +496,7 @@ class Player_disp(display.Display):
                 self.err_print(f'Playlist "{plname}" already exists')
                 return
 
-            playlist.init_pl(plname, self.db)
+            playlist.Playlist.init_pl(plname, self.db)
             newpl = playlist.Playlist(name=plname, db=self.db)
         else:
             plname = args[0]

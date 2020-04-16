@@ -38,9 +38,3 @@ class Remote(queue.Queue):
         for p in pl:
             for f in fn:
                 self.disp.add((f, p))
-                """
-                if os.path.isdir(f):
-                    self.disp.adddir((f, p))
-                else:
-                    self.disp.addfile((f, p))
-                """
