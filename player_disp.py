@@ -580,7 +580,7 @@ class Player_disp(display.Display):
         """
         update db
         """
-        self.db.update()
+        self.db.update_db()
 
 
     """

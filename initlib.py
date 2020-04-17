@@ -25,16 +25,12 @@ conn = sqlite3.connect(dbpath)
 curs = conn.cursor()
 db = musicdb.Musicdb(dbpath, libpath)
 
-"""
 print('Creating database')
 musicdb.Musicdb.init_db(db)
 
-import time
 print('Adding ' + libpath)
-s = time.time()
-db.add_dir(libpath)
-print(time.time() - s)
-"""
+db.insert_dir(libpath)
+
 for pl in pl_list:
     plname = os.path.splitext(os.path.basename(pl))[0]
 

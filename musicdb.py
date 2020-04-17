@@ -57,7 +57,7 @@ class Musicdb:
         return bool(self.curs.fetchone())
 
 
-    def add_song(self, path):
+    def insert_song(self, path):
         if path in self:
             return
 
@@ -72,59 +72,66 @@ class Musicdb:
     def remove_song(self, path):
         if path not in self:
             return
-        self.exe("DELETE FROM library WHERE path=?;", (path,))
 
-        if pl_all:
-            self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
+        self.exe("DELETE FROM library WHERE path=?;", (path,))
+        self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
 
         self.commit()
 
 
-    def add_dir(self, di):
+    def insert_song_list(self, paths):
+        songs = self.insert_multi(
+            [
+                s.tuple()
+                for p in (pp for pp in paths if pp not in self)
+                if (s := song.Song.from_path(p) is not None)
+            ]
+        )
+
+
+    def insert_dir(self, di):
         list_all = self.dir_files(di)
         if list_all:
-            self.add_multi(list_all)
+            self.insert_multi(list_all)
 
 
     def dir_files(self, di):
-        list_all = []
-
-        for root, _, files in os.walk(di):
-            for ff in files:
-                path = os.path.join(root, ff)
-
-                if path not in self:
-                    out = song.Song.from_path(path)
-                    if out:
-                        list_all.append(out.tuple())
-
-        return list_all
+        return [
+            out.tuple()
+            for root, _, files in os.walk(di)
+            for ff in files
+            if (out := song.Song.from_path(os.path.join(root, ff))) is not None and out.path not in self
+        ]
 
 
-    def add_multi(self, li):
+    def insert_multi(self, li):
         self.executemany("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,0);", li)
         self.commit()
 
 
-    def update(self):
+    def update_db(self):
         #this gets every file
         all_files = [
             os.path.join(root, ff)
             for root, _, files in os.walk(self.lib)
-            for ff in files if os.path.splitext(ff)[1] in ext_list
+            for ff in files if os.path.splitext(ff)[1] in song.ext_list
         ]
 
-        new_files = []
         for path in all_files:
+            out = song.Song.from_path(path)
+            if not out:
+                continue;
             if path not in self:
-                out = song.Song.from_path(path)
-                if not out:
-                    continue
-                new_files.append(out.db_str())
+                new_files.append(out.tuple())
+            else:
+                self.update_song(out)
 
-        self.add_multi(new_files)
+        self.insert_multi(new_files)
         return
 
 
+    def update_song(self, song):
+        self.exe("UPDATE library SET title=?, artist=?, album=?, length=?, samplerate=?, channels=?, bitrate=? WHERE path=?", (song.title, song.artist, song.album, song.length, song.samplerate, song.channels, song.bitrate, song.path))
+        
     def list_pl(self):
         return [pl[0] for pl in self.exe("SELECT plname FROM playlists;")]

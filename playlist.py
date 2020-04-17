@@ -181,24 +181,45 @@ class Playlist:
             return
 
         #add file to library table if it's not already
-        self.db.add_song(path)
+        self.db.insert_song(path)
 
         #add file into playlist table
         self.exe("INSERT INTO pl_song VALUES (?,?);", (path, self.name,))
 
-        song = self.exe("SELECT * FROM library WHERE path=?;", (path,))
-        self.data.append({tag: data for tag, data in zip(self.tags, song)})
+        self.data += [
+            {
+                tag: data
+                for tag, data
+                in zip(self.tags, song)
+            }
+            for song
+            in self.exe("SELECT * FROM library WHERE path=?;", (path,))
+        ]
             
         self.commit()
 
 
     def insert_dir(self, di):
-        new_files = self.db.dir_files(di)
-        
-        self.db.add_multi(new_files)
-        new_paths = [f[0] for f in new_files if f[0] not in self]
+        new_db = []
+        new_pl = []
+        for root, _, files in os.walk(di):
+            for ff in files:
+                path = os.path.join(root, ff)
+                out = song.Song.from_path(path)                
+                if not out:
+                    continue
 
-        self.insert_path_list(new_paths)
+                if path not in self.db:
+                    new_db.append(out.tuple())
+                if path not in self:
+                    new_pl.append(path)
+
+        if new_db:
+            self.db.insert_multi(new_db)
+
+        if new_pl:
+            self.insert_path_list(new_pl)
+
         self.sort()
 
 
@@ -206,25 +227,25 @@ class Playlist:
         with open(path, "r") as fp:
             path_list = [p.rstrip() for p in fp]
 
-        for p in path_list:
-            self.insert(p)
-                    
-        debug.debug(self.data)
+        self.db.insert_song_list(path_list)
+
+        self.insert_path_list(path_list)
         self.sort()
 
 
     def insert_path_list(self, path_list):
-        self.executemany("INSERT INTO pl_song VALUES (?,?)", [(path,self.name) for path in path_list])
+        self.executemany("INSERT INTO pl_song VALUES (?,?)", ((path,self.name) for path in path_list))
 
-        new_songs = [
-            {
-                tag: data
-                for tag, data in zip(self.tags, self.exe("SELECT * FROM library WHERE path=?;", (path,)))
-            }
-            for path in path_list
-        ]
-
-        self.data += new_songs
+        for path in path_list:
+            self.data += [
+                {
+                    tag: data
+                    for tag, data
+                    in zip(self.tags, song)
+                }
+                for song
+                in self.exe("SELECT * FROM library WHERE path=?;", (path,))
+            ]
         
         self.commit()
 

@@ -35,7 +35,6 @@ class Song:
 
         self.bitrate = int(prob['format']['bit_rate'])
 
-        debug.debug((tags[0], tags[1], tags[2], attr[0], attr[1], attr[2]))
 
     @classmethod
     def from_path(cls, path):
