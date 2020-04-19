@@ -11,7 +11,7 @@ class Musicdb:
         if os.path.exists(path):
             self.path = path
         else:
-            raise FileNotFoundError(f"{path} does not exist")
+            raise FileNotFoundError("{} does not exist".format(path))
         
         self.lib = lib
 

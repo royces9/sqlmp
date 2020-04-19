@@ -96,7 +96,7 @@ class Playlist:
 
 
     def get_val(self, val):
-        self.exe(f"SELECT {val} FROM playlists WHERE plname=?;", (self.name,))
+        self.exe("SELECT {} FROM playlists WHERE plname=?;".format(val), (self.name,))
         out = self.db.curs.fetchone()
         if out:
             return out[0]
@@ -166,13 +166,11 @@ class Playlist:
         self.data.sort(key=key)
 
 
-    def remove(self, path):
-        delsong = list(filter(lambda x: x['path'] == path, self.data))[:1]
-        if not delsong:
-            return
+    def remove(self, song):
+        if song in self.data:
+            self.data.remove(song)
 
-        self.data.remove(delsong[0])
-        self.exe("DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, path,))
+        self.exe("DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, song['path'],))
         self.commit()
 
 

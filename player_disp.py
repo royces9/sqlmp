@@ -124,10 +124,9 @@ class Player_disp(display.Display):
         if self.cur == 0:
             self.delpl([])
         elif self.cur == 1:
-            curpl = self[0].highlighted()
             cursong = self[1].highlighted()
 
-            curpl.remove(cursong['path'])
+            self[0].highlighted().remove(cursong)
             self[1].delete(cursong)
 
             if not self[1].data:
@@ -389,7 +388,7 @@ class Player_disp(display.Display):
             ind = self.pl_exists(plname)
 
             if ind < 0:
-                self.err_print(f'Playlist "{plname}" doesn\'t exist')
+                self.err_print('Playlist "{}" doesn\'t exist'.format(plname))
                 return
 
             pl = self[0].data[ind]
@@ -421,13 +420,13 @@ class Player_disp(display.Display):
             ind = self.pl_exists(plname)
 
             if ind < 0:
-                self.err_print(f'Playlist "{plname}" doesn\'t exist')
+                self.err_print('Playlist "{}" doesn\'t exist'.format(plname))
                 return
 
             pl = self[0].data[ind]
 
         if not os.path.exists(dest):
-            self.err_print(f'Directory "{dest}" doesn\'t exist')
+            self.err_print('Directory "{}" doesn\'t exist'.format(dest))
             return
 
         with open('/'.join([dest, plname]), 'w+') as fp:
@@ -493,7 +492,7 @@ class Player_disp(display.Display):
             plname = args[0]
 
             if self.pl_exists(plname) >= 0:
-                self.err_print(f'Playlist "{plname}" already exists')
+                self.err_print('Playlist "{}" already exists'.format(plname))
                 return
 
             playlist.Playlist.init_pl(plname, self.db)
@@ -502,11 +501,11 @@ class Player_disp(display.Display):
             plname = args[0]
             plfile = args[1]
             if not os.path.isfile(plfile):
-                self.err_print(f'File does not exist: {plfile}.')
+                self.err_print('File does not exist: {}.'.format(plfile))
                 return
 
             if self.pl_exists(plname) >= 0:
-                self.err_print(f'Playlist "{plname}" already exists')
+                self.err_print('Playlist "{}" already exists'.format(plname))
                 return
 
             playlist.init_pl(plname, self.db)
@@ -530,7 +529,7 @@ class Player_disp(display.Display):
         if playmode in cur.playmode_list:
             cur.change_playmode(playmode)
         else:
-            self.err_print(f'"{playmode}" is not a valid playback mode')
+            self.err_print('"{}" is not a valid playback mode'.format(playmode))
 
 
     def renamepl(self, args):
@@ -551,7 +550,7 @@ class Player_disp(display.Display):
             ind = self.pl_exists(curname)
 
             if ind < 0:
-                self.err_print(f'Playlist "{curname}" doesn\'t exist')
+                self.err_print('Playlist "{}" doesn\'t exist'.format(curname))
                 return
 
         self[0].data[ind].rename(newname)
@@ -573,7 +572,7 @@ class Player_disp(display.Display):
             cur.change_sort(_key)
             self[1].disp()
         else:
-            self.err_print(f'"{_key}" is not a valid key to sort by')
+            self.err_print('"{}" is not a valid key to sort by'.format(_key))
 
 
     def update(self, args):
