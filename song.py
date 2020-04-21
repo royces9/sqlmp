@@ -51,4 +51,4 @@ class Song:
 
     def db_str(self):
         path = self.path.replace("'", "''")
-        return f"('{}', '{}', '{}', '{}', {}, {}, {}, {}, 0)".format(path, self, title, self.artist, self.album, self.length, self.samplerate, self.channels, self.bitrate)
+        return "('{}', '{}', '{}', '{}', {}, {}, {}, {}, 0)".format(path, self, title, self.artist, self.album, self.length, self.samplerate, self.channels, self.bitrate)

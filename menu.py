@@ -3,6 +3,7 @@ import threadwin
 
 import wchar
 
+import debug
 
 class Window:
     def __init__(self, x=0, y=0, w=0, h=0):
@@ -96,42 +97,40 @@ class Menu(Window):
 
 
     def up(self):
-        at_top = self.cursor < 1
-
-        if not at_top:
-            self.paint_cursor(self.normal_colour, self.cursor)
+        if not self.cursor < 1:
             self.cursor -= 1
+
         elif self.offset > 0:
             self.offset -= 1
             self.win.scroll(-1)
-            self.paint_cursor(self.normal_colour, self.cursor + 1)
 
             if self.offset < len(self.data):
                 formatted_list = self.form(self.data[self.offset])
                 self.print_col(0, 0, formatted_list)
 
-        self.paint_highlight(self.highlight_colour, self.offset)
+        self.paint_cursor(self.normal_colour, self.cursor + 1)
         self.paint_cursor(self.cursor_colour, self.cursor)
+
+        self.paint_highlight(self.highlight_colour, self.offset)
 
 
     def down(self):
         if (self.offset + self.cursor) < (len(self.data) - 1):
-            at_bot = self.cursor >= (self.h - 1)
-            if at_bot:
+            if self.cursor >= (self.h - 1):
                 self.offset += 1
                 self.win.scroll(1)
-                self.paint_cursor(self.normal_colour, self.cursor - 1)
 
                 if (self.h - 1 + self.offset) < len(self.data):
                     formatted_list = self.form(self.data[(self.h - 1) + self.offset])
                     self.print_col(0, self.h - 1, formatted_list)
 
             else:
-                self.paint_cursor(self.normal_colour, self.cursor)
                 self.cursor += 1
 
-        self.paint_highlight(self.highlight_colour, self.offset)
-        self.paint_cursor(self.cursor_colour, self.cursor)
+            self.paint_cursor(self.normal_colour, self.cursor - 1)
+            self.paint_cursor(self.cursor_colour, self.cursor)
+
+            self.paint_highlight(self.highlight_colour, self.offset)
 
 
     def disp(self):

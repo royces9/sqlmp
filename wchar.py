@@ -1,4 +1,5 @@
 import ctypes
+import debug
 
 libc = ctypes.CDLL(None)
 
