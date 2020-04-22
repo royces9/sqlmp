@@ -588,6 +588,7 @@ class Player_disp(display.Display):
     def draw(self):
         self[0].disp()
         self[1].disp()
+
         self.refresh()
 
 

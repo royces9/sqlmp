@@ -134,14 +134,18 @@ class Menu(Window):
 
 
     def disp(self):
-        for ii in range(self.h):
-            self.print_blank(ii)
-            if (ii + self.offset) < len(self.data):
-                formatted_list = self.form(self.data[ii + self.offset])
-                self.print_col(0, ii, formatted_list)
+        self.win.erase()
+        diff = len(self.data) - self.offset
+        smaller = self.h if diff > self.h else diff
+
+        for ii in range(smaller):
+            formatted_list = self.form(self.data[ii + self.offset])
+            self.print_col(0, ii, formatted_list)
 
         self.paint_highlight(self.highlight_colour, self.offset)
         self.paint_cursor(self.cursor_colour, self.cursor)
+
+        self.win.noutrefresh()
 
 
     def paint_highlight(self, colour, offset):
