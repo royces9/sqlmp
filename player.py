@@ -19,7 +19,7 @@ class Play_state(enum.Enum):
 
     def __format__(self, form):
         return self.name
-
+    
 
 class Player:
     def __init__(self, vol, step):
@@ -95,6 +95,7 @@ class Player:
                 rate=self.rate,
                 output=True,
             )
+
             #bytes = len * rate * width * channels
             self.step = int(self.play_len * self.rate * self.width * self.channels)
             self.seek_delta_c = self.seek_delta * self.rate *\

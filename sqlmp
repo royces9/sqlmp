@@ -32,6 +32,7 @@ def main_loop(disp):
     while not disp.die:
         disp.draw()
         
+        #this call blocks
         item = remote.get()
 
         #if item is from remote it is a tuple
