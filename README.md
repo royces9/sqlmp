@@ -17,6 +17,7 @@ Allows one to add songs to a playlist through the shell
 ##### sqlmp:
 The actual player
 
+======
 #### List of commands:
 
 Many commands also have optional arguments, marked by `Opt`
@@ -35,7 +36,7 @@ given as a second argument.
 ------
 ##### `export <directory> Opt<playlist>`
 List the files of the currently highlighted playlist, or a playlist given
-as a second argument to a textfile in `directory`.
+as a second argument, to a textfile in `directory`.
 
 ------
 ##### `exportall <directory>`
@@ -45,7 +46,7 @@ Same as export, except for all playlists.
 ##### `find <term> Opt<key>`
 Find the first occurring exact instance of `term` in the currently highlighted playlist's sort key and
 go to it, other keys can be used by supplying a second argument.
-Running `find` again without arguments will go to the next instance, and so on.
+Running `find` again without arguments will go to the next instance.
 
 ------
 ##### `newpl <name> Opt<file>`
