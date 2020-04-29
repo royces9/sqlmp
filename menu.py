@@ -7,14 +7,26 @@ import debug
 
 class Window:
     def __init__(self, x=0, y=0, w=0, h=0):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
-
         self.win = threadwin.Threadwin(h, w, y, x)
 
         self.blank = ' ' * (self.w - 1)
+
+
+    @property
+    def x(self):
+        return self.win.getbegyx()[1]
+
+    @property
+    def y(self):
+        return self.win.getbegyx()[0]
+
+    @property
+    def w(self):
+        return self.win.getmaxyx()[1]
+
+    @property
+    def h(self):
+        return self.win.getmaxyx()[0]
 
 
     def print_blank(self, y=0, x=0):

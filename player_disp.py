@@ -223,15 +223,9 @@ class Player_disp(display.Display):
         hl = [hh, hh, bottom_bar]
 
         for win, x, y, w, h in zip(self.wins, xx, yy, wl, hl):
-            win.x = x
-            win.y = y
-            win.w = w
-            win.h = h
             win.blank = ' ' * (w - 1)
-
             win.win.resize(h, w)
             win.win.mvwin(y, x)
-            win.win.clear()
 
         for win in self.wins[0:2]:
             if win.cursor >= win.h:
