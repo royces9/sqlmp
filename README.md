@@ -14,7 +14,7 @@ Use this when starting, initializes the database with your music library and pla
 ##### remote.py:
 Allows one to add songs to a playlist through the shell
 
-##### sqlmp.py:
+##### sqlmp:
 The actual player
 
 #### List of commands:
