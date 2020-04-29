@@ -21,37 +21,47 @@ The actual player
 
 Many commands also have optional arguments, marked by `Opt`
 
-##### `adddir <directory> Opt<playlist>`
-Adds `directory` to the currently highlighted playlist
+------
+##### `add <arg> Opt<playlist>`
+Adds `arg` to the currently highlighted playlist
 or a playlist given as a second argument.
+Can be either a file or directory.
 
-##### `addfile <filename> Opt<playlist>`
-Add `filename` to the currently highlighted playlist
-or a playlist given as a second argument.
-
+------
 ##### `delpl Opt<playlist>`
 Delete the currently highlighted playlist, or a playlist
 given as a second argument.
 
+------
 ##### `export <directory> Opt<playlist>`
-Copy the files in the currently highlighted playlist, or to a playlist given
-as a second argument to `directory`.
+List the files of the currently highlighted playlist, or a playlist given
+as a second argument to a textfile in `directory`.
 
+------
+##### `exportall <directory>`
+Same as export, except for all playlists.
+
+------
 ##### `find <term> Opt<key>`
 Find the first occurring exact instance of `term` in the currently highlighted playlist's sort key and
-go to it, other keys can be used by supplying a second argument
+go to it, other keys can be used by supplying a second argument.
+Running `find` again without arguments will go to the next instance, and so on.
 
+------
 ##### `newpl <name> Opt<file>`
 Make a new blank playlist named `name`, contents can be added from file on creation by supplying
-a name of a file with paths to music files
+a name of a file with paths to music files.
 
+------
 ##### `playmode <mode>`
 Change the playmode of the currently highlighted playlist to one of the following modes:
 shuffle, inorder, single
 
+------
 ##### `renamepl <name> Opt<playlist>`
 Rename the currently highlighted playlist to `name`,
 or rename a playlist given as a second argument
 
+------
 ##### `sort <key>`
 Sort the currently highlighted playlist by `key`
