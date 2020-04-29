@@ -14,23 +14,23 @@ import socket_thread
 from loadconf import config as config
 
 
-def __inp(disp, qq):
+def __inp(ui, qq):
     while True:
-        disp.command_event.wait()
+        ui.command_event.wait()
         
-        key = disp.getkey()
-        if key in disp.actions:
+        key = ui.getkey()
+        if key in ui.actions:
             qq.put_nowait((key))
             if key in config.COMMAND:
-                disp.command_event.clear()
+                ui.command_event.clear()
 
-def main_loop(disp):
-    remote = socket_thread.Remote(disp, config.SOCKET)
+def main_loop(ui):
+    remote = socket_thread.Remote(ui, config.SOCKET)
 
-    threading.Thread(target=__inp, args=(disp,remote,), daemon=True).start()
+    threading.Thread(target=__inp, args=(ui, remote, ), daemon=True).start()
 
-    while not disp.die:
-        disp.draw()
+    while not ui.die:
+        ui.draw()
         
         #this call blocks
         item = remote.get()
@@ -39,8 +39,8 @@ def main_loop(disp):
         #otherwise it's a keypress
         if type(item) is tuple:
             remote.add_item(item)
-        elif item in disp.actions:
-            disp.actions[item]()
+        elif item in ui.actions:
+            ui.actions[item]()
 
 
 def cleanup(stdscr, exit_f=False):
@@ -70,8 +70,8 @@ def main():
 
     try:
         signal.signal(signal.SIGINT, lambda a, b: cleanup(stdscr, True))
-        disp = init.windows(db, stdscr)
-        main_loop(disp)
+        ui = init.windows(db, stdscr)
+        main_loop(ui)
         cleanup(stdscr)
     except Exception as e:
         cleanup(stdscr)

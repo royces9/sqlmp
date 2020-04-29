@@ -12,9 +12,6 @@ class Window:
         else:
             self.win = win
 
-        self.blank = ' ' * (self.w - 1)
-
-
     @property
     def x(self):
         return self.win.getbegyx()[1]
@@ -33,11 +30,12 @@ class Window:
 
 
     def print_blank(self, y=0, x=0):
-        self.win.addnstr(y, x, self.blank, self.w - x)
+        self.win.move(y, x)
+        self.win.clrtoeol()
 
 
     def print_line(self, line, y=0, x=0):
-        self.win.addnstr(y, x, self.blank, self.w - x)
+        self.print_blank(y, x)
         trunc_line = wchar.set_width(line, self.w - x)
         self.win.addnstr(y, x, trunc_line, self.w - x)
 
@@ -147,7 +145,6 @@ class Menu(Window):
 
             self.paint_highlight(self.highlight_colour, self.offset)
 
-
     def disp(self):
         self.win.erase()
         diff = len(self.data) - self.offset
@@ -178,10 +175,9 @@ class Menu(Window):
     def print_col(self, x, y, datas):
         for string, fraction in datas:
             width = int(self.w * fraction)
-            self.win.addnstr(y, x, wchar.set_width(string, width), self.w)
+            self.win.addnstr(y, x, wchar.set_width(string, width), width)
 
             x += width
-
 
     def insert(self, items):
         if isinstance(items, list):

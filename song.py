@@ -42,7 +42,7 @@ class Song:
         attr = [a[1](prob['streams'][0][a[0]])
                 for a in [('duration', float), ('sample_rate', int), ('channels', int)]]
 
-        return (tags, ) + (attr, ) + (int(prob['format']['bit_rate']), )
+        return tuple(tags, ) + tuple(attr, ) + (int(prob['format']['bit_rate']), )
 
     @classmethod
     def from_path(cls, path):

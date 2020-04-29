@@ -265,8 +265,8 @@ class Playlist:
 
 
     def rename(self, newname):
-        self.exe("UPDATE TABLE pl_song SET plname=? WHERE plname=?;", (newname, self.name,))
-        self.exe("UPDATE TABLE playlists SET plname=? WHERE plname=?;", (newname, self.name,))
+        self.exe("UPDATE pl_song SET plname=? WHERE plname=?;", (newname, self.name,))
+        self.exe("UPDATE playlists SET plname=? WHERE plname=?;", (newname, self.name,))
 
         self.name = newname
         self.commit()

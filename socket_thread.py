@@ -7,9 +7,9 @@ import threading
 import debug
 
 class Remote(queue.Queue):
-    def __init__(self, disp, socket):
+    def __init__(self, ui, socket):
         super().__init__()
-        self.disp = disp
+        self.ui = ui
         self.socket = socket
         self.thread = threading.Thread(target=self.__socket, daemon=True)
         self.thread.start()
@@ -28,8 +28,8 @@ class Remote(queue.Queue):
                         pl, fn = data.decode('utf-8').split('\n\n')
                         self.put_nowait((pl.split('\n'), fn.split('\n')))
 
-                    js = json.loads(json.dumps(self.disp.cur_song))
-                    js['status'] = format(self.disp.player.state)
+                    js = json.loads(json.dumps(self.ui.cur_song))
+                    js['status'] = format(self.ui.player.state)
                     js = json.dumps(js)
                     conn.send(js.encode())
 
@@ -37,4 +37,4 @@ class Remote(queue.Queue):
         pl, fn = item
         for p in pl:
             for f in fn:
-                self.disp.add((f, p))
+                self.ui.commands.add((f, p))

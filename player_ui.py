@@ -1,19 +1,14 @@
 import curses
 import curses.textpad as tp
-import os
-import shlex
-import sys
 import threading
 import time
 
+import commands
 import player
-import playlist
 import song
 
 from loadconf import config as config
 import debug
-
-import queue
 
 
 def song_info(song):
@@ -34,29 +29,14 @@ class Player_ui:
 
         self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
         self.db = db
-        self.conn = db.conn
-        self.curs = db.curs
 
         #typed commands
-        self.commands = {
-            'add': self.add,
-            'delpl': self.delpl,
-            'export': self.export,
-            'export_all': self.export_all,
-            'find': self.find, 
-            'newpl': self.newpl,
-            'playmode': self.playmode,
-            'renamepl': self.renamepl,
-            'sort': self.sort,
-            'update': self.update,
-        }
+        self.commands = commands.Commands(self)
+        self.command_event = self.commands.command_event
 
         #hotkeys, from keys.py
-        self.actions = {}
-        self.__init_actions()
+        self.actions = self.__init_actions()
 
-        self.find_list = None
-        
         #text window for information
         self.textwin = self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
@@ -76,24 +56,19 @@ class Player_ui:
         self.info.start()
 
         self.die = False
-        self.command_event = threading.Event()
-        self.command_event.set()
+
 
     def __len__(self):
         return len(self.wins)
 
+
     def __setitem__(self, ind, item):
         self.wins[ind] = item
+
 
     def __getitem__(self, ind):
         return self.wins[ind]
 
-
-    def refresh(self):
-        for win in self.wins:
-            win.refresh()
-
-        self.stdscr.refresh()
 
     def getkey(self):
         out = self.stdscr.getkey()
@@ -101,14 +76,17 @@ class Player_ui:
 
         return out
 
+
     def curwin(self):
         return self.wins[self.cur]
+
 
     def set_die(self):
         self.die = True
 
 
     def __init_actions(self):
+        actions = {}
         pairs = [
             [config.UP, self.up],
             [config.DOWN, self.down],
@@ -130,8 +108,9 @@ class Player_ui:
         ]
 
         for key, val in pairs:
-            self.actions.update(dict.fromkeys(key, val))
+            actions.update(dict.fromkeys(key, val))
 
+        return actions
 
     """
     Functions called from key press/events
@@ -141,7 +120,7 @@ class Player_ui:
         delete songs from playlists
         """
         if self.cur == 0:
-            self.delpl([])
+            self.commands.delpl([])
         elif self.cur == 1:
             cursong = self[1].highlighted()
 
@@ -149,11 +128,9 @@ class Player_ui:
             self[1].delete(cursong)
 
             if not self[1].data:
-                self.cur = 0
-                self.wins[0].cursor_colour = config.FOCUSED[0]
-                self.wins[1].cursor_colour = config.CURSOR[0]
+                self.switch_view_left()
 
-        self.curwin().disp()
+        self.draw()
 
 
     def down(self, arg=None):
@@ -163,7 +140,7 @@ class Player_ui:
         self.curwin().down()
 
         if self.cur == 0:
-            self[1] = self[0].data[self[0].highlighted_ind()]
+            self[1] = self[0].highlighted()
 
 
     def grab_input(self, arg=None):
@@ -173,11 +150,10 @@ class Player_ui:
         #command_event.clear() is called from the input thread
         #in sqlmp, this prevents a race condition where getkey
         #gets called before the queue can execute grab_input
-        #self.command_event.clear()
 
         self[2].print_blank(2)
+        self[2].win.addch(2, 0, ":")
         self[2].win.move(2, 1)
-        self[2].win.addnstr(2, 0, ":", 1)
         self[2].refresh()
 
         self.tb.win.move(0, 0)
@@ -186,19 +162,16 @@ class Player_ui:
         inp = self.tb.edit()
         curses.curs_set(0)
 
-        self.exec_inp(inp)
+        self.commands.exe(inp)
         self[2].print_blank(2)
-        self.command_event.set()
+
 
     def highlight(self, arg=None):
         """
         highlight an entry to do stuff with
         """
-        if self.cur == 1:
-            self[1].highlight()
-            self[1].down()
-        elif self.cur == 0:
-            self[0].highlight()
+        self.curwin().highlight()
+        self.curwin().down()
 
 
     def jump_cur_play(self, arg=None):
@@ -209,17 +182,16 @@ class Player_ui:
             #TODO: O(n) :grimacing:
             if self.cur_song in self[1].data:
                 ind = self[1].data.index(self.cur_song)
-                self.__jump_to_ind(ind, len(self[1].data), 1)
+                self.jump_to_ind(ind, len(self[1].data), 1)
                 self.switch_view_right()
         else:
             ind = self[0].data.index(self.cur_pl)
-            self.__jump_to_ind(ind, len(self[0].data), 0)
+            self.jump_to_ind(ind, len(self[0].data), 0)
 
             self[1].data = self[0].highlighted().data
             self[1].highlight_list = []
 
-        self[0].disp()
-        self[1].disp()
+        self.draw()
 
 
     def mute(self, arg=None):
@@ -238,7 +210,6 @@ class Player_ui:
         hl = [hh, hh, bottom_bar]
 
         for win, x, y, w, h in zip(self.wins, xx, yy, wl, hl):
-            win.blank = ' ' * (w - 1)
             win.win.resize(h, w)
             win.win.mvwin(y, x)
 
@@ -247,9 +218,11 @@ class Player_ui:
                 prev = win.cursor + win.offset
                 win.cursor = win.h - 1
                 win.offset = prev - win.cursor
+        
+        self.textwin = self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
+        self.tb = tp.Textbox(self.textwin, insert_mode=True)
 
         self.draw()
-
 
     def select(self, arg=None):
         """
@@ -281,8 +254,7 @@ class Player_ui:
         else:
             self.switch_view_right()
 
-        self[0].disp()
-        self[1].disp()
+        self.draw()
 
         
     def switch_view_right(self):
@@ -316,7 +288,6 @@ class Player_ui:
 
         self[1].down()
 
-
     
     def up(self, arg=None):
         """
@@ -326,270 +297,12 @@ class Player_ui:
         self.curwin().up()
 
         if self.cur == 0:
-            self[1] = self[0].data[self[0].highlighted_ind()]
+            self[1] = self[0].highlighted()
 
 
     """
     Functions called from exec_inp
     """
-    def exec_inp(self, inp):
-        """
-        executes the actual command from grab_inp
-        """
-        try:
-            spl = shlex.split(inp)
-        except:
-            self.err_print('Mismatched quotations.')
-            return
-        
-        if not spl:
-            self.err_print("")
-            return
-
-        if spl[0] in self.commands:
-            self.err_print("")
-            self.commands[spl[0]](spl[1:])
-        else:
-            self.err_print('Invalid command: ' + spl[0])
-
-
-    def add(self, args):
-        """
-        add a directory or file to a playlist
-        1 arg : add arg to highlighted playlist
-        2 args: add arg to named playlist
-
-        """
-        if not args:
-            self.err_print('One argument required')
-            return
-
-        if len(args) == 1:
-            pl = self[0].highlighted().data
-        else:
-            ind = self.pl_exists(args[1])
-            if ind < 0:
-                return
-
-            pl = self[0].data[ind]
-
-        newitem = args[0]
-        if os.path.isfile(newitem):
-            pl.insert(newitem)
-        elif os.path.isdir(newitem):
-            pl.insert_dir(newitem)
-
-        self[1].disp()
-
-
-    def delpl(self, args):
-        """
-        delete a playlist
-        0 args: delete highlighted playlist
-        1 arg : delete the named playlist
-        """
-        if not args:
-            pl = self[0].highlighted().data
-            plname = pl.name
-        else:
-            plname = args[0]
-            ind = self.pl_exists(plname)
-
-            if ind < 0:
-                self.err_print('Playlist "{}" doesn\'t exist'.format(plname))
-                return
-
-            pl = self[0].data[ind]
-
-        self[0].delete(pl)
-        playlist.Playlist.del_pl(plname, self.db)
-
-        self[0].disp()
-        self[1].disp()
-
-
-    def export(self, args):
-        """
-        export a playlist
-        1 args: export highlighted playlist to directory
-        2 args: export the named playlist to directory
-        """
-        if not args:
-            self.err_print('One argument required')
-            return
-        elif len(args) == 1:
-            pl = self[0].highlighted().data
-            plname = pl.name
-            dest = args[0]
-        else:
-            plname = args[0]
-            dest = args[1]
-
-            ind = self.pl_exists(plname)
-
-            if ind < 0:
-                self.err_print('Playlist "{}" doesn\'t exist'.format(plname))
-                return
-
-            pl = self[0].data[ind]
-
-        if not os.path.exists(dest):
-            self.err_print('Directory "{}" doesn\'t exist'.format(dest))
-            return
-
-        with open('/'.join([dest, plname]), 'w+') as fp:
-            for d in pl.data:
-                print(d['path'], file=fp)
-
-
-    def export_all(self, args):
-        if not args:
-            self.err_print('One argument required')
-            return
-        elif len(args) == 1:
-            dest = args[0]
-            for pl in self[0]:
-                self.export((pl.name, dest))
-
-    def find(self, args):
-        """
-        find a song with the matching arguments
-        1 args: jump to the first song that matches the arg by the current sorting key
-        2 args: jump to the first song that matches the arg by the given key
-        """
-        curpl = self[0].highlighted().data
-        if not args:
-            if not self.find_list:
-                self.err_print('At least one argument required')
-                return
-        else:
-            term = args[0]
-            if len(args) == 1:
-                key = curpl.sort_key
-            elif len(args) == 2:
-                key = args[1]
-                if key not in curpl.tags:
-                    self.err_print('Invalid key: ' + key)
-                    return
-
-            self.find_list = (ii for ii, item in enumerate(curpl.data) if item[key] == term)
-
-        try:
-            ind = next(self.find_list)
-        except StopIteration:
-            self.err_print('Not found.')
-            return
-
-        self.__jump_to_ind(ind, len(curpl.data), 1)
-
-        self.switch_view_right()
-        self[0].disp()
-        self[1].disp()
-
-
-    def newpl(self, args):
-        """
-        makes a new playlist
-        1 arg : blank playlist with given name
-        2 args: playlist with given name and contents given by file argument
-        """
-        if not args:
-            self.err_print('One argument required')
-            return
-        elif len(args) == 1:
-            plname = args[0]
-
-            if self.pl_exists(plname) >= 0:
-                self.err_print('Playlist "{}" already exists'.format(plname))
-                return
-
-            playlist.Playlist.init_pl(plname, self.db)
-            newpl = playlist.Playlist(name=plname, db=self.db)
-        else:
-            plname = args[0]
-            plfile = args[1]
-            if not os.path.isfile(plfile):
-                self.err_print('File does not exist: {}.'.format(plfile))
-                return
-
-            if self.pl_exists(plname) >= 0:
-                self.err_print('Playlist "{}" already exists'.format(plname))
-                return
-
-            playlist.init_pl(plname, self.db)
-            newpl = playlist.Playlist(name=plname, db=self.db)
-            newpl.insert_from_file(plfile)
-
-        self[0].insert(newpl)
-        self[0].disp()
-
-
-    def playmode(self, args):
-        """
-        change the playmode (shuffle, in order, single)
-        """
-        if not args:
-            self.err_print('One argument required')
-            return
-
-        playmode = args[0]
-        cur = self[0].highlighted().data
-        if playmode in cur.playmode_list:
-            cur.change_playmode(playmode)
-        else:
-            self.err_print('"{}" is not a valid playback mode'.format(playmode))
-
-
-    def renamepl(self, args):
-        """
-        rename a playlist
-        1 arg : rename highlighted playlist
-        2 args: rename the named playlist
-        """
-        if not args:
-            self.err_print('One argument required')
-            return
-        elif len(args) == 1:
-            ind = self[0].highlighted_ind()
-            newname = args[0]
-        else:
-            curname = args[0]
-            newname = args[1]
-            ind = self.pl_exists(curname)
-
-            if ind < 0:
-                self.err_print('Playlist "{}" doesn\'t exist'.format(curname))
-                return
-
-        self[0].data[ind].rename(newname)
-        self[0].disp()
-
-
-    def sort(self, args):
-        """
-        sort the playlist according to some key
-        changes are saved to the db
-        """
-        if not args:
-            self.err_print('One argument required')
-            return
-
-        _key = args[0]
-        cur = self[0].highlighted().data
-        if _key in cur.tags:
-            cur.change_sort(_key)
-            self[1].disp()
-        else:
-            self.err_print('"{}" is not a valid key to sort by'.format(_key))
-
-
-    def update(self, args):
-        """
-        update db
-        """
-        self.db.update_db()
-
-
     """
     Utility functions
     """
@@ -597,8 +310,7 @@ class Player_ui:
         self[0].disp()
         self[1].disp()
 
-        self.refresh()
-
+        curses.doupdate()
 
     def __enqueue(self):
         """
@@ -607,12 +319,7 @@ class Player_ui:
         self.player.append(next(self.cur_pl))
 
 
-    def err_print(self, err):
-        self[2].print_blank(3)
-        self[2].print_line(err, y=3)
-
-
-    def __jump_to_ind(self, ind, data_len, window):
+    def jump_to_ind(self, ind, data_len, window):
         offset = ind - int(self[window].h / 2)
         if offset < 0:
             #for the case that the found index is near the top
@@ -624,16 +331,6 @@ class Player_ui:
         self[window].cursor = ind - offset
         self[window].offset = offset
 
-
-    def pl_exists(self, name):
-        """
-        check if pl exists and return its index in list
-        """
-        for i, d in enumerate(self[0].data):
-            if d.name == name:
-                return i
-
-        return -1
 
     def __print_cur_playing(self):
         """
@@ -675,6 +372,7 @@ class Player_ui:
                 self.__enqueue()
 
         self.__print_cur_playing()
+
 
     def __info_print_loop(self):
         while True:
