@@ -37,5 +37,5 @@ class Threadwin:
                 else:
                     setattr(self, attr, getattr(self.__win, attr))
 
-        setattr(self, 'addnstr', exception_deco(getattr(self.__win, 'addnstr')))
+        #setattr(self, 'addnstr', exception_deco(getattr(self.__win, 'addnstr')))
         

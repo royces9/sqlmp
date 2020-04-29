@@ -2,8 +2,9 @@ import curses
 import sys
 
 import menu
-import player_disp
+import player_ui
 import playlist
+import threadwin
 
 from loadconf import config as config
 
@@ -39,20 +40,22 @@ def ncurses():
 def windows(db, stdscr):
     hh, ww, bottom_bar, cc = config.set_size(stdscr)
 
-    leftwin = menu.Menu(0, 0, ww, hh,
-                        data=[playlist.Playlist(name=pl, db=db) for pl in db.list_pl()],
-                        form=lambda x: ((x.name, 1),),
+    win = threadwin.Threadwin(hh, cc - ww, 0, ww)
+
+    data = [menu.Menu(win=win, data=playlist.Playlist(name=pl, db=db),
+                      form=config.SONG_DISP,
+                      cursor_colour=config.CURSOR[0],
+                      highlight_colour=config.HIGHLIGHT_COLOUR[0],
+                      normal_colour=config.NORMAL[0])
+            for pl in db.list_pl()]
+
+    leftwin = menu.Menu(0, 0, ww, hh, data=data,
+                        form=lambda x: ((x.data.name, 1),),
                         cursor_colour=config.FOCUSED[0],
                         highlight_colour=config.FOCUSED[0],
                         normal_colour=config.NORMAL[0])
 
-    rightwin = menu.Menu(ww, 0, cc - ww, hh,
-                         data=leftwin.data[0].data,
-                         form=config.SONG_DISP,
-                         cursor_colour=config.CURSOR[0],
-                         highlight_colour=config.HIGHLIGHT_COLOUR[0],
-                         normal_colour=config.NORMAL[0])
-
+    rightwin = leftwin[0]
     botwin = menu.Window(0, hh, cc, bottom_bar)
 
-    return player_disp.Player_disp([leftwin, rightwin, botwin], stdscr, db)
+    return player_ui.Player_ui([leftwin, rightwin, botwin], stdscr, db)

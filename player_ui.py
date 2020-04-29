@@ -6,9 +6,9 @@ import sys
 import threading
 import time
 
-import display
 import player
 import playlist
+import song
 
 from loadconf import config as config
 import debug
@@ -26,9 +26,11 @@ def song_info(song):
     return ' - '.join(info)
 
 
-class Player_disp(display.Display):
+class Player_ui:
     def __init__(self, wins, stdscr, db):
-        super().__init__(wins, stdscr)
+        self.cur = 0
+        self.wins = wins
+        self.stdscr = stdscr
 
         self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
         self.db = db
@@ -61,15 +63,7 @@ class Player_disp(display.Display):
         self[2].win.leaveok(True)
 
         #init a blank song
-        self.cur_song = {'title': 'Nothing currently playing',
-                         'artist': '',
-                         'album': '',
-                         'length': 0,
-                         'samplerate': 0,
-                         'channels': 0,
-                         'bitrate': 0,
-                         'playcount': 0
-        }
+        self.cur_song = song.blank_song
 
         #currently playing playlist
         self.cur_pl = None
@@ -84,6 +78,31 @@ class Player_disp(display.Display):
         self.die = False
         self.command_event = threading.Event()
         self.command_event.set()
+
+    def __len__(self):
+        return len(self.wins)
+
+    def __setitem__(self, ind, item):
+        self.wins[ind] = item
+
+    def __getitem__(self, ind):
+        return self.wins[ind]
+
+
+    def refresh(self):
+        for win in self.wins:
+            win.refresh()
+
+        self.stdscr.refresh()
+
+    def getkey(self):
+        out = self.stdscr.getkey()
+        curses.flushinp()
+
+        return out
+
+    def curwin(self):
+        return self.wins[self.cur]
 
     def set_die(self):
         self.die = True
@@ -126,7 +145,7 @@ class Player_disp(display.Display):
         elif self.cur == 1:
             cursong = self[1].highlighted()
 
-            self[0].highlighted().remove(cursong)
+            self[0].highlighted().data.remove(cursong)
             self[1].delete(cursong)
 
             if not self[1].data:
@@ -144,11 +163,7 @@ class Player_disp(display.Display):
         self.curwin().down()
 
         if self.cur == 0:
-            self[1].data = self[0].highlighted().data
-            self[1].highlight_list = []
-            self[1].cursor = 0
-            self[1].offset = 0
-            self[1].disp()
+            self[1] = self[0].data[self[0].highlighted_ind()]
 
 
     def grab_input(self, arg=None):
@@ -190,7 +205,7 @@ class Player_disp(display.Display):
         if self.player.is_not_playing():
             return
 
-        if self.cur_pl is self[0].highlighted():
+        if self.cur_pl is self[0].highlighted().data:
             #TODO: O(n) :grimacing:
             if self.cur_song in self[1].data:
                 ind = self[1].data.index(self.cur_song)
@@ -240,12 +255,14 @@ class Player_disp(display.Display):
         """
         play a song in a playlist
         """
-        self.cur_pl = self[0].highlighted()
+        self.cur_pl = self[0].highlighted().data
         if self.cur == 1:
             next_song = self[1].highlighted()
         elif self.cur == 0:
             next_song = next(self.cur_pl)
-
+        else:
+            next_song = None
+            
         if next_song:
             self.player.play(next_song)
             self.cur_pl.remake_gen()
@@ -288,18 +305,19 @@ class Player_disp(display.Display):
         if not self.wins[0].highlight_list:
             return
 
-        curpl = self[0].highlighted()
+        curpl = self[0].highlighted().data
         cursong = self[1].highlighted()
         if not cursong:
             return
 
         for pl in self[0].highlight_list:
             if pl is not curpl:
-                pl.insert(cursong['path'])
+                pl.data.insert(cursong['path'])
 
         self[1].down()
 
 
+    
     def up(self, arg=None):
         """
         scroll up on the menu
@@ -308,11 +326,7 @@ class Player_disp(display.Display):
         self.curwin().up()
 
         if self.cur == 0:
-            self[1].data = self[0].highlighted().data
-            self[1].highlight_list = []
-            self[1].cursor = 0
-            self[1].offset = 0
-            self[1].disp()
+            self[1] = self[0].data[self[0].highlighted_ind()]
 
 
     """
@@ -351,7 +365,7 @@ class Player_disp(display.Display):
             return
 
         if len(args) == 1:
-            pl = self[0].highlighted()
+            pl = self[0].highlighted().data
         else:
             ind = self.pl_exists(args[1])
             if ind < 0:
@@ -375,7 +389,7 @@ class Player_disp(display.Display):
         1 arg : delete the named playlist
         """
         if not args:
-            pl = self[0].highlighted()
+            pl = self[0].highlighted().data
             plname = pl.name
         else:
             plname = args[0]
@@ -404,7 +418,7 @@ class Player_disp(display.Display):
             self.err_print('One argument required')
             return
         elif len(args) == 1:
-            pl = self[0].highlighted()
+            pl = self[0].highlighted().data
             plname = pl.name
             dest = args[0]
         else:
@@ -443,7 +457,7 @@ class Player_disp(display.Display):
         1 args: jump to the first song that matches the arg by the current sorting key
         2 args: jump to the first song that matches the arg by the given key
         """
-        curpl = self[0].highlighted()
+        curpl = self[0].highlighted().data
         if not args:
             if not self.find_list:
                 self.err_print('At least one argument required')
@@ -519,7 +533,7 @@ class Player_disp(display.Display):
             return
 
         playmode = args[0]
-        cur = self[0].highlighted()
+        cur = self[0].highlighted().data
         if playmode in cur.playmode_list:
             cur.change_playmode(playmode)
         else:
@@ -561,7 +575,7 @@ class Player_disp(display.Display):
             return
 
         _key = args[0]
-        cur = self[0].highlighted()
+        cur = self[0].highlighted().data
         if _key in cur.tags:
             cur.change_sort(_key)
             self[1].disp()
@@ -645,7 +659,7 @@ class Player_disp(display.Display):
         info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
         if self.player.mute:
             info_str += ' [M]'
-        playmode = self[0].highlighted().playmode
+        playmode = self[0].highlighted().data.playmode
 
         self[2].print_line(info_str, y=1)
         self[2].print_right_justified(' ' + playmode + ' ', y=1)

@@ -6,8 +6,11 @@ import wchar
 import debug
 
 class Window:
-    def __init__(self, x=0, y=0, w=0, h=0):
-        self.win = threadwin.Threadwin(h, w, y, x)
+    def __init__(self, x=0, y=0, w=0, h=0, win=None):
+        if not win:
+            self.win = threadwin.Threadwin(h, w, y, x)
+        else:
+            self.win = win
 
         self.blank = ' ' * (self.w - 1)
 
@@ -50,12 +53,12 @@ class Window:
 
 
 class Menu(Window):
-    def __init__(self, x=0, y=0, w=0, h=0, data=None,
+    def __init__(self, x=0, y=0, w=0, h=0, win=None, data=None,
                  form=lambda ll: ((str(ll), 1),),
                  cursor_colour=curses.A_STANDOUT,
                  highlight_colour=curses.A_REVERSE,
                  normal_colour=curses.A_NORMAL):
-        super().__init__(x, y, w, h)
+        super().__init__(x, y, w, h, win)
 
         #the coordinate of the cursor on the screen
         self.cursor = 0

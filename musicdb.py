@@ -80,7 +80,7 @@ class Musicdb:
 
 
     def insert_song_list(self, paths):
-        songs = self.insert_multi(
+        self.insert_multi(
             [
                 s.tuple()
                 for p in (pp for pp in paths if pp not in self)
