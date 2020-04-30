@@ -178,14 +178,20 @@ class Player_ui:
         if self.player.is_not_playing():
             return
 
-        if self.cur_pl is self[0].highlighted().data:
-            #TODO: O(n) :grimacing:
-            if self.cur_song in self[1].data:
-                ind = self[1].data.index(self.cur_song)
-                self.jump_to_ind(ind, len(self[1].data), 1)
+        #check that cur_pl and the currently selected pl
+        #are the same
+        if self.cur_pl is self[1].data:
+            #check that cur_song is in the cur_pl
+            if self.cur_song in self.cur_pl.data:
+                ind = self[1].data.data.index(self.cur_song)
+                self.jump_to_ind(ind, len(self.cur_pl.data), 1)
                 self.switch_view_right()
         else:
-            ind = self[0].data.index(self.cur_pl)
+            for i, menu_pl in enumerate(self[0].data):
+                if menu_pl.data is self.cur_pl:
+                    ind = i
+                    break
+
             self.jump_to_ind(ind, len(self[0].data), 0)
 
             self[1].data = self[0].highlighted().data
@@ -213,7 +219,7 @@ class Player_ui:
             win.win.resize(h, w)
             win.win.mvwin(y, x)
 
-        for win in self.wins[0:2]:
+        for win in self[0:2]:
             if win.cursor >= win.h:
                 prev = win.cursor + win.offset
                 win.cursor = win.h - 1
@@ -259,14 +265,14 @@ class Player_ui:
         
     def switch_view_right(self):
         self.cur = 1
-        self.wins[1].cursor_colour = config.FOCUSED[0]
-        self.wins[0].cursor_colour = config.CURSOR[0]
+        self[1].cursor_colour = config.FOCUSED[0]
+        self[0].cursor_colour = config.CURSOR[0]
 
 
     def switch_view_left(self):
         self.cur = 0
-        self.wins[0].cursor_colour = config.FOCUSED[0]
-        self.wins[1].cursor_colour = config.CURSOR[0]
+        self[0].cursor_colour = config.FOCUSED[0]
+        self[1].cursor_colour = config.CURSOR[0]
 
         
 
@@ -274,7 +280,10 @@ class Player_ui:
         """
         move songs around playlists
         """
-        if not self.wins[0].highlight_list:
+        if self.cur != 1:
+            return
+        
+        if not self[0].highlight_list:
             return
 
         curpl = self[0].highlighted().data
@@ -300,9 +309,6 @@ class Player_ui:
             self[1] = self[0].highlighted()
 
 
-    """
-    Functions called from exec_inp
-    """
     """
     Utility functions
     """

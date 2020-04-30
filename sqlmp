@@ -17,7 +17,7 @@ from loadconf import config as config
 def __inp(ui, qq):
     while True:
         ui.command_event.wait()
-        
+
         key = ui.getkey()
         if key in ui.actions:
             qq.put_nowait((key))
