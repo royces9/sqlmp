@@ -5,7 +5,7 @@ import threading
 import menu
 import player_ui
 import playlist
-import config
+from loadconf import config
 
 class Commands:
     def __init__(self, ui):

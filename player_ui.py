@@ -7,7 +7,7 @@ import commands
 import player
 import song
 
-from loadconf import config as config
+from loadconf import config
 import debug
 
 

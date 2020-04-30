@@ -4,7 +4,7 @@ import os
 import socket
 import sys
 
-from loadconf import config as config
+from loadconf import config
 
 """
 how to use:

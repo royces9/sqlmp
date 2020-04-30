@@ -6,7 +6,7 @@ import player_ui
 import playlist
 import threadwin
 
-from loadconf import config as config
+from loadconf import config
 
 def colours():
     curses.start_color()
