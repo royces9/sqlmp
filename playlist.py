@@ -48,6 +48,9 @@ class Playlist:
         return next(self.gen)
 
 
+    def index(self, obj):
+        return self.data.index(obj)
+
     @staticmethod
     def init_pl(name, db):
         if name in {'library', 'playlists', 'pl_song'}:

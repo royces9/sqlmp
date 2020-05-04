@@ -28,7 +28,7 @@ class Song:
 
     def grab_tags(self, path):
         prob = ffmpeg.probe(path)
-    
+
         tags_out = ['title', 'artist', 'album']
         if 'tags' in prob['format']:
             tmp = {k.lower(): i for k, i in prob['format']['tags'].items()}
@@ -38,9 +38,9 @@ class Song:
             tags = [tmp[t] if t in tmp else '' for t in tags_out]
         else:
             tags = [''] * len(tags_out)
-        
-        attr = [a[1](prob['streams'][0][a[0]])
-                for a in [('duration', float), ('sample_rate', int), ('channels', int)]]
+
+        attr = (a[1](prob['streams'][0][a[0]])
+                for a in [('duration', float), ('sample_rate', int), ('channels', int)])
 
         return tuple(tags, ) + tuple(attr, ) + (int(prob['format']['bit_rate']), )
 
@@ -57,7 +57,3 @@ class Song:
 
     def tuple(self):
         return (self.path, self.title, self.artist, self.album, self.length, self.samplerate, self.channels, self.bitrate,)
-
-    def db_str(self):
-        path = self.path.replace("'", "''")
-        return "('{}', '{}', '{}', '{}', {}, {}, {}, {}, 0)".format(path, self, title, self.artist, self.album, self.length, self.samplerate, self.channels, self.bitrate)

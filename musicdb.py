@@ -45,6 +45,7 @@ class Musicdb:
         except Exception as err:
             raise err
 
+
     def executemany(self, query, args=()):
         try:
             return self.curs.executemany(query, args)
@@ -111,20 +112,23 @@ class Musicdb:
 
     def update_db(self):
         #this gets every file
-        all_files = [
+        all_files = (
             os.path.join(root, ff)
             for root, _, files in os.walk(self.lib)
             for ff in files if os.path.splitext(ff)[1] in song.ext_list
-        ]
+        )
 
+        new_files = []
         for path in all_files:
             out = song.Song.from_path(path)
+        
             if not out:
                 continue;
             if path not in self:
                 new_files.append(out.tuple())
             else:
                 self.update_song(out)
+
 
         self.insert_multi(new_files)
         return

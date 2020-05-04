@@ -183,7 +183,7 @@ class Player_ui:
         if self.cur_pl is self[1].data:
             #check that cur_song is in the cur_pl
             if self.cur_song in self.cur_pl.data:
-                ind = self[1].data.data.index(self.cur_song)
+                ind = self[1].data.index(self.cur_song)
                 self.jump_to_ind(ind, len(self.cur_pl.data), 1)
                 self.switch_view_right()
         else:
