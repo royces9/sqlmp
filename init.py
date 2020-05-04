@@ -52,7 +52,7 @@ def windows(db, stdscr):
     leftwin = menu.Menu(0, 0, ww, hh, data=data,
                         form=lambda x: ((x.data.name, 1),),
                         cursor_colour=config.FOCUSED[0],
-                        highlight_colour=config.FOCUSED[0],
+                        highlight_colour=config.HIGHLIGHT_COLOUR[0],
                         normal_colour=config.NORMAL[0])
 
     rightwin = leftwin[0]

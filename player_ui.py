@@ -180,6 +180,7 @@ class Player_ui:
 
         #check that cur_pl and the currently selected pl
         #are the same
+        debug.debug([self.cur_pl, self[1].data])
         if self.cur_pl is self[1].data:
             #check that cur_song is in the cur_pl
             if self.cur_song in self.cur_pl.data:
@@ -194,8 +195,7 @@ class Player_ui:
 
             self.jump_to_ind(ind, len(self[0].data), 0)
 
-            self[1].data = self[0].highlighted().data
-            self[1].highlight_list = []
+            self[1] = self[0].highlighted()
 
         self.draw()
 
