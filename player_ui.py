@@ -4,8 +4,11 @@ import threading
 import time
 
 import commands
+import menu
 import player
+import playlist
 import song
+import threadwin
 
 from loadconf import config
 import debug
@@ -22,13 +25,14 @@ def song_info(song):
 
 
 class Player_ui:
-    def __init__(self, wins, stdscr, db):
+    def __init__(self, stdscr, db):
         self.cur = 0
-        self.wins = wins
         self.stdscr = stdscr
+        self.db = db
 
         self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
-        self.db = db
+
+        self.leftwin, _, self.botwin = self.__init_windows()
 
         #typed commands
         self.commands = commands.Commands(self)
@@ -38,9 +42,9 @@ class Player_ui:
         self.actions = self.__init_actions()
 
         #text window for information
-        self.textwin = self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
+        self.textwin = self.botwin.win.subwin(1, self.botwin.w - 1, self.botwin.y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
-        self[2].win.leaveok(True)
+        self.botwin.win.leaveok(True)
 
         #init a blank song
         self.cur_song = song.blank_song
@@ -58,16 +62,9 @@ class Player_ui:
         self.die = False
 
 
-    def __len__(self):
-        return len(self.wins)
-
-
-    def __setitem__(self, ind, item):
-        self.wins[ind] = item
-
-
-    def __getitem__(self, ind):
-        return self.wins[ind]
+    @property
+    def rightwin(self):
+        return self.leftwin.highlighted()
 
 
     def getkey(self):
@@ -76,9 +73,8 @@ class Player_ui:
 
         return out
 
-
     def curwin(self):
-        return self.wins[self.cur]
+        return [self.leftwin, self.rightwin][self.cur]
 
 
     def set_die(self):
@@ -104,13 +100,38 @@ class Player_ui:
             [config.TRANSFER, self.transfer],
             [config.DELETE, self.delete],
             [config.CUR_PLAY, self.jump_cur_play],
-            [['KEY_RESIZE'], self.resize],
+            #[['KEY_RESIZE'], self.resize],
         ]
 
         for key, val in pairs:
             actions.update(dict.fromkeys(key, val))
 
         return actions
+
+
+    def __init_windows(self):
+        hh, ww, bottom_bar, cc = config.set_size(self.stdscr)
+
+        win = threadwin.Threadwin(hh, cc - ww, 0, ww)
+
+        data = [menu.Menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
+                          form=config.SONG_DISP,
+                          cursor_colour=config.CURSOR[0],
+                          highlight_colour=config.HIGHLIGHT_COLOUR[0],
+                          normal_colour=config.NORMAL[0])
+                for pl in self.db.list_pl()]
+
+        leftwin = menu.Menu(0, 0, ww, hh, data=data,
+                            form=lambda x: ((x.data.name, 1),),
+                            cursor_colour=config.FOCUSED[0],
+                            highlight_colour=config.HIGHLIGHT_COLOUR[0],
+                            normal_colour=config.NORMAL[0])
+
+        rightwin = leftwin[0]
+        botwin = menu.Window(0, hh, cc, bottom_bar)
+        
+        return leftwin, rightwin, botwin
+
 
     """
     Functions called from key press/events
@@ -122,12 +143,12 @@ class Player_ui:
         if self.cur == 0:
             self.commands.delpl([])
         elif self.cur == 1:
-            cursong = self[1].highlighted()
+            cursong = self.rightwin.highlighted()
 
-            self[0].highlighted().data.remove(cursong)
-            self[1].delete(cursong)
+            self.rightwin.data.remove(cursong)
+            self.rightwin.delete(cursong)
 
-            if not self[1].data:
+            if not self.rightwin.data:
                 self.switch_view_left()
 
         self.draw()
@@ -139,9 +160,6 @@ class Player_ui:
         """
         self.curwin().down()
 
-        if self.cur == 0:
-            self[1] = self[0].highlighted()
-
 
     def grab_input(self, arg=None):
         """
@@ -151,10 +169,10 @@ class Player_ui:
         #in sqlmp, this prevents a race condition where getkey
         #gets called before the queue can execute grab_input
 
-        self[2].print_blank(2)
-        self[2].win.addch(2, 0, ":")
-        self[2].win.move(2, 1)
-        self[2].refresh()
+        self.botwin.print_blank(2)
+        self.botwin.win.addch(2, 0, ":")
+        self.botwin.win.move(2, 1)
+        self.botwin.refresh()
 
         self.tb.win.move(0, 0)
 
@@ -163,7 +181,7 @@ class Player_ui:
         curses.curs_set(0)
 
         self.commands.exe(inp)
-        self[2].print_blank(2)
+        self.botwin.print_blank(2)
 
 
     def highlight(self, arg=None):
@@ -180,21 +198,20 @@ class Player_ui:
 
         #check that cur_pl and the currently selected pl
         #are the same
-        if self.cur_pl is self[1].data:
+        if self.cur_pl is self.rightwin.data:
             #check that cur_song is in the cur_pl
             if self.cur_song in self.cur_pl.data:
-                ind = self[1].data.index(self.cur_song)
+                ind = self.rightwin.data.index(self.cur_song)
                 self.jump_to_ind(ind, len(self.cur_pl.data), 1)
                 self.switch_view_right()
         else:
-            for i, menu_pl in enumerate(self[0].data):
+            for i, menu_pl in enumerate(self.leftwin.data):
                 if menu_pl.data is self.cur_pl:
                     ind = i
                     break
 
-            self.jump_to_ind(ind, len(self[0].data), 0)
+            self.jump_to_ind(ind, len(self.leftwin.data), 0)
 
-            self[1] = self[0].highlighted()
 
         self.draw()
 
@@ -203,7 +220,7 @@ class Player_ui:
         self.player.toggle_mute()
 
 
-    def resize(self):
+    def resize(self, test=None):
         """
         handle resize event
         """
@@ -213,18 +230,20 @@ class Player_ui:
         yy = [0, 0, hh]
         wl = [ww, cc - ww, cc]
         hl = [hh, hh, bottom_bar]
+        wins = [self.leftwin, self.rightwin, self.botwin]
 
-        for win, x, y, w, h in zip(self.wins, xx, yy, wl, hl):
+        for win, x, y, w, h in zip(wins, xx, yy, wl, hl):
             win.win.resize(h, w)
             win.win.mvwin(y, x)
 
-        for win in self[0:2]:
+        for win in wins[0:2]:
             if win.cursor >= win.h:
                 prev = win.cursor + win.offset
                 win.cursor = win.h - 1
                 win.offset = prev - win.cursor
+
         
-        self.textwin = self[2].win.subwin(1, self[2].w - 1, self[2].y + 2, 1)
+        self.textwin = self.botwin.win.subwin(1, self.botwin.w - 1, self.botwin.y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
 
         self.draw()
@@ -233,9 +252,9 @@ class Player_ui:
         """
         play a song in a playlist
         """
-        self.cur_pl = self[0].highlighted().data
+        self.cur_pl = self.rightwin.data
         if self.cur == 1:
-            next_song = self[1].highlighted()
+            next_song = self.rightwin.highlighted()
         elif self.cur == 0:
             next_song = next(self.cur_pl)
         else:
@@ -244,14 +263,14 @@ class Player_ui:
         if next_song:
             self.player.play(next_song)
             self.cur_pl.remake_gen()
-            self.cur_pl.ind = self[1].highlighted_ind()
+            self.cur_pl.ind = self.rightwin.highlighted_ind()
 
 
     def switch_view(self, arg=None):
         """
         switch focus from left to right, and vice versa
         """
-        if not self[1].data:
+        if not self.leftwin.data:
             return
 
         if self.cur == 1:
@@ -264,14 +283,14 @@ class Player_ui:
         
     def switch_view_right(self):
         self.cur = 1
-        self[1].cursor_colour = config.FOCUSED[0]
-        self[0].cursor_colour = config.CURSOR[0]
+        self.rightwin.cursor_colour = config.FOCUSED[0]
+        self.leftwin.cursor_colour = config.CURSOR[0]
 
 
     def switch_view_left(self):
         self.cur = 0
-        self[0].cursor_colour = config.FOCUSED[0]
-        self[1].cursor_colour = config.CURSOR[0]
+        self.leftwin.cursor_colour = config.FOCUSED[0]
+        self.rightwin.cursor_colour = config.CURSOR[0]
 
         
 
@@ -282,19 +301,19 @@ class Player_ui:
         if self.cur != 1:
             return
         
-        if not self[0].highlight_list:
+        if not self.leftwin.highlight_list:
             return
 
-        curpl = self[0].highlighted().data
-        cursong = self[1].highlighted()
+        curpl = self.rightwin.data
+        cursong = self.rightwin.highlighted()
         if not cursong:
             return
 
-        for pl in self[0].highlight_list:
+        for pl in self.leftwin.highlight_list:
             if pl is not curpl:
                 pl.data.insert(cursong['path'])
 
-        self[1].down()
+        self.rightwin.down()
 
     
     def up(self, arg=None):
@@ -304,16 +323,13 @@ class Player_ui:
         """
         self.curwin().up()
 
-        if self.cur == 0:
-            self[1] = self[0].highlighted()
-
 
     """
     Utility functions
     """
     def draw(self):
-        self[0].disp()
-        self[1].disp()
+        self.leftwin.disp()
+        self.rightwin.disp()
 
         curses.doupdate()
 
@@ -346,12 +362,12 @@ class Player_ui:
         if self.player.is_paused():
             song += ' *PAUSED*'
 
-        self[2].print_line(song)
+        self.botwin.print_line(song)
 
         if self.cur_pl:
-            self[2].print_right_justified(' ' + self.cur_pl.name + ' ')
+            self.botwin.print_right_justified(' ' + self.cur_pl.name + ' ')
         
-        self[2].win.chgat(0, 0, self[2].w, config.FOCUSED[0])
+        self.botwin.win.chgat(0, 0, self.botwin.w, config.FOCUSED[0])
 
 
     def __info_print(self):
@@ -361,10 +377,10 @@ class Player_ui:
         info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
         if self.player.mute:
             info_str += ' [M]'
-        playmode = self[0].highlighted().data.playmode
+        playmode = self.rightwin.data.playmode
 
-        self[2].print_line(info_str, y=1)
-        self[2].print_right_justified(' ' + playmode + ' ', y=1)
+        self.botwin.print_line(info_str, y=1)
+        self.botwin.print_right_justified(' ' + playmode + ' ', y=1)
 
         if not self.player.curempty():
             player_event = self.player.curplay()
@@ -385,7 +401,7 @@ class Player_ui:
             self.__info_print()
             diff = time.time() - start
 
-            self[2].refresh()
+            self.botwin.refresh()
 
             if diff < self.frame_time:
                 time.sleep(self.frame_time - diff)
