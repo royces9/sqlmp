@@ -1,3 +1,4 @@
+import copy
 import json
 import queue
 import os
@@ -28,10 +29,9 @@ class Remote(queue.Queue):
                         pl, fn = data.decode('utf-8').split('\n\n')
                         self.put_nowait((pl.split('\n'), fn.split('\n')))
 
-                    js = json.loads(json.dumps(self.ui.cur_song))
+                    js = copy.copy(self.ui.cur_song.dict())
                     js['status'] = format(self.ui.player.state)
-                    js = json.dumps(js)
-                    conn.send(js.encode())
+                    conn.send(json.dumps(js).encode())
 
     def add_item(self, item):
         pl, fn = item

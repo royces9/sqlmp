@@ -16,7 +16,6 @@ class Playlist:
         self.ind = 0
 
         self.sort_key = self.get_val('sort')
-        self.tags = ['path', 'title', 'artist', 'album', 'length', 'samplerate', 'channels', 'bitrate', 'playcount']
         self.data = self.get_songs()
 
         self.sort()
@@ -47,6 +46,8 @@ class Playlist:
 
         return next(self.gen)
 
+    def __str__(self):
+        return self.name
 
     def index(self, obj):
         return self.data.index(obj)
@@ -89,11 +90,8 @@ class Playlist:
     def get_songs(self):
         #dict comprehension in a list comprehension (yikes)
         return [
-            {
-                tag: data
-                for tag, data in zip(self.tags, song)
-            }
-            for song in self.exe("SELECT * FROM library WHERE path IN\
+            song.Song.from_iter(song_i)
+            for song_i in self.exe("SELECT * FROM library WHERE path IN\
             (SELECT path FROM pl_song WHERE plname=?);", (self.name,))
         ]
 
@@ -188,12 +186,8 @@ class Playlist:
         self.exe("INSERT INTO pl_song VALUES (?,?);", (path, self.name,))
 
         self.data += [
-            {
-                tag: data
-                for tag, data
-                in zip(self.tags, song)
-            }
-            for song
+            song.Song.from_iter(song_i)
+            for song_i
             in self.exe("SELECT * FROM library WHERE path=?;", (path,))
         ]
             
@@ -239,12 +233,8 @@ class Playlist:
 
         for path in path_list:
             self.data += [
-                {
-                    tag: data
-                    for tag, data
-                    in zip(self.tags, song)
-                }
-                for song
+                song.Song.from_iter(song_i)
+                for song_i
                 in self.exe("SELECT * FROM library WHERE path=?;", (path,))
             ]
         

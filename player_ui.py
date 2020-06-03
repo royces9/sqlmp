@@ -32,7 +32,7 @@ class Player_ui:
 
         self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
 
-        self.leftwin, _, self.botwin = self.__init_windows()
+        self.leftwin, self.botwin = self.__init_windows()
 
         #typed commands
         self.commands = commands.Commands(self)
@@ -100,7 +100,7 @@ class Player_ui:
             [config.TRANSFER, self.transfer],
             [config.DELETE, self.delete],
             [config.CUR_PLAY, self.jump_cur_play],
-            #[['KEY_RESIZE'], self.resize],
+            [['KEY_RESIZE'], self.resize],
         ]
 
         for key, val in pairs:
@@ -122,15 +122,13 @@ class Player_ui:
                 for pl in self.db.list_pl()]
 
         leftwin = menu.Menu(0, 0, ww, hh, data=data,
-                            form=lambda x: ((x.data.name, 1),),
                             cursor_colour=config.FOCUSED[0],
                             highlight_colour=config.HIGHLIGHT_COLOUR[0],
                             normal_colour=config.NORMAL[0])
 
-        rightwin = leftwin[0]
         botwin = menu.Window(0, hh, cc, bottom_bar)
         
-        return leftwin, rightwin, botwin
+        return leftwin, botwin
 
 
     """
@@ -202,7 +200,7 @@ class Player_ui:
             #check that cur_song is in the cur_pl
             if self.cur_song in self.cur_pl.data:
                 ind = self.rightwin.data.index(self.cur_song)
-                self.jump_to_ind(ind, len(self.cur_pl.data), 1)
+                self.jump_to_ind(ind, len(self.cur_pl.data), self.rightwin)
                 self.switch_view_right()
         else:
             for i, menu_pl in enumerate(self.leftwin.data):
@@ -210,7 +208,7 @@ class Player_ui:
                     ind = i
                     break
 
-            self.jump_to_ind(ind, len(self.leftwin.data), 0)
+            self.jump_to_ind(ind, len(self.leftwin.data), self.leftwin)
 
 
         self.draw()
@@ -341,16 +339,16 @@ class Player_ui:
 
 
     def jump_to_ind(self, ind, data_len, window):
-        offset = ind - int(self[window].h / 2)
+        offset = ind - int(window.h / 2)
         if offset < 0:
             #for the case that the found index is near the top
             offset = 0
-        elif offset >= data_len - self[window].h:
+        elif offset >= data_len - window.h:
             #for the case that the found index is near the bottom
-            offset = data_len - self[window].h
+            offset = data_len - window.h
 
-        self[window].cursor = ind - offset
-        self[window].offset = offset
+        window.cursor = ind - offset
+        window.offset = offset
 
 
     def __print_cur_playing(self):

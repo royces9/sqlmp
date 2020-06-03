@@ -51,11 +51,11 @@ def song_format(ll):
     length = song_length(ll['length'])
 
     return (
-        (artist, 1/4),
-        (title, 3/8),
-        (album, 1/4),
-        (bitrate, 1/16),
-        (length, 1/16),
+        (artist, 1/4, False),
+        (title, 3/8, False),
+        (album, 1/4, False),
+        (bitrate, 1/16, True),
+        (length, 1/16, True),
     )
 
 

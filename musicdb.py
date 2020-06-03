@@ -98,10 +98,10 @@ class Musicdb:
 
     def dir_files(self, di):
         return [
-            out.tuple()
+            tuple(out)
             for root, _, files in os.walk(di)
             for ff in files
-            if (out := song.Song.from_path(os.path.join(root, ff))) is not None and out.path not in self
+            if (out := song.Song.from_path(os.path.join(root, ff))) is not None and out['path'] not in self
         ]
 
 
@@ -125,7 +125,7 @@ class Musicdb:
             if not out:
                 continue;
             if path not in self:
-                new_files.append(out.tuple())
+                new_files.append(tuple(out))
             else:
                 self.update_song(out)
 
@@ -135,7 +135,7 @@ class Musicdb:
 
 
     def update_song(self, song):
-        self.exe("UPDATE library SET title=?, artist=?, album=?, length=?, samplerate=?, channels=?, bitrate=? WHERE path=?", (song.title, song.artist, song.album, song.length, song.samplerate, song.channels, song.bitrate, song.path))
+        self.exe("UPDATE library SET title=?, artist=?, album=?, length=?, samplerate=?, channels=?, bitrate=? WHERE path=?", (song['title'], song['artist'], song['album'], song['length'], song['samplerate'], song['channels'], song['bitrate'], song['path']))
         
     def list_pl(self):
         return [pl[0] for pl in self.exe("SELECT plname FROM playlists;")]

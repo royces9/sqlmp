@@ -1,32 +1,39 @@
+import ffmpeg
 import os
 
-import ffmpeg
+from loadconf import config
 
 import debug
 
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
 
-blank_song = {'title': 'Nothing currently playing',
-              'artist': '',
-              'album': '',
-              'length': 0,
-              'samplerate': 0,
-              'channels': 0,
-              'bitrate': 0,
-              'playcount': 0
-}
+tags = ['path', 'title', 'artist', 'album', 'length', 'samplerate', 'channels', 'bitrate', 'playcount']
 
 
 class Song:
-    def __init__(self, path):
-        self.path = path
-        
-        (self.title, self.artist, self.album,
-         self.length, self.samplerate, self.channels,
-         self.bitrate) =  self.grab_tags(path)
+    def __init__(self, di):
+        self.__dict = di
 
 
-    def grab_tags(self, path):
+    def __getitem__(self, key):
+        return self.__dict[key]
+
+
+    def __iter__(self):
+        for item in song.tags:
+            yield self.__dict[item]
+
+
+    def __str__(self):
+        return self.__dict['title']
+
+
+    def dict(self):
+        return self.__dict
+
+
+    @staticmethod
+    def grab_tags(path):
         prob = ffmpeg.probe(path)
 
         tags_out = ['title', 'artist', 'album']
@@ -44,6 +51,7 @@ class Song:
 
         return tuple(tags, ) + tuple(attr, ) + (int(prob['format']['bit_rate']), )
 
+
     @classmethod
     def from_path(cls, path):
         if os.path.splitext(path)[1] not in ext_list:
@@ -52,8 +60,31 @@ class Song:
         if not os.path.exists(path):
             return None
 
-        return cls(path)
+        return cls(Song.new_dict(Song.grab_tags(path)))
 
 
-    def tuple(self):
-        return (self.path, self.title, self.artist, self.album, self.length, self.samplerate, self.channels, self.bitrate,)
+    @classmethod
+    def from_iter(cls, it):
+        return cls(Song.new_dict((it)))
+
+
+    @staticmethod
+    def new_dict(datas):
+        return {
+            tag: data
+            for tag, data
+            in zip(tags, datas)
+        }
+
+
+blank_song = Song({'title': 'Nothing currently playing',
+              'artist': '',
+              'album': '',
+              'length': 0,
+              'samplerate': 0,
+              'channels': 0,
+              'bitrate': 0,
+              'playcount': 0
+})
+
+    

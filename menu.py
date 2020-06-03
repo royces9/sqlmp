@@ -49,7 +49,7 @@ class Window:
 
 class Menu(Window):
     def __init__(self, x=0, y=0, w=0, h=0, win=None, data=None,
-                 form=lambda ll: ((str(ll), 1),),
+                 form=lambda ll: ((str(ll), 1, 0),),
                  cursor_colour=curses.A_STANDOUT,
                  highlight_colour=curses.A_REVERSE,
                  normal_colour=curses.A_NORMAL):
@@ -82,6 +82,10 @@ class Menu(Window):
 
     def __getitem__(self, ind):
         return self.data[ind]
+
+
+    def __str__(self):
+        return str(self.data)
 
 
     def highlight(self):
@@ -148,6 +152,7 @@ class Menu(Window):
         smaller = self.h if diff > self.h else diff
 
         for ii in range(smaller):
+            #self.print_line(str(self.data[ii + self.offset]), ii, 0)
             formatted_list = self.form(self.data[ii + self.offset])
             self.print_col(0, ii, formatted_list)
 
@@ -170,11 +175,15 @@ class Menu(Window):
 
 
     def print_col(self, x, y, datas):
-        for string, fraction in datas:
+        for string, fraction, flag in datas:
             width = int(self.w * fraction)
-            self.win.addnstr(y, x, wchar.set_width(string, width), width)
+            s = wchar.set_width(string, width)
+            if flag:
+                s = s.rjust(width)
+            self.win.addnstr(y, x, s, width)
 
             x += width
+
 
     def insert(self, items):
         if isinstance(items, list):

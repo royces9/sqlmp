@@ -35,8 +35,8 @@ class Commands:
 
 
     def err_print(self, err):
-        self[2].print_blank(3)
-        self[2].print_line(err, y=3)
+        self.ui.botwin.print_blank(3)
+        self.ui.botwin.print_line(err, y=3)
 
 
     def exe(self, inp):
@@ -72,13 +72,13 @@ class Commands:
             return
 
         if len(args) == 1:
-            pl = self[0].highlighted().data
+            pl = self.ui.leftwin.highlighted().data
         else:
             ind = self.pl_exists(args[1])
             if ind < 0:
                 return
 
-            pl = self[0].data[ind].data
+            pl = self.ui.leftwin.data[ind].data
 
         newitem = args[0]
         if os.path.isfile(newitem):
@@ -86,7 +86,7 @@ class Commands:
         elif os.path.isdir(newitem):
             pl.insert_dir(newitem)
 
-        self[1].disp()
+        self.ui.rightwin.disp()
 
 
     def delpl(self, args):
@@ -96,7 +96,7 @@ class Commands:
         1 arg : delete the named playlist
         """
         if not args:
-            pl = self[0].highlighted()
+            pl = self.ui.leftwin.highlighted()
             plname = pl.data.name
         else:
             plname = args[0]
@@ -106,9 +106,9 @@ class Commands:
                 self.err_print('Playlist "{}" doesn\'t exist'.format(plname))
                 return
 
-            pl = self[0].data[ind]
+            pl = self.ui.leftwin.data[ind]
 
-        self[0].delete(pl)
+        self.ui.leftwin.delete(pl)
         playlist.Playlist.del_pl(plname, self.ui.db)
 
         self.ui.draw()
@@ -123,7 +123,7 @@ class Commands:
             self.err_print('One argument required')
             return
         elif len(args) == 1:
-            pl = self[0].highlighted().data
+            pl = self.ui.leftwin.highlighted().data
             plname = pl.name
             dest = args[0]
         else:
@@ -136,7 +136,7 @@ class Commands:
                 self.err_print('Playlist "{}" doesn\'t exist'.format(plname))
                 return
 
-            pl = self[0].data[ind].data
+            pl = self.ui.leftwin.data[ind].data
 
         if not os.path.exists(dest):
             self.err_print('Directory "{}" doesn\'t exist'.format(dest))
@@ -153,8 +153,8 @@ class Commands:
             return
         elif len(args) == 1:
             dest = args[0]
-            for pl in self[0]:
-                self.export((pl.name, dest))
+            for pl in self.ui.leftwin:
+                self.export((pl.data.name, dest))
 
     def find(self, args):
         """
@@ -162,7 +162,7 @@ class Commands:
         1 args: jump to the first song that matches the arg by the current sorting key
         2 args: jump to the first song that matches the arg by the given key
         """
-        curpl = self[0].highlighted().data
+        curpl = self.ui.leftwin.highlighted().data
         if not args:
             if not self.find_list:
                 self.err_print('At least one argument required')
@@ -208,7 +208,7 @@ class Commands:
                 return
 
             playlist.Playlist.init_pl(plname, self.ui.db)
-            newpl = menu.Menu(win=self[1].win,
+            newpl = menu.Menu(win=self.ui.rightwin.win,
                               data=playlist.Playlist(name=plname, db=self.ui.db),
                               form=config.SONG_DISP,
                               cursor_colour=config.CURSOR[0],
@@ -226,7 +226,7 @@ class Commands:
                 return
 
             playlist.init_pl(plname, self.ui.db)
-            newpl = menu.Menu(win=self[1].win,
+            newpl = menu.Menu(win=self.ui.rightwin.win,
                               data=playlist.Playlist(name=plname, db=self.ui.db),
                               form=config.SONG_DISP,
                               cursor_colour=config.CURSOR[0],
@@ -235,8 +235,8 @@ class Commands:
 
             newpl.insert_from_file(plfile)
 
-        self[0].insert(newpl)
-        self[0].disp()
+        self.ui.leftwin.insert(newpl)
+        self.ui.leftwin.disp()
 
 
     def playmode(self, args):
@@ -248,7 +248,7 @@ class Commands:
             return
 
         playmode = args[0]
-        cur = self[0].highlighted().data
+        cur = self.ui.leftwin.highlighted().data
         if playmode in cur.playmode_list:
             cur.change_playmode(playmode)
         else:
@@ -265,7 +265,7 @@ class Commands:
             self.err_print('One argument required')
             return
         elif len(args) == 1:
-            ind = self[0].highlighted_ind()
+            ind = self.ui.leftwin.highlighted_ind()
             newname = args[0]
         else:
             curname = args[0]
@@ -276,8 +276,8 @@ class Commands:
                 self.err_print('Playlist "{}" doesn\'t exist'.format(curname))
                 return
 
-        self[0].data[ind].data.rename(newname)
-        self[0].disp()
+        self.ui.leftwin.data[ind].data.rename(newname)
+        self.ui.leftwin.disp()
 
 
     def sort(self, args):
@@ -290,10 +290,10 @@ class Commands:
             return
 
         _key = args[0]
-        cur = self[0].highlighted().data
+        cur = self.ui.leftwin.highlighted().data
         if _key in cur.tags:
             cur.change_sort(_key)
-            self[1].disp()
+            self.ui.rightwin.disp()
         else:
             self.err_print('"{}" is not a valid key to sort by'.format(_key))
 
@@ -306,11 +306,12 @@ class Commands:
 
 
     def pl_exists(self, name):
-        """                                                                                                            
-        check if pl exists and return its index in list                                                                
         """
-        for i, d in enumerate(self[0].data):
+        check if pl exists and return its index in list
+        """
+        for i, d in enumerate(self.ui.leftwin.data):
             if d.data.name == name:
                 return i
 
         return -1
+ 

@@ -1,7 +1,12 @@
 import ctypes
+import os
+
 import debug
 
 libc = ctypes.CDLL(None)
+wide = ctypes.CDLL(os.path.dirname(__file__) + '/wide.so')
+wide.set_width.restype = ctypes.c_wchar_p
+
 
 def wcwidth(c):
     """
@@ -21,20 +26,8 @@ def wcswidth(s):
 
 
 def set_width(s, n):
-    """
-    return s truncated to n wide
-    if the width of s is less than n, return s
-    """
-    wid, _len = wcswidth(s)
-    if wid == -1:
-        return ""
-    if wid >= n:
-        for i, c in enumerate(reversed(s)):
-            cw = wcwidth(c)
-            if cw == -1:
-                return ""
-            wid -= cw
-            if wid < n:
-                return s[:_len - i - 1]
+    inp = ctypes.c_wchar_p(s)
+    return wide.set_width(inp, n)
 
-    return s
+
+
