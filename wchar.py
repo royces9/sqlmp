@@ -3,7 +3,7 @@ import os
 
 import debug
 
-libc = ctypes.CDLL(None)
+#no need to import clib because wchar.h is #included in wide.c
 wide = ctypes.CDLL(os.path.dirname(__file__) + '/wide.so')
 wide.set_width.restype = ctypes.c_wchar_p
 
@@ -13,7 +13,7 @@ def wcwidth(c):
     return width of character, if string inputted, only the first character
     """
     inp = ctypes.c_wchar(c[0])
-    return libc.wcwidth(inp)
+    return wide.wcwidth(inp)
 
 
 def wcswidth(s):
@@ -22,7 +22,7 @@ def wcswidth(s):
     """
     n = len(s)
     inp = ctypes.c_wchar_p(s)
-    return libc.wcswidth(inp, n), n
+    return wide.wcswidth(inp, n), n
 
 
 def set_width(s, n):

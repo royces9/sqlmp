@@ -9,6 +9,9 @@ import playlist
 #quick script to init lib and some playlists or something
 #only run this once
 
+#compile widechar stuff
+os.system('gcc -fPIC -shared -o wide.so wide.c')
+
 #location of database file
 dbpath = 'newlib.db'
 
