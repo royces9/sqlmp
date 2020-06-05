@@ -14,16 +14,6 @@ from loadconf import config
 import debug
 
 
-def song_info(song):
-    """
-    return a string with formatted song info
-    """
-    info = [str(song[key]) for key in config.SONG_INFO
-            if song[key]]
-
-    return ' - '.join(info)
-
-
 class Player_ui:
     def __init__(self, stdscr, db):
         self.cur = 0
@@ -355,7 +345,7 @@ class Player_ui:
         """
         print currently playing song/playlist in bottom window with highlight
         """
-        song = song_info(self.cur_song)
+        song = self.cur_song.info()
 
         if self.player.is_paused():
             song += ' *PAUSED*'
@@ -367,7 +357,7 @@ class Player_ui:
         
         self.botwin.win.chgat(0, 0, self.botwin.w, config.FOCUSED[0])
 
-
+        
     def __info_print(self):
         time_str = config.song_length(self.player.cur_time())
         total_time_str = config.song_length(self.cur_song['length'])
@@ -375,10 +365,11 @@ class Player_ui:
         info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
         if self.player.mute:
             info_str += ' [M]'
-        playmode = self.rightwin.data.playmode
 
+        #TODO
+        #maybe make this into one line
         self.botwin.print_line(info_str, y=1)
-        self.botwin.print_right_justified(' ' + playmode + ' ', y=1)
+        self.botwin.print_right_justified(' ' + self.rightwin.data.playmode + ' ', y=1)
 
         if not self.player.curempty():
             player_event = self.player.curplay()

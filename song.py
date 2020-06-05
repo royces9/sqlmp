@@ -32,6 +32,12 @@ class Song:
         return self.__dict
 
 
+    def info(self):
+        i = [str(self[key]) for key in config.SONG_INFO\
+             if self[key]]
+
+        return ' - '.join(i)
+
     @staticmethod
     def grab_tags(path):
         prob = ffmpeg.probe(path)
