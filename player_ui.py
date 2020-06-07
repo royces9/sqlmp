@@ -139,8 +139,6 @@ class Player_ui:
             if not self.rightwin.data:
                 self.switch_view_left()
 
-        self.draw()
-
 
     def down(self, arg=None):
         """
@@ -157,6 +155,8 @@ class Player_ui:
         #in sqlmp, this prevents a race condition where getkey
         #gets called before the queue can execute grab_input
 
+        #TODO maybe there's some way to have some callback function
+        #that gets executed x amount of time after this happens
         self.botwin.print_blank(2)
         self.botwin.win.addch(2, 0, ":")
         self.botwin.win.move(2, 1)
@@ -201,9 +201,6 @@ class Player_ui:
             self.jump_to_ind(ind, len(self.leftwin.data), self.leftwin)
 
 
-        self.draw()
-
-
     def mute(self, arg=None):
         self.player.toggle_mute()
 
@@ -234,7 +231,6 @@ class Player_ui:
         self.textwin = self.botwin.win.subwin(1, self.botwin.w - 1, self.botwin.y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
 
-        self.draw()
 
     def select(self, arg=None):
         """
@@ -265,8 +261,6 @@ class Player_ui:
             self.switch_view_left()
         else:
             self.switch_view_right()
-
-        self.draw()
 
         
     def switch_view_right(self):
@@ -391,6 +385,9 @@ class Player_ui:
             diff = time.time() - start
 
             self.botwin.refresh()
-
+            #TODO doupdate on multiple threads can't be safe
+            #change this later
+            curses.doupdate()
+            
             if diff < self.frame_time:
                 time.sleep(self.frame_time - diff)

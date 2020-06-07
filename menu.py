@@ -43,7 +43,7 @@ class Window:
 
 
     def refresh(self):
-        self.win.refresh()
+        self.win.noutrefresh()
 
 
 
@@ -145,6 +145,7 @@ class Menu(Window):
             self.paint_cursor(self.cursor_colour, self.cursor)
 
             self.paint_highlight(self.highlight_colour, self.offset)
+
 
     def disp(self):
         self.win.erase()
