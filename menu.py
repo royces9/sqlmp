@@ -46,7 +46,6 @@ class Window:
         self.win.noutrefresh()
 
 
-
 class Menu(Window):
     def __init__(self, x=0, y=0, w=0, h=0, win=None, data=None,
                  form=lambda ll: ((str(ll), 1, 0),),

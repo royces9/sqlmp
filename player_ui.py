@@ -44,7 +44,7 @@ class Player_ui:
 
         #amount of time in between drawing
         #not really a frame time but w/e
-        self.frame_time = 0.1
+        self.frame_time = 0.01
 
         self.info = threading.Thread(target=self.__info_print_loop, daemon=True)
         self.info.start()
@@ -157,6 +157,7 @@ class Player_ui:
 
         #TODO maybe there's some way to have some callback function
         #that gets executed x amount of time after this happens
+        #so i can remove error messages after x amount of time
         self.botwin.print_blank(2)
         self.botwin.win.addch(2, 0, ":")
         self.botwin.win.move(2, 1)
@@ -313,8 +314,6 @@ class Player_ui:
         self.leftwin.disp()
         self.rightwin.disp()
 
-        curses.doupdate()
-
     def __enqueue(self):
         """
         add a new song onto the player queue
@@ -382,12 +381,11 @@ class Player_ui:
         while True:
             start = time.time()
             self.__info_print()
-            diff = time.time() - start
-
             self.botwin.refresh()
             #TODO doupdate on multiple threads can't be safe
             #change this later
             curses.doupdate()
-            
+            diff = time.time() - start
+
             if diff < self.frame_time:
                 time.sleep(self.frame_time - diff)
