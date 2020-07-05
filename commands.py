@@ -185,7 +185,7 @@ class Commands:
             self.err_print('Not found.')
             return
 
-        self.ui.jump_to_ind(ind, len(curpl.data), 1)
+        self.ui.jump_to_ind(ind, len(curpl.data), self.ui.rightwin)
 
         self.ui.switch_view_right()
         self.ui.draw()
