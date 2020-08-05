@@ -58,7 +58,8 @@ class Player_ui:
 
 
     def getkey(self):
-        out = self.stdscr.getkey()
+        out = self.stdscr.getch()
+        #out = self.stdscr.getkey()
         curses.flushinp()
 
         return out
@@ -90,6 +91,8 @@ class Player_ui:
             [config.TRANSFER, self.transfer],
             [config.DELETE, self.delete],
             [config.CUR_PLAY, self.jump_cur_play],
+            [config.JUMP_UP, self.jump_up],
+            [config.JUMP_DOWN, self.jump_down],
             [['KEY_RESIZE'], self.resize],
         ]
 
@@ -163,11 +166,15 @@ class Player_ui:
         self.botwin.win.move(2, 1)
         self.botwin.refresh()
 
-        self.tb.win.move(0, 0)
+        #self.tb.win.move(0, 0)
 
+        curses.echo()
         curses.curs_set(2)
-        inp = self.tb.edit()
+        inp = self.botwin.win.getstr().decode('utf-8')
+        debug.debug(inp)
+        #inp = self.tb.edit()
         curses.curs_set(0)
+        curses.noecho()
 
         self.commands.exe(inp)
         self.botwin.print_blank(2)
@@ -201,6 +208,13 @@ class Player_ui:
 
             self.jump_to_ind(ind, len(self.leftwin.data), self.leftwin)
 
+
+    def jump_down(self, arg=None):
+        self.curwin().jump_down(self.curwin().h // 2)
+
+
+    def jump_up(self, arg=None):
+        self.curwin().jump_up(self.curwin().h // 2)
 
     def mute(self, arg=None):
         self.player.toggle_mute()

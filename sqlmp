@@ -18,14 +18,14 @@ def __inp(ui, qq):
     while True:
         ui.command_event.wait()
 
-        key = ui.getkey()
+        key = curses.keyname(ui.getkey()).decode('utf-8')
 
         if key in ui.actions:
             qq.put_nowait((key))
 
             if key in config.COMMAND:
                 ui.command_event.clear()
-
+            
                 
 def main_loop(ui):
     remote = socket_thread.Remote(ui, config.SOCKET)

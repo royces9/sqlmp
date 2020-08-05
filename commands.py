@@ -47,7 +47,7 @@ class Commands:
             spl = shlex.split(inp)
         except:
             self.err_print('Mismatched quotations.')
-            self.command.set()
+            self.command_event.set()
             return
         
         if not spl:
