@@ -20,7 +20,7 @@ class Song:
 
 
     def __iter__(self):
-        for item in song.tags:
+        for item in tags:
             yield self.__dict[item]
 
 
@@ -55,7 +55,7 @@ class Song:
         attr = (a[1](prob['streams'][0][a[0]])
                 for a in [('duration', float), ('sample_rate', int), ('channels', int)])
 
-        return tuple(tags, ) + tuple(attr, ) + (int(prob['format']['bit_rate']), )
+        return (path,) + tuple(tags, ) + tuple(attr, ) + (int(prob['format']['bit_rate']), ) + (0,)
 
 
     @classmethod

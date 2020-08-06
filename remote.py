@@ -45,14 +45,15 @@ def parse_args(argv):
     pl = []
     fn = []
 
-    cwd = os.getcwd()
+    #cwd = os.getcwd()
     for arg in args:
         if arg[0] == '-p':
             #playlist
             pl += [p for p in arg[1:]]
         elif arg[0] == '-f':
             #files or dir
-            fn += ['/'.join([cwd, f]) for f in arg[1:]]
+            fn += [os.path.abspath(f) for f in arg[1:]]
+            #fn += ['/'.join([cwd, f]) for f in arg[1:]]
         else:
             break
 
@@ -74,7 +75,7 @@ def main():
             s.send('\n'.join(pl).encode())
             s.send(b'\n\n')
             s.send('\n'.join(fn).encode())
-            s.send(b'\n')
+            #s.send(b'\n')
             s.recv(1024)
 
         else:

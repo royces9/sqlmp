@@ -171,7 +171,6 @@ class Player_ui:
         curses.echo()
         curses.curs_set(2)
         inp = self.botwin.win.getstr().decode('utf-8')
-        debug.debug(inp)
         #inp = self.tb.edit()
         curses.curs_set(0)
         curses.noecho()

@@ -106,7 +106,7 @@ class Musicdb:
 
 
     def insert_multi(self, li):
-        self.executemany("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,0);", li)
+        self.executemany("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,?);", li)
         self.commit()
 
 

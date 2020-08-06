@@ -136,44 +136,30 @@ class Menu(Window):
     def jump_up(self, n):
         self.cursor -= n
 
-        if self.cursor < 0 and self.offset > 0:
-            self.offset += self.cursor
-            if self.offset < 0:
-                self.win.scroll(-(self.offset - self.cursor))
+        if self.cursor < 0:
+            if self.offset < -self.cursor:
+                self.win.scroll(self.offset)
                 self.offset = 0
             else:
+                self.offset += self.cursor
                 self.win.scroll(self.cursor)
-
-        self.cursor = 0
+            self.cursor = 0
 
         self.paint_cursor(self.cursor_colour, self.cursor)
         self.paint_highlight(self.highlight_colour, self.offset)
 
 
     def jump_down(self, n):
-        diff = (len(self.data) - 1) - (self.offset + self.cursor)
-        
-        old_off = self.offset
         self.cursor += n
-        if self.cursor >= (self.h - 1):
-            self.offset += self.h - self.cursor
-            self.cursor = self.h - 1
 
         if (self.offset + self.cursor) >= (len(self.data) - 1):
-            self.offset = (len(self.data) - 1) - self.cursor
-            
-        self.win.scroll(old_off)
+            self.cursor = (len(self.data) - 1) - self.offset
 
-        """
-        for _ in range(n):
-            if (self.offset + self.cursor) < (len(self.data) - 1):
-                if self.cursor >= (self.h - 1):
-                    self.offset += 1
-                    self.win.scroll(1)
+        if self.cursor > (self.h - 1):
+            self.offset += (self.cursor - (self.h - 1))
+            self.win.scroll(self.cursor - (self.h - 1))
+            self.cursor = self.h - 1
 
-                else:
-                    self.cursor += 1
-        """
         self.paint_cursor(self.cursor_colour, self.cursor)
         self.paint_highlight(self.highlight_colour, self.offset)
 
