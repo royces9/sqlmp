@@ -7,6 +7,29 @@ import player_ui
 import playlist
 from loadconf import config
 
+import debug
+class Error_msg:
+    def __init__(self, ui, timer, frame_time, exe, args):
+        self.exe = exe
+        self.args = args
+        self.reset = False
+        self.timer = timer
+        self.count = int(self.timer / frame_time)
+        self.total = 0
+        
+    def check(self):
+        if self.reset:
+            self.total += 1
+            if self.total > self.count:
+                self.total = 0
+                self.reset = False
+                self.exe(*self.args)
+
+    def set(self):
+        self.total = 0
+        self.reset = True
+
+
 class Commands:
     def __init__(self, ui):
         self.ui = ui
@@ -17,7 +40,7 @@ class Commands:
             'delpl': self.delpl,
             'export': self.export,
             'export_all': self.export_all,
-            'find': self.find, 
+            'find': self.find,
             'newpl': self.newpl,
             'playmode': self.playmode,
             'renamepl': self.renamepl,
@@ -25,6 +48,7 @@ class Commands:
             'update': self.update,
         }
 
+        self.err = Error_msg(self.ui, 2, self.ui.frame_time, self.ui.botwin.print_blank, (3,))
         self.find_list = None
         self.command_event = threading.Event()
         self.command_event.set()
@@ -37,7 +61,7 @@ class Commands:
     def err_print(self, err):
         self.ui.botwin.print_blank(3)
         self.ui.botwin.print_line(err, y=3)
-
+        self.err.set()
 
     def exe(self, inp):
         """
@@ -60,13 +84,14 @@ class Commands:
 
         self.command_event.set()
 
+
     def add(self, args):
         """
         add a directory or file to a playlist
         1 arg : add arg to highlighted playlist
         2 args: add arg to named playlist
-
         """
+
         if not args:
             self.err_print('One argument required')
             return

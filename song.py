@@ -5,7 +5,7 @@ from loadconf import config
 
 import debug
 
-ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg'}
+ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg', '.opus'}
 
 tags = ['path', 'title', 'artist', 'album', 'length', 'samplerate', 'channels', 'bitrate', 'playcount']
 

@@ -24,10 +24,6 @@ class Player_ui:
 
         self.leftwin, self.botwin = self.__init_windows()
 
-        #typed commands
-        self.commands = commands.Commands(self)
-        self.command_event = self.commands.command_event
-
         #hotkeys, from keys.py
         self.actions = self.__init_actions()
 
@@ -45,6 +41,10 @@ class Player_ui:
         #amount of time in between drawing
         #not really a frame time but w/e
         self.frame_time = 0.01
+
+        #typed commands
+        self.commands = commands.Commands(self)
+        self.command_event = self.commands.command_event
 
         self.info = threading.Thread(target=self.__info_print_loop, daemon=True)
         self.info.start()
@@ -168,6 +168,10 @@ class Player_ui:
 
         #self.tb.win.move(0, 0)
 
+        #TODO
+        #getstr seems to have a bunch of weird behaviour
+        #backspace doesn't work
+        #space doesn't move the cursor to indicate there's a space
         curses.echo()
         curses.curs_set(2)
         inp = self.botwin.win.getstr().decode('utf-8')
@@ -402,3 +406,5 @@ class Player_ui:
 
             if diff < self.frame_time:
                 time.sleep(self.frame_time - diff)
+
+            self.commands.err.check()

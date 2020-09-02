@@ -66,7 +66,7 @@ class Musicdb:
         if not out:
             return
 
-        self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,0);", out.tuple())
+        self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,?);", tuple(out))
         self.commit()
 
 
@@ -83,7 +83,7 @@ class Musicdb:
     def insert_song_list(self, paths):
         self.insert_multi(
             [
-                s.tuple()
+                tuple(s)
                 for p in (pp for pp in paths if pp not in self)
                 if (s := song.Song.from_path(p) is not None)
             ]
