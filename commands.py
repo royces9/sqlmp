@@ -316,7 +316,7 @@ class Commands:
 
         _key = args[0]
         cur = self.ui.leftwin.highlighted().data
-        if _key in cur.tags:
+        if _key in playlist.song.tags:
             cur.change_sort(_key)
             self.ui.rightwin.disp()
         else:
