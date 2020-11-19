@@ -12,22 +12,19 @@ class Error_msg:
     def __init__(self, ui, timer, frame_time, exe, args):
         self.exe = exe
         self.args = args
-        self.reset = False
         self.timer = timer
         self.count = int(self.timer / frame_time)
         self.total = 0
         
     def check(self):
-        if self.reset:
+        if self.total:
             self.total += 1
-            if self.total > self.count:
+            if self.total >= self.count:
                 self.total = 0
-                self.reset = False
                 self.exe(*self.args)
 
     def set(self):
-        self.total = 0
-        self.reset = True
+        self.total = 1
 
 
 class Commands:
