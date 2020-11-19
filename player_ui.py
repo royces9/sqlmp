@@ -30,7 +30,6 @@ class Player_ui:
         #text window for information
         self.textwin = self.botwin.win.subwin(1, self.botwin.w - 1, self.botwin.y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
-        self.botwin.win.leaveok(True)
 
         #init a blank song
         self.cur_song = song.blank_song
