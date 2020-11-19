@@ -28,8 +28,8 @@ class Player_ui:
         self.actions = self.__init_actions()
 
         #text window for information
-        self.textwin = self.botwin.win.subwin(1, self.botwin.w - 1, self.botwin.y + 2, 1)
-        self.tb = tp.Textbox(self.textwin, insert_mode=True)
+        #self.textwin = self.botwin.win.subwin(1, self.botwin.w - 1, self.botwin.y + 2, 1)
+        self.tb = tp.Textbox(self.textbox.win, insert_mode=True)
 
         #init a blank song
         self.cur_song = song.blank_song
@@ -118,8 +118,8 @@ class Player_ui:
                             highlight_colour=config.HIGHLIGHT_COLOUR[0],
                             normal_colour=config.NORMAL[0])
 
-        botwin = menu.Window(0, hh, cc, bottom_bar)
-        
+        botwin = menu.Window(0, hh, cc, 3)
+        self.textbox = menu.Window(0, hh + 2, cc, 3)
         return leftwin, botwin
 
 
