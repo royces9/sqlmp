@@ -30,7 +30,6 @@ class Player_ui:
         #text window for information
         self.textwin = self.botwin.win.subwin(1, self.botwin.w - 1, self.botwin.y + 2, 1)
         self.tb = tp.Textbox(self.textwin, insert_mode=True)
-        self.botwin.win.leaveok(True)
 
         #init a blank song
         self.cur_song = song.blank_song
@@ -168,10 +167,6 @@ class Player_ui:
 
         #self.tb.win.move(0, 0)
 
-        #TODO
-        #getstr seems to have a bunch of weird behaviour
-        #backspace doesn't work
-        #space doesn't move the cursor to indicate there's a space
         curses.echo()
         curses.curs_set(2)
         inp = self.botwin.win.getstr().decode('utf-8')
