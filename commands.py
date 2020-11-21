@@ -5,6 +5,7 @@ import threading
 import menu
 import player_ui
 import playlist
+import song
 from loadconf import config
 
 import debug
@@ -194,7 +195,7 @@ class Commands:
                 key = curpl.sort_key
             elif len(args) > 1:
                 key = args[1]
-                if key not in curpl.song.tags:
+                if key not in song.tags:
                     self.err_print('Invalid key: ' + key)
                     return
 
