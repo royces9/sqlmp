@@ -23,11 +23,13 @@ class Player_ui:
         self.stdscr = stdscr
         self.db = db
 
+        #actual music player
         self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
 
+        #the windows of the player
         self.leftwin, self.botwin, self.textwin = self.__init_windows()
 
-        #hotkeys, from keys.py
+        #hotkeys from config.py
         self.actions = self.__init_actions()
 
         #init a blank song
@@ -44,15 +46,18 @@ class Player_ui:
         self.commands = commands.Commands(self)
         self.command_event = self.commands.command_event
 
+        #handles input for typed commands
+        self.keys = keys.Keys()
+        #flag to decide if command is getting entered
+        self.inp = False
+
+        #thread for updating everything visually
         self.info = threading.Thread(target=self.__info_print_loop, daemon=True)
         self.info.start()
 
         #flag to decide if we kill the ui
         self.die = False
 
-        #flag to decide if command is getting entered
-        self.inp = False
-        self.keys = keys.Keys()
         
     @property
     def rightwin(self):
@@ -63,7 +68,7 @@ class Player_ui:
         out = self.stdscr.getch()
         curses.flushinp()
 
-        return chr(out)
+        return out
 
     def curwin(self):
         return [self.leftwin, self.rightwin][self.cur]
@@ -86,7 +91,7 @@ class Player_ui:
             [config.PLAYPAUSE, self.player.play_pause],
             [config.QUIT, self.set_die],
             [config.SWITCH, self.switch_view],
-            [config.COMMAND, self.grab_input],
+            [config.COMMAND, self.prepare_command],
             [config.SELECT, self.select],
             [config.HIGHLIGHT, self.highlight],
             [config.TRANSFER, self.transfer],
@@ -120,8 +125,8 @@ class Player_ui:
                             highlight_colour=config.HIGHLIGHT_COLOUR[0],
                             normal_colour=config.NORMAL[0])
 
-        botwin = menu.Window(0, hh, cc, 2)
-        textwin = menu.Window(0, hh + 2, cc, 2)
+        botwin = menu.Window(0, hh, cc, song_info_bar_height)
+        textwin = menu.Window(0, hh + 2, cc, command_bar_height)
         return leftwin, botwin, textwin
 
 
@@ -151,13 +156,14 @@ class Player_ui:
         self.curwin().down()
 
 
-    def grab_input(self, arg=None):
+    def prepare_command(self, arg=None):
         """
-        grab a command input when ':' is pressed
+        prepare input loop to handle command input
+        when config.COMMAND key is pressed
         """
         #command_event.wait() is called from the input thread
         #in sqlmp, this prevents a race condition where getkey
-        #gets called before the queue can execute grab_input
+        #gets called before the queue can execute prepare_command
         self.textwin.print_blank(0)
         self.textwin.win.addch(0, 0, ':')
         curses.curs_set(2)
@@ -169,6 +175,7 @@ class Player_ui:
     def handle_input(self, key):
         if key in self.keys:
             if self.keys[key]():
+                return self.keys.get_string()
                 self.commands.exe(self.keys.get_string())
                 self.keys.reset()
                 self.inp = False
@@ -178,7 +185,6 @@ class Player_ui:
             self.keys.add(key)
 
         self.__print_typing()
-        
 
     def __print_typing(self):
         tmp = self.keys.get_string()
@@ -235,11 +241,11 @@ class Player_ui:
         """
         hh, ww, cc = config.set_size(self.stdscr)
 
-        xx = [0, ww, 0]
-        yy = [0, 0, hh]
-        wl = [ww, cc - ww, cc]
-        hl = [hh, hh, bottom_bar]
-        wins = [self.leftwin, self.rightwin, self.botwin]
+        xx = [0, ww, 0, 0]
+        yy = [0, 0, hh, hh + song_info_bar_height]
+        wl = [ww, cc - ww, cc, cc]
+        hl = [hh, hh, song_info_bar_height, command_bar_height]
+        wins = [self.leftwin, self.rightwin, self.botwin, self.botwin]
 
         for win, x, y, w, h in zip(wins, xx, yy, wl, hl):
             win.win.resize(h, w)

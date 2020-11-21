@@ -27,7 +27,7 @@ class Remote(queue.Queue):
                     data = conn.recv(1024)
                     if data != b' \n\n ':
                         pl, fn = data.decode('utf-8').split('\n\n')
-                        self.put_nowait((pl.split('\n'), fn.split('\n')))
+                        self.put_nowait((1, pl.split('\n'), fn.split('\n')))
 
                     js = copy.copy(self.ui.cur_song.dict())
                     js['status'] = format(self.ui.player.state)

@@ -4,46 +4,13 @@ import curses
 import os
 import signal
 import sys
-import threading
 
 import debug
 import init
+import mainloop
 import musicdb
-import socket_thread
             
-from loadconf import config as config
-
-
-def __inp(ui, qq):
-    while True:
-        ui.command_event.wait()
-
-        key = ui.stdscr.get_wch()
-        if ui.inp:
-            ui.handle_input(key)
-        elif key in ui.actions:
-            qq.put_nowait((key))
-
-            if key in config.COMMAND:
-                ui.command_event.clear()
-
-
-def main_loop(ui):
-    remote = socket_thread.Remote(ui, config.SOCKET)
-
-    threading.Thread(target=__inp, args=(ui, remote, ), daemon=True).start()
-
-    while not ui.die:
-        #this call blocks
-        item = remote.get()
-
-        #if item is from remote it is a tuple
-        #otherwise it's a keypress
-        if type(item) is tuple:
-            remote.add_item(item)
-        elif item in ui.actions:
-            ui.actions[item]()
-
+from loadconf import config
 
 def cleanup(stdscr, exit_f=False):
     if os.path.exists(config.SOCKET):
@@ -73,7 +40,7 @@ def main():
     try:
         signal.signal(signal.SIGINT, lambda a, b: cleanup(stdscr, True))
         ui = init.windows(db, stdscr)
-        main_loop(ui)
+        mainloop.mainloop(ui)
         cleanup(stdscr)
     except Exception as e:
         cleanup(stdscr)
@@ -82,4 +49,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
