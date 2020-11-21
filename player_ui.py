@@ -166,14 +166,6 @@ class Player_ui:
         self.command_event.set()
 
 
-<<<<<<< HEAD
-        curses.echo()
-        curses.curs_set(2)
-        inp = self.botwin.win.getstr().decode('utf-8')
-        #inp = self.tb.edit()
-        curses.curs_set(0)
-        curses.noecho()
-=======
     def handle_input(self, key):
         if key in self.keys:
             if self.keys[key]():
@@ -187,7 +179,6 @@ class Player_ui:
 
         self.__print_typing()
         
->>>>>>> bottom_window
 
     def __print_typing(self):
         tmp = self.keys.get_string()
