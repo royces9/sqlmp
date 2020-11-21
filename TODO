@@ -21,12 +21,7 @@ jumping to current playing track
 updating metadata of songs
 - need a way to update song metadata singly
 
-text input idea
-- expanding brain idea
-  - toggle a flag that goes to the main loop and grab input from the main loop and jump back to the input function UNTIL enter or esc is hit
-    holy moly its genius
-
 Bugs:
-- when entering a command (with :), the cursor moves next to the current time playing
-
 - there was a crash after pressing tab randomly, not sure what that is yet
+
+- when entering a command, sometimes the cursor moves to the next line
