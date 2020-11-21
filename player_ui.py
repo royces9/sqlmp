@@ -4,16 +4,19 @@ import threading
 import time
 
 import commands
+import keys
 import menu
 import player
 import playlist
 import song
 import threadwin
+import wchar
 
 from loadconf import config
 import debug
 
-
+song_info_bar_height = 2
+command_bar_height = 2
 class Player_ui:
     def __init__(self, stdscr, db):
         self.cur = 0
@@ -22,14 +25,10 @@ class Player_ui:
 
         self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
 
-        self.leftwin, self.botwin = self.__init_windows()
+        self.leftwin, self.botwin, self.textwin = self.__init_windows()
 
         #hotkeys, from keys.py
         self.actions = self.__init_actions()
-
-        #text window for information
-        #self.textwin = self.botwin.win.subwin(1, self.botwin.w - 1, self.botwin.y + 2, 1)
-        self.tb = tp.Textbox(self.textbox.win, insert_mode=True)
 
         #init a blank song
         self.cur_song = song.blank_song
@@ -48,9 +47,13 @@ class Player_ui:
         self.info = threading.Thread(target=self.__info_print_loop, daemon=True)
         self.info.start()
 
+        #flag to decide if we kill the ui
         self.die = False
 
-
+        #flag to decide if command is getting entered
+        self.inp = False
+        self.keys = keys.Keys()
+        
     @property
     def rightwin(self):
         return self.leftwin.highlighted()
@@ -58,10 +61,9 @@ class Player_ui:
 
     def getkey(self):
         out = self.stdscr.getch()
-        #out = self.stdscr.getkey()
         curses.flushinp()
 
-        return out
+        return chr(out)
 
     def curwin(self):
         return [self.leftwin, self.rightwin][self.cur]
@@ -102,7 +104,7 @@ class Player_ui:
 
 
     def __init_windows(self):
-        hh, ww, bottom_bar, cc = config.set_size(self.stdscr)
+        hh, ww, cc = config.set_size(self.stdscr)
 
         win = threadwin.Threadwin(hh, cc - ww, 0, ww)
 
@@ -118,9 +120,9 @@ class Player_ui:
                             highlight_colour=config.HIGHLIGHT_COLOUR[0],
                             normal_colour=config.NORMAL[0])
 
-        botwin = menu.Window(0, hh, cc, 3)
-        self.textbox = menu.Window(0, hh + 2, cc, 3)
-        return leftwin, botwin
+        botwin = menu.Window(0, hh, cc, 2)
+        textwin = menu.Window(0, hh + 2, cc, 2)
+        return leftwin, botwin, textwin
 
 
     """
@@ -153,33 +155,38 @@ class Player_ui:
         """
         grab a command input when ':' is pressed
         """
-        #command_event.clear() is called from the input thread
+        #command_event.wait() is called from the input thread
         #in sqlmp, this prevents a race condition where getkey
         #gets called before the queue can execute grab_input
-
-        #TODO maybe there's some way to have some callback function
-        #that gets executed x amount of time after this happens
-        #so i can remove error messages after x amount of time
-        self.botwin.print_blank(2)
-        self.botwin.win.addch(2, 0, ":")
-        self.botwin.win.move(2, 1)
-        self.botwin.refresh()
-
-        #self.tb.win.move(0, 0)
-
-        #TODO
-        #getstr seems to have a bunch of weird behaviour
-        #backspace doesn't work
-        #space doesn't move the cursor to indicate there's a space
-        curses.echo()
+        self.textwin.print_blank(0)
+        self.textwin.win.addch(0, 0, ':')
         curses.curs_set(2)
-        inp = self.botwin.win.getstr().decode('utf-8')
-        #inp = self.tb.edit()
-        curses.curs_set(0)
-        curses.noecho()
 
-        self.commands.exe(inp)
-        self.botwin.print_blank(2)
+        self.inp = True
+        self.command_event.set()
+
+
+    def handle_input(self, key):
+        if key in self.keys:
+            if self.keys[key]():
+                self.commands.exe(self.keys.get_string())
+                self.keys.reset()
+                self.inp = False
+                curses.curs_set(0)
+                self.textwin.print_blank(0)
+        else:
+            self.keys.add(key)
+
+        self.__print_typing()
+        
+
+    def __print_typing(self):
+        tmp = self.keys.get_string()
+        self.textwin.print_blank(x=1, y=0)
+        self.textwin.win.addnstr(0, 1, wchar.set_width(tmp, self.textwin.w - 1), self.textwin.w - 1)
+        wid, _ = wchar.wcswidth(tmp[:self.keys.index])
+        if wid + 1 < self.textwin.w:
+            self.textwin.win.move(0, wid + 1)
 
 
     def highlight(self, arg=None):
@@ -226,7 +233,7 @@ class Player_ui:
         """
         handle resize event
         """
-        hh, ww, bottom_bar, cc = config.set_size(self.stdscr)
+        hh, ww, cc = config.set_size(self.stdscr)
 
         xx = [0, ww, 0]
         yy = [0, 0, hh]
@@ -243,10 +250,6 @@ class Player_ui:
                 prev = win.cursor + win.offset
                 win.cursor = win.h - 1
                 win.offset = prev - win.cursor
-
-        
-        self.textwin = self.botwin.win.subwin(1, self.botwin.w - 1, self.botwin.y + 2, 1)
-        self.tb = tp.Textbox(self.textwin, insert_mode=True)
 
 
     def select(self, arg=None):
@@ -329,6 +332,9 @@ class Player_ui:
     def draw(self):
         self.leftwin.disp()
         self.rightwin.disp()
+        self.botwin.refresh()
+        self.textwin.refresh()
+            
 
     def __enqueue(self):
         """
@@ -397,7 +403,8 @@ class Player_ui:
         while True:
             start = time.time()
             self.__info_print()
-            self.botwin.refresh()
+            self.draw()
+            
             #TODO doupdate on multiple threads can't be safe
             #change this later
             curses.doupdate()

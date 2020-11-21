@@ -18,23 +18,22 @@ def __inp(ui, qq):
     while True:
         ui.command_event.wait()
 
-        key = curses.keyname(ui.getkey()).decode('utf-8')
-
-        if key in ui.actions:
+        key = ui.stdscr.get_wch()
+        if ui.inp:
+            ui.handle_input(key)
+        elif key in ui.actions:
             qq.put_nowait((key))
 
             if key in config.COMMAND:
                 ui.command_event.clear()
-            
-                
+
+
 def main_loop(ui):
     remote = socket_thread.Remote(ui, config.SOCKET)
 
     threading.Thread(target=__inp, args=(ui, remote, ), daemon=True).start()
 
     while not ui.die:
-        ui.draw()
-        
         #this call blocks
         item = remote.get()
 

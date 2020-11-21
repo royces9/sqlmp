@@ -26,11 +26,11 @@ class Error_msg:
     def set(self):
         self.total = 1
 
-
 class Commands:
     def __init__(self, ui):
         self.ui = ui
-        
+        self.win = self.ui.textwin
+
         #typed commands
         self.commands = {
             'add': self.add,
@@ -45,7 +45,7 @@ class Commands:
             'update': self.update,
         }
 
-        self.err = Error_msg(self.ui, 2, self.ui.frame_time, self.ui.botwin.print_blank, (3,))
+        self.err = Error_msg(self.ui, 2, self.ui.frame_time, self.win.print_blank, (1,))
         self.find_list = None
         self.command_event = threading.Event()
         self.command_event.set()
@@ -56,8 +56,8 @@ class Commands:
 
 
     def err_print(self, err):
-        self.ui.botwin.print_blank(3)
-        self.ui.botwin.print_line(err, y=3)
+        self.win.print_blank(1)
+        self.win.print_line(err, y=1)
         self.err.set()
 
     def exe(self, inp):
@@ -70,7 +70,7 @@ class Commands:
             self.err_print('Mismatched quotations.')
             self.command_event.set()
             return
-        
+
         if not spl:
             self.err_print("")
         elif spl[0] in self.commands:
@@ -133,7 +133,6 @@ class Commands:
         self.ui.leftwin.delete(pl)
         playlist.Playlist.del_pl(plname, self.ui.db)
 
-        self.ui.draw()
 
     def export(self, args):
         """
@@ -195,7 +194,7 @@ class Commands:
                 key = curpl.sort_key
             elif len(args) > 1:
                 key = args[1]
-                if key not in curpl.tags:
+                if key not in curpl.song.tags:
                     self.err_print('Invalid key: ' + key)
                     return
 
@@ -210,7 +209,6 @@ class Commands:
         self.ui.jump_to_ind(ind, len(curpl.data), self.ui.rightwin)
 
         self.ui.switch_view_right()
-        self.ui.draw()
 
 
     def newpl(self, args):
