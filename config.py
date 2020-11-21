@@ -14,16 +14,16 @@ UP = {'KEY_UP', 'l'}
 DOWN = {'KEY_DOWN', 'k'}
 LEFT = {'KEY_LEFT', 'j'}
 RIGHT = {'KEY_RIGHT', ';'}
-JUMP_UP = {'^L'} #ctrl-L
-JUMP_DOWN = {'^K'} #ctrl-K
+JUMP_UP = {'\f'} #ctrl-L
+JUMP_DOWN = {'\v'} #ctrl-K
 VOLUP = {']'}
 VOLDOWN = {'['}
 MUTE = {'m'}
 PLAYPAUSE = {'c'}
 QUIT = {'q'}
-SWITCH = {'^I'} #tab
+SWITCH = {'\t'} #tab
 COMMAND = {':'}
-SELECT = {'^J'} #enter
+SELECT = {'\n'} #enter
 HIGHLIGHT = {' '}
 TRANSFER = {'y'}
 DELETE = {'D'}
@@ -82,16 +82,15 @@ NORMAL = [curses.A_NORMAL, 0, 0]
 
 
 def set_size(stdscr):
-    #height of bottom window
-    bottom = 4
-
+    
     #cur term size
     lines, cols = stdscr.getmaxyx()
 
     #height of the left and right windows
-    height = lines - bottom
+    #hardcoded value of the bottom bar height
+    height = lines - 4
 
     #width of the left window
     width = cols // 6
 
-    return height, width, bottom, cols
+    return height, width, cols

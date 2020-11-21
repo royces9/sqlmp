@@ -39,7 +39,7 @@ class Window:
 
     def print_right_justified(self, line, y=0):
         length = wchar.wcswidth(line)[0]
-        self.win.addnstr(y, self.w - length, line, length)
+        self.win.addnstr(y, self.w - length, line, length - 1)
 
 
     def refresh(self):
