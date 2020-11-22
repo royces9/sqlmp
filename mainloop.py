@@ -5,11 +5,15 @@ import socket_thread
 
 from loadconf import config
 
+import debug
+
+
 def __inp(ui, qq):
     while True:
         ui.command_event.wait()
 
         key = ui.stdscr.get_wch()
+        debug.debug(key)
         if ui.inp:
             command = ui.handle_input(key)
             if command:
@@ -26,23 +30,31 @@ def mainloop(ui):
 
     threading.Thread(target=__inp, args=(ui, remote, ), daemon=True).start()
 
+    event_dict = {1: from_remote,
+                   2: from_key_press,
+                   3: from_command,
+                   }
+    
     while not ui.die:
         #this call blocks
         item = remote.get()
 
-        if item[0] == 1:
-            #from remote
-            remote.add_item(item[1:])
-        elif item[0] == 2:
-            #from key press
-            ui.actions[item[1]]()
-        elif item[0] == 3:
-            #from command
-            ui.commands.exe(item[1])
-            ui.keys.reset()
-            ui.inp = False
-            curses.curs_set(0)
-            ui.textwin.print_blank(0)
+        #do something based off of type of item
+        event_dict[item[0]](item, ui, remote)
 
 
-            
+def from_remote(item, _, remote):
+    remote.add_item(item[1:])
+
+def from_key_press(item, ui, _):
+    ui.actions[item[1]]()
+
+def from_command(item, ui, _):
+    curses.curs_set(0)
+    ui.textwin.print_blank(0)
+    ui.inp = False
+
+    ui.commands.exe(item[1])
+    ui.keys.reset()
+
+

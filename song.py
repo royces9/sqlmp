@@ -19,6 +19,9 @@ class Song:
         return self.__dict[key]
 
 
+    def __setitem__(self, key, item):
+        self.__dict[key] = item
+
     def __iter__(self):
         for item in tags:
             yield self.__dict[item]

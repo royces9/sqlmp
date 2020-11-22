@@ -99,7 +99,7 @@ class Player_ui:
             [config.CUR_PLAY, self.jump_cur_play],
             [config.JUMP_UP, self.jump_up],
             [config.JUMP_DOWN, self.jump_down],
-            [['KEY_RESIZE'], self.resize],
+            [{curses.KEY_RESIZE}, self.resize],
         ]
 
         for key, val in pairs:
@@ -126,7 +126,7 @@ class Player_ui:
                             normal_colour=config.NORMAL[0])
 
         botwin = menu.Window(0, hh, cc, song_info_bar_height)
-        textwin = menu.Window(0, hh + 2, cc, command_bar_height)
+        textwin = menu.Window(0, hh + song_info_bar_height, cc, command_bar_height)
         return leftwin, botwin, textwin
 
 
@@ -176,11 +176,6 @@ class Player_ui:
         if key in self.keys:
             if self.keys[key]():
                 return self.keys.get_string()
-                self.commands.exe(self.keys.get_string())
-                self.keys.reset()
-                self.inp = False
-                curses.curs_set(0)
-                self.textwin.print_blank(0)
         else:
             self.keys.add(key)
 
@@ -245,7 +240,7 @@ class Player_ui:
         yy = [0, 0, hh, hh + song_info_bar_height]
         wl = [ww, cc - ww, cc, cc]
         hl = [hh, hh, song_info_bar_height, command_bar_height]
-        wins = [self.leftwin, self.rightwin, self.botwin, self.botwin]
+        wins = [self.leftwin, self.rightwin, self.botwin, self.textwin]
 
         for win, x, y, w, h in zip(wins, xx, yy, wl, hl):
             win.win.resize(h, w)
@@ -300,7 +295,6 @@ class Player_ui:
         self.leftwin.cursor_colour = config.FOCUSED[0]
         self.rightwin.cursor_colour = config.CURSOR[0]
 
-        
 
     def transfer(self, arg=None):
         """
@@ -411,8 +405,6 @@ class Player_ui:
             self.__info_print()
             self.draw()
             
-            #TODO doupdate on multiple threads can't be safe
-            #change this later
             curses.doupdate()
             diff = time.time() - start
 

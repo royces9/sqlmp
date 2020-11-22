@@ -170,7 +170,6 @@ class Menu(Window):
         smaller = self.h if diff > self.h else diff
 
         for ii in range(smaller):
-            #self.print_line(str(self.data[ii + self.offset]), ii, 0)
             formatted_list = self.form(self.data[ii + self.offset])
             self.print_col(0, ii, formatted_list)
 

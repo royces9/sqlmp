@@ -82,7 +82,6 @@ NORMAL = [curses.A_NORMAL, 0, 0]
 
 
 def set_size(stdscr):
-    
     #cur term size
     lines, cols = stdscr.getmaxyx()
 

@@ -18,9 +18,6 @@ jumping to current playing track
   - O(lg(n)) alg is easy to implement (binary search), but O(1) is possible so go for that
     - probably just put another variable into player_disp that holds the current index (ugly...)
 
-updating metadata of songs
-- need a way to update song metadata singly
-
 Bugs:
 - there was a crash after pressing tab randomly, not sure what that is yet
 

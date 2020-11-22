@@ -37,13 +37,14 @@ class Commands:
             'add': self.add,
             'delpl': self.delpl,
             'export': self.export,
-            'export_all': self.export_all,
+            'export-all': self.export_all,
             'find': self.find,
             'newpl': self.newpl,
             'playmode': self.playmode,
             'renamepl': self.renamepl,
             'sort': self.sort,
             'update': self.update,
+            'update-single': self.update_single
         }
 
         self.err = Error_msg(self.ui, 2, self.ui.frame_time, self.win.print_blank, (1,))
@@ -312,7 +313,7 @@ class Commands:
 
         _key = args[0]
         cur = self.ui.leftwin.highlighted().data
-        if _key in playlist.song.tags:
+        if _key in song.tags:
             cur.change_sort(_key)
             self.ui.rightwin.disp()
         else:
@@ -324,6 +325,27 @@ class Commands:
         update db
         """
         self.ui.db.update_db()
+
+
+    def update_single(self, args):
+        """
+        update selected entry
+        args[0]: the tag to change
+        args[1]: the new value for the tag
+        """
+        if len(args) < 2:
+            self.err_print('Two arguments required')
+            return
+            
+        tag = args[0]
+        value = args[1]
+        if tag not in song.tags:
+            self.err_print('Invalid key: ' + key)
+            return
+
+        cursong = self.ui.rightwin.highlighted()
+        cursong[tag] = value
+        self.ui.db.update_song(cursong)
 
 
     def pl_exists(self, name):
