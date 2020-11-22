@@ -13,7 +13,6 @@ def __inp(ui, qq):
         ui.command_event.wait()
 
         key = ui.stdscr.get_wch()
-        debug.debug(key)
         if ui.inp:
             command = ui.handle_input(key)
             if command:
