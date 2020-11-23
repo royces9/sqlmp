@@ -4,8 +4,14 @@ import debug
 
 class Keys:
     def __init__(self):
+        #keep the string as a list so multibytes strings can be handled by index
         self.string = []
+
+        #index of the cursor
         self.index = 0
+
+        #dict of the special keymaps
+        #everything else is printed
         self.funcs = {'\n': self.enter,
                       curses.KEY_BACKSPACE: self.backspace,
                       chr(1): self.ctrl_a,
@@ -30,23 +36,41 @@ class Keys:
         self.index = 0
 
     def ctrl_a(self):
+        """
+        go to beginning
+        """
         self.index = 0
 
     def ctrl_b(self):
+        """
+        move cursor back one
+        """
         if self.index > 0:
             self.index -= 1
         
     def ctrl_d(self):
+        """
+        delete character at cursor
+        """
         self.string.pop(self.index)
 
     def ctrl_e(self):
+        """
+        go to end
+        """
         self.index = len(self.string)
 
     def ctrl_f(self):
+        """
+        move cursor forward one
+        """
         if self.index < len(self.string):
             self.index += 1
 
     def ctrl_k(self):
+        """
+        kill everything on and past the cursor
+        """
         self.string = self.string[0:self.index]
         
     def add(self, key):

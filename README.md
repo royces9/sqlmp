@@ -39,7 +39,7 @@ List the files of the currently highlighted playlist, or a playlist given
 as a second argument, to a textfile in `directory`.
 
 ------
-##### `exportall <directory>`
+##### `export-all <directory>`
 Same as export, except for all playlists.
 
 ------
@@ -66,3 +66,8 @@ or rename a playlist given as a second argument
 ------
 ##### `sort <key>`
 Sort the currently highlighted playlist by `key`
+
+------
+##### `update-single <tag> <value>`
+Update the currently selected song's `tag` to `value` in the database.
+This does not change the actual file's metadata.

@@ -236,10 +236,18 @@ class Player_ui:
         """
         hh, ww, cc = config.set_size(self.stdscr)
 
+        #x position
         xx = [0, ww, 0, 0]
+
+        #y position
         yy = [0, 0, hh, hh + song_info_bar_height]
+
+        #window widths
         wl = [ww, cc - ww, cc, cc]
+
+        #window heights
         hl = [hh, hh, song_info_bar_height, command_bar_height]
+
         wins = [self.leftwin, self.rightwin, self.botwin, self.textwin]
 
         for win, x, y, w, h in zip(wins, xx, yy, wl, hl):
@@ -381,8 +389,6 @@ class Player_ui:
         if self.player.mute:
             info_str += ' [M]'
 
-        #TODO
-        #maybe make this into one line
         self.botwin.print_line(info_str, y=1)
         self.botwin.print_right_justified(' ' + self.rightwin.data.playmode + ' ', y=1)
 
