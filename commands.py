@@ -2,6 +2,7 @@ import os
 import shlex
 import threading
 
+import keys
 import menu
 import player_ui
 import playlist
@@ -49,6 +50,12 @@ class Commands:
 
         self.err = Error_msg(self.ui, 2, self.ui.frame_time, self.win.print_blank, (1,))
         self.find_list = None
+
+        #handles input for typed commands
+        self.keys = keys.Keys()
+        #flag to decide if command is getting entered
+        self.inp = False
+
         self.command_event = threading.Event()
         self.command_event.set()
 

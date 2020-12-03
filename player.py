@@ -11,15 +11,19 @@ import pyaudio
 import debug
 
 class Play_state(enum.Enum):
-    not_playing = 0
-    playing = 1
-    paused = 2
-    new = 3
-    end = 4
+    not_playing = enum.auto()
+    playing = enum.auto()
+    paused = enum.auto()
+    new = enum.auto()
+    end = enum.auto()
 
     def __format__(self, form):
         return self.name
     
+class Event(enum.Enum):
+    start = enum.auto()
+    end_normal = enum.auto()
+    end_early = enum.auto()
 
 class Player:
     def __init__(self, vol, step):
@@ -47,6 +51,9 @@ class Player:
         self.channels = 0
         self.width = 2
 
+        #current song
+        self.cursong = None
+
         #current count of the
         #chunk that is currently
         #playing
@@ -65,16 +72,16 @@ class Player:
         #always loop unless we quit
         while self.state != Play_state.end:
             #this call blocks until something is pushed onto the queue
-            fn = self.playq.get(block=True, timeout=None)
+            self.cursong = self.playq.get(block=True, timeout=None)
 
             #change state to playing
             self.state = Play_state.playing
 
-            #push song onto play queue to signal that playback is starting
-            self.curq.put_nowait(fn)
+            #start onto play queue to signal that playback is starting
+            self.curq.put_nowait(Event.start)
 
             #grab path
-            fp = fn['path']
+            fp = self.cursong['path']
 
             #convert input file to pcm data
             wav, _ = (ffmpeg
@@ -84,8 +91,8 @@ class Player:
                       .run(capture_stdout=True, capture_stderr=True))
 
             #grab stream data for the pyaudio stream
-            self.rate = fn['samplerate']
-            self.channels = fn['channels']
+            self.rate = self.cursong['samplerate']
+            self.channels = self.cursong['channels']
             self.width = 2
 
             #open a pyaudio stream
@@ -104,21 +111,26 @@ class Player:
 
             wav_chunks = [wav[i:i+self.step] for i in range(0, len(wav), self.step)]
 
-            while (self.iterator < len(wav_chunks)) and self.state not in {Play_state.new, Play_state.end}:
+            end_code = Event.end_early
+            while self.iterator < len(wav_chunks):
+                if self.state in {Play_state.new, Play_state.end}:
+                    break
+                #while (self.iterator < len(wav_chunks)) and self.state not in {Play_state.new, Play_state.end}:
                 adjust = audioop.mul(wav_chunks[self.iterator], self.width, (not self.mute) * self.vol / 500)
                 stream.write(adjust)
                 self.iterator += 1
 
                 while self.is_paused():
                     self.pauseq.get(block=True, timeout=None)
-
+            else:
+                end_code = Event.end_normal
 
             #resource clean up
             stream.stop_stream()
             stream.close()
 
-            #push None to queue to signal that playback of a song has ended
-            self.curq.put_nowait(None)
+            #push to queue to signal that playback of a song has ended
+            self.curq.put_nowait(end_code)
 
             #set stream to not playing after playback ends
             self.state = Play_state.not_playing

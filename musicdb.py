@@ -123,7 +123,7 @@ class Musicdb:
             out = song.Song.from_path(path)
         
             if not out:
-                continue;
+                continue
             if path not in self:
                 new_files.append(tuple(out))
             else:
@@ -134,8 +134,20 @@ class Musicdb:
         return
 
 
+    def increment_playcount(self, song):
+        """
+        increment playcount for a song by one
+        """
+        self.exe("UPDATE library SET playcount=playcount+1 WHERE path=?", (song['path'],))
+        self.commit()
+
     def update_song(self, song):
+        """
+        update a song in the db with metadata from input song
+        the song must be updated before the call to update_song
+        """
         self.exe("UPDATE library SET title=?, artist=?, album=?, length=?, samplerate=?, channels=?, bitrate=? WHERE path=?", (song['title'], song['artist'], song['album'], song['length'], song['samplerate'], song['channels'], song['bitrate'], song['path']))
+        self.commit()
         
     def list_pl(self):
         return [pl[0] for pl in self.exe("SELECT plname FROM playlists;")]

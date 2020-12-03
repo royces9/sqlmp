@@ -52,12 +52,15 @@ def song_format(ll):
 
     length = song_length(ll['length'])
 
+    playcount = str(ll['playcount'])
+
     return (
         (artist, 1/4, False),
-        (title, 3/8, False),
+        (title, 5/16, False),
         (album, 1/4, False),
         (bitrate, 1/16, True),
         (length, 1/16, True),
+        (playcount, 1/16, True),
     )
 
 

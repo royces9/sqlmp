@@ -1,5 +1,7 @@
 import curses
 import curses.textpad as tp
+import enum
+import queue
 import threading
 import time
 
@@ -14,6 +16,9 @@ import wchar
 
 from loadconf import config
 import debug
+
+class Event(enum.Enum):
+    increment_playcount = enum.auto()
 
 song_info_bar_height = 2
 command_bar_height = 2
@@ -34,6 +39,9 @@ class Player_ui:
 
         #init a blank song
         self.cur_song = song.blank_song
+        #when incrementing playcount, throw songs
+        #that need to be incremented into the queue
+        self.incrementq = queue.Queue(0)
 
         #currently playing playlist
         self.cur_pl = None
@@ -45,11 +53,6 @@ class Player_ui:
         #typed commands
         self.commands = commands.Commands(self)
         self.command_event = self.commands.command_event
-
-        #handles input for typed commands
-        self.keys = keys.Keys()
-        #flag to decide if command is getting entered
-        self.inp = False
 
         #thread for updating everything visually
         self.info = threading.Thread(target=self.__info_print_loop, daemon=True)
@@ -64,8 +67,16 @@ class Player_ui:
         return self.leftwin.highlighted()
 
 
-    def getkey(self):
-        out = self.stdscr.getch()
+    @property
+    def keys(self):
+        return self.commands.keys
+
+
+    def getevent(self):
+        if not self.incrementq.empty():
+            return Event.increment_playcount
+
+        out = self.stdscr.get_wch()
         curses.flushinp()
 
         return out
@@ -99,6 +110,7 @@ class Player_ui:
             [config.CUR_PLAY, self.jump_cur_play],
             [config.JUMP_UP, self.jump_up],
             [config.JUMP_DOWN, self.jump_down],
+            [[Event.increment_playcount], self.increment_playcount],
             [{curses.KEY_RESIZE}, self.resize],
         ]
 
@@ -168,7 +180,7 @@ class Player_ui:
         self.textwin.win.addch(0, 0, ':')
         curses.curs_set(2)
 
-        self.inp = True
+        self.commands.inp = True
         self.command_event.set()
 
 
@@ -230,7 +242,7 @@ class Player_ui:
         self.player.toggle_mute()
 
 
-    def resize(self, test=None):
+    def resize(self, arg=None):
         """
         handle resize event
         """
@@ -342,7 +354,7 @@ class Player_ui:
         self.rightwin.disp()
         self.botwin.refresh()
         self.textwin.refresh()
-            
+
 
     def __enqueue(self):
         """
@@ -353,15 +365,23 @@ class Player_ui:
 
     def jump_to_ind(self, ind, data_len, window):
         offset = ind - int(window.h / 2)
-        if offset < 0:
-            #for the case that the found index is near the top
-            offset = 0
-        elif offset >= data_len - window.h:
+        if offset >= data_len - window.h:
             #for the case that the found index is near the bottom
             offset = data_len - window.h
+        if offset < 0:
+            #offset must be greater than 0
+            offset = 0
 
         window.cursor = ind - offset
         window.offset = offset
+
+    def increment_playcount(self):
+        if self.incrementq.empty():
+            return
+
+        song = self.incrementq.get()
+        self.db.increment_playcount(song)
+        song['playcount'] += 1
 
 
     def __print_cur_playing(self):
@@ -394,12 +414,18 @@ class Player_ui:
 
         if not self.player.curempty():
             player_event = self.player.curplay()
+
             #check if the event is for playback starting or ending
-            if player_event:
+            if player_event == player.Event.start:
                 #playback started, print information to bottom window
-                self.cur_song = player_event
+                self.cur_song = self.player.cursong
             else:
-                #playback ended, queue another song
+                #playback ended
+                #increment its playcount
+                if player_event == player.Event.end_normal:
+                    self.incrementq.put_nowait(self.cur_song)
+
+                #queue another song
                 self.__enqueue()
 
         self.__print_cur_playing()

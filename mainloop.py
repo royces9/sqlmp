@@ -12,8 +12,8 @@ def __inp(ui, qq):
     while True:
         ui.command_event.wait()
 
-        key = ui.stdscr.get_wch()
-        if ui.inp:
+        key = ui.getevent()
+        if ui.commands.inp:
             command = ui.handle_input(key)
             if command:
                 qq.put_nowait((3, command))
@@ -30,9 +30,9 @@ def mainloop(ui):
     threading.Thread(target=__inp, args=(ui, remote, ), daemon=True).start()
 
     event_dict = {1: from_remote,
-                   2: from_key_press,
-                   3: from_command,
-                   }
+                  2: from_player_ui,
+                  3: from_command,
+                  }
     
     while not ui.die:
         #this call blocks
@@ -42,16 +42,20 @@ def mainloop(ui):
         event_dict[item[0]](item, ui, remote)
 
 
+#anything from an external process
 def from_remote(item, _, remote):
     remote.add_item(item[1:])
 
-def from_key_press(item, ui, _):
+#events from player_ui
+#includes key presses and playback changes
+def from_player_ui(item, ui, _):
     ui.actions[item[1]]()
 
+#any typed commands that are not single key presses
 def from_command(item, ui, _):
     curses.curs_set(0)
     ui.textwin.print_blank(0)
-    ui.inp = False
+    ui.commands.inp = False
 
     ui.commands.exe(item[1])
     ui.keys.reset()

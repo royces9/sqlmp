@@ -41,6 +41,7 @@ class Song:
 
         return ' - '.join(i)
 
+
     @staticmethod
     def grab_tags(path):
         prob = ffmpeg.probe(path)
