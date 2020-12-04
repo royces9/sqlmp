@@ -1,8 +1,5 @@
 Things that I want to implement:
 
-Play count:
-- increment play count when something is done playing, 
-
 Display:
 - Need to find a way to make columns cleaner, it's kinda ugly right now
 - also maybe consider putting bars or something to separate windows
@@ -22,3 +19,7 @@ Bugs:
 - there was a crash after pressing tab randomly, not sure what that is yet
 
 - when entering a command, sometimes the cursor moves to the next line
+
+- playcount doesn't update on screen until key press
+
+- start up lags a little or something, first few inputs don't do anything
