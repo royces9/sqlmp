@@ -1,12 +1,10 @@
 import curses
-import curses.textpad as tp
 import enum
 import queue
 import threading
 import time
 
 import commands
-import keys
 import menu
 import player
 import playlist
@@ -174,8 +172,8 @@ class Player_ui:
         when config.COMMAND key is pressed
         """
         #command_event.wait() is called from the input thread
-        #in sqlmp, this prevents a race condition where getkey
-        #gets called before the queue can execute prepare_command
+        #in the __inp function, this prevents a race condition where
+        #getkey gets called before the queue can execute prepare_command
         self.textwin.print_blank(0)
         self.textwin.win.addch(0, 0, ':')
         curses.curs_set(2)

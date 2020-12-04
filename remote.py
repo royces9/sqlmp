@@ -1,87 +1,35 @@
-#!/usr/bin/python
-
-import os
+import copy
+import json
 import socket
-import sys
+import threading
 
-from loadconf import config
+import mainloop_event as me
 
-"""
-how to use:
-$ remote -f $(file) -p $(playlist)
+import debug
 
-$(file) can be a directory or files or a list of files
-$(playlist) is a playlist or a list of playlists
-
-Warning:
-$ remote -f song_1.mp3 -p play_1 -f song_2.mp3 -p play_2
-
-will add both song_1.mp3 and song_2.mp3 to both play_1 and play_2
-"""
-
-help_text = '\n'.join([
-    '-h, --help     help',
-    '-f             directory, file, or list of files',
-    '-p             playlist or a list of playlists',
-    '',
-    'Warning:',
-    '$ remote -f song_1.mp3 -p play_1 -f song_2.mp3 -p play_2',
-    'will add both song_1.mp3 and song_2.mp3 to both play_1 and play_2',
-    ])
-    
+class Remote:
+    def __init__(self, ui, socket, queue):
+        super().__init__()
+        self.ui = ui
+        self.queue = queue
+        self.socket = socket
+        self.thread = threading.Thread(target=self.__socket, daemon=True)
+        self.thread.start()
 
 
-def parse_args(argv):
-    if not argv[0].startswith('-'):
-        return '', ''
+    def __socket(self):
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+            s.bind(self.socket)
+            s.listen()
 
-    args = []
-    for arg in argv:
-        if arg.startswith('-'):
-            args.append([arg])
-        else:
-            args[-1].append(arg)
+            while True:
+                conn, _ = s.accept()
+                with conn:
+                    data = conn.recv(1024)
+                    if data != b' \n\n ':
+                        pl, fn = data.decode('utf-8').split('\n\n')
+                        self.queue.put_nowait((me.from_remote, pl.split('\n'), fn.split('\n')))
 
-    pl = []
-    fn = []
-
-    #cwd = os.getcwd()
-    for arg in args:
-        if arg[0] == '-p':
-            #playlist
-            pl += [p for p in arg[1:]]
-        elif arg[0] == '-f':
-            #files or dir
-            fn += [os.path.abspath(f) for f in arg[1:]]
-            #fn += ['/'.join([cwd, f]) for f in arg[1:]]
-        else:
-            break
-
-    return pl, fn
-
-def main():
-    if len(sys.argv) > 1 and sys.argv[1] in {'-h', '--help'}:
-        print(help_text)
-        return
-    
-    if not os.path.exists(config.SOCKET):
-        print('', end='')
-        return
-
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
-        s.connect(config.SOCKET)
-        if len(sys.argv) > 1:
-            pl, fn = parse_args(sys.argv[1:])
-            s.send('\n'.join(pl).encode())
-            s.send(b'\n\n')
-            s.send('\n'.join(fn).encode())
-            #s.send(b'\n')
-            s.recv(1024)
-
-        else:
-            s.send(b' \n\n ')
-            data = s.recv(1024)
-            print(data.decode('utf-8'), end='')
-
-if __name__ == '__main__':
-    main()
+                    js = copy.copy(self.ui.cur_song.dict())
+                    js['status'] = format(self.ui.player.state)
+                    conn.send(json.dumps(js).encode())

@@ -2,6 +2,7 @@
 
 import curses
 import os
+import queue
 import signal
 import sys
 
@@ -9,6 +10,7 @@ import debug
 import init
 import mainloop
 import musicdb
+import remote
             
 from loadconf import config
 
@@ -39,9 +41,22 @@ def main():
 
     try:
         signal.signal(signal.SIGINT, lambda a, b: cleanup(stdscr, True))
+
+        #init the ui
         ui = init.windows(db, stdscr)
-        mainloop.mainloop(ui)
+
+        #init input queue
+        inpq = queue.Queue()
+
+        #init remote
+        remote.Remote(ui, config.SOCKET, inpq)
+
+        #start mainloop
+        mainloop.mainloop(ui, inpq)
+
+        #cleanup curses
         cleanup(stdscr)
+
     except Exception as e:
         cleanup(stdscr)
         debug.print_error('error:', e)

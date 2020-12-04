@@ -1,9 +1,9 @@
-import ffmpeg
 import os
 import sqlite3
 
-import debug
 import song
+
+import debug
 
 
 class Musicdb:

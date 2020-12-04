@@ -1,63 +1,45 @@
-import curses
 import threading
 
-import socket_thread
+import mainloop_event as me
 
 from loadconf import config
 
 import debug
 
 
-def __inp(ui, qq):
+def __inp(ui, inpq):
     while True:
+        #if a command is running, this
+        #blocks until it's done running
         ui.command_event.wait()
 
+        #grab an event from player_ui
         key = ui.getevent()
+
+        #ui.commands.inp is True if a command is being input
+        #otherwise, check if it's a hotkey for something
         if ui.commands.inp:
+            #command returns True when enter is pressed
             command = ui.handle_input(key)
             if command:
-                qq.put_nowait((3, command))
-        elif key in ui.actions:
-            qq.put_nowait((2, key))
+                inpq.put_nowait((me.from_command, command))
 
+        elif key in ui.actions:
+            inpq.put_nowait((me.from_ui, key))
+
+            #clear command_event so the top of the loop blocks
+            #to guarantee that ui.commands.inp is set to True
             if key in config.COMMAND:
                 ui.command_event.clear()
 
 
-def mainloop(ui):
-    remote = socket_thread.Remote(ui, config.SOCKET)
+def mainloop(ui, inpq):
+    #start thread for grabbing input
+    threading.Thread(target=__inp, args=(ui, inpq, ), daemon=True).start()
 
-    threading.Thread(target=__inp, args=(ui, remote, ), daemon=True).start()
-
-    event_dict = {1: from_remote,
-                  2: from_player_ui,
-                  3: from_command,
-                  }
-    
     while not ui.die:
-        #this call blocks
-        item = remote.get()
+        #check input queue for any new things to do
+        item = inpq.get()
 
         #do something based off of type of item
-        event_dict[item[0]](item, ui, remote)
-
-
-#anything from an external process
-def from_remote(item, _, remote):
-    remote.add_item(item[1:])
-
-#events from player_ui
-#includes key presses and playback changes
-def from_player_ui(item, ui, _):
-    ui.actions[item[1]]()
-
-#any typed commands that are not single key presses
-def from_command(item, ui, _):
-    curses.curs_set(0)
-    ui.textwin.print_blank(0)
-    ui.commands.inp = False
-
-    ui.commands.exe(item[1])
-    ui.keys.reset()
-
-
+        item[0](item, ui)

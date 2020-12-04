@@ -4,7 +4,8 @@ import debug
 
 class Keys:
     def __init__(self):
-        #keep the string as a list so multibytes strings can be handled by index
+        #keep the string as a list so multibytes
+        #characters can be handled by index
         self.string = []
 
         #index of the cursor

@@ -4,12 +4,12 @@ import threading
 
 import keys
 import menu
-import player_ui
 import playlist
 import song
 from loadconf import config
 
 import debug
+
 class Error_msg:
     def __init__(self, ui, timer, frame_time, exe, args):
         self.exe = exe
