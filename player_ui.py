@@ -5,6 +5,7 @@ import threading
 import time
 
 import commands
+import mainloop_event as me
 import menu
 import player
 import playlist
@@ -18,6 +19,7 @@ import debug
 class Event(enum.Enum):
     increment_playcount = enum.auto()
 
+    
 song_info_bar_height = 2
 command_bar_height = 2
 class Player_ui:
@@ -47,14 +49,18 @@ class Player_ui:
         #amount of time in between drawing
         #not really a frame time but w/e
         self.frame_time = 0.01
-
+        
         #typed commands
         self.commands = commands.Commands(self)
         self.command_event = self.commands.command_event
+        self.command_event.set()
+
+        #input queue and thread
+        self.inpq = queue.Queue(0)
+        threading.Thread(target=self.__input_loop, daemon=True).start()
 
         #thread for updating everything visually
-        self.info = threading.Thread(target=self.__info_print_loop, daemon=True)
-        self.info.start()
+        threading.Thread(target=self.__info_print_loop, daemon=True).start()
 
         #flag to decide if we kill the ui
         self.die = False
@@ -63,7 +69,6 @@ class Player_ui:
     @property
     def rightwin(self):
         return self.leftwin.highlighted()
-
 
     @property
     def keys(self):
@@ -399,6 +404,32 @@ class Player_ui:
         self.botwin.win.chgat(0, 0, self.botwin.w, config.FOCUSED[0])
 
         
+    def __input_loop(self):
+        while True:
+            #if a command is running, this blocks
+            #until the command is done
+            self.command_event.wait()
+
+            #grab an event
+            key = self.getevent()
+
+            #commands.inp is True if a command is being input
+            #otherwise, check if key is a hotkey for something
+            if self.commands.inp:
+                #command returns True when enter is pressed
+                command = self.handle_input(key)
+                if command:
+                    self.inpq.put_nowait((me.from_command, command))
+
+            elif key in self.actions:
+                self.inpq.put_nowait((me.from_ui, key))
+
+                #clear command_event so the top of the loop blocks
+                #to guarantee that commands.inp is set to True
+                if key in config.COMMAND:
+                    self.command_event.clear()
+                
+
     def __info_print(self):
         time_str = config.song_length(self.player.cur_time())
         total_time_str = config.song_length(self.cur_song['length'])
