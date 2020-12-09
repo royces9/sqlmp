@@ -5,7 +5,6 @@ import threading
 import time
 
 import commands
-import mainloop_event as me
 import menu
 import player
 import playlist
@@ -39,9 +38,6 @@ class Player_ui:
 
         #init a blank song
         self.cur_song = song.blank_song
-        #when incrementing playcount, throw songs
-        #that need to be incremented into the queue
-        self.incrementq = queue.Queue(0)
 
         #currently playing playlist
         self.cur_pl = None
@@ -75,20 +71,17 @@ class Player_ui:
         return self.commands.keys
 
 
-    def getevent(self):
-        if not self.incrementq.empty():
-            return Event.increment_playcount
-
+    def getkey(self):
         out = self.stdscr.get_wch()
         curses.flushinp()
 
-        return out
+        return out, None
 
     def curwin(self):
         return [self.leftwin, self.rightwin][self.cur]
 
 
-    def set_die(self):
+    def set_die(self, args=None):
         self.die = True
 
 
@@ -113,7 +106,6 @@ class Player_ui:
             [config.CUR_PLAY, self.jump_cur_play],
             [config.JUMP_UP, self.jump_up],
             [config.JUMP_DOWN, self.jump_down],
-            [[Event.increment_playcount], self.increment_playcount],
             [{curses.KEY_RESIZE}, self.resize],
         ]
 
@@ -122,7 +114,7 @@ class Player_ui:
 
         return actions
 
-
+        
     def __init_windows(self):
         hh, ww, cc = config.set_size(self.stdscr)
 
@@ -378,11 +370,7 @@ class Player_ui:
         window.cursor = ind - offset
         window.offset = offset
 
-    def increment_playcount(self):
-        if self.incrementq.empty():
-            return
-
-        song = self.incrementq.get()
+    def increment_playcount(self, song):
         self.db.increment_playcount(song)
         song['playcount'] += 1
 
@@ -404,6 +392,22 @@ class Player_ui:
         self.botwin.win.chgat(0, 0, self.botwin.w, config.FOCUSED[0])
 
         
+    def mainloop(self):
+        while not self.die:
+            #check input queue for any new things to do
+            func, args = self.inpq.get()
+
+            #do something based off of type of item
+            func(*args)
+
+
+    def from_command(self, command):
+        curses.curs_set(0)
+        self.textwin.print_blank(0)
+        self.commands.inp = False
+        self.commands.exe(command)
+        self.keys.reset()
+
     def __input_loop(self):
         while True:
             #if a command is running, this blocks
@@ -411,24 +415,24 @@ class Player_ui:
             self.command_event.wait()
 
             #grab an event
-            key = self.getevent()
+            key, item = self.getkey()
 
             #commands.inp is True if a command is being input
-            #otherwise, check if key is a hotkey for something
+            #otherwise, check if key is a hotkey
             if self.commands.inp:
                 #command returns True when enter is pressed
                 command = self.handle_input(key)
                 if command:
-                    self.inpq.put_nowait((me.from_command, command))
+                    self.inpq.put_nowait((self.from_command, (command,)))
 
             elif key in self.actions:
-                self.inpq.put_nowait((me.from_ui, key))
-
+                self.inpq.put_nowait((self.actions[key], (None,)))
+                
                 #clear command_event so the top of the loop blocks
                 #to guarantee that commands.inp is set to True
                 if key in config.COMMAND:
                     self.command_event.clear()
-                
+
 
     def __info_print(self):
         time_str = config.song_length(self.player.cur_time())
@@ -452,7 +456,7 @@ class Player_ui:
                 #playback ended
                 #increment its playcount
                 if player_event == player.Event.end_normal:
-                    self.incrementq.put_nowait(self.cur_song)
+                    self.inpq.put_nowait((self.increment_playcount, (self.cur_song,)))
 
                 #queue another song
                 self.__enqueue()

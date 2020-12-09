@@ -3,8 +3,6 @@ import json
 import socket
 import threading
 
-import mainloop_event as me
-
 import debug
 
 class Remote:
@@ -27,8 +25,13 @@ class Remote:
                     data = conn.recv(1024)
                     if data != b' \n\n ':
                         pl, fn = data.decode('utf-8').split('\n\n')
-                        self.ui.inpq.put_nowait((me.from_remote, pl.split('\n'), fn.split('\n')))
+                        self.ui.inpq.put_nowait((self.from_remote, (pl.split('\n'), fn.split('\n'),)))
 
                     js = copy.copy(self.ui.cur_song.dict())
                     js['status'] = format(self.ui.player.state)
                     conn.send(json.dumps(js).encode())
+
+    def from_remote(self, pl, fn):
+        for p in pl:
+            for f in fn:
+                self.ui.commands.add((f, p))

@@ -54,7 +54,7 @@ def main():
         remote.Remote(ui, config.SOCKET)
 
         #start mainloop
-        mainloop(ui)
+        ui.mainloop()
 
         #cleanup curses
         cleanup(stdscr)

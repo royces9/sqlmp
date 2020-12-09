@@ -20,6 +20,4 @@ Bugs:
 
 - when entering a command, sometimes the cursor moves to the next line
 
-- playcount doesn't update on screen until key press
-
 - start up lags a little or something, first few inputs don't do anything
