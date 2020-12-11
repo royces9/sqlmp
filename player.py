@@ -8,6 +8,8 @@ import threading
 import ffmpeg
 import pyaudio
 
+import song
+
 import debug
 
 class Play_state(enum.Enum):
@@ -24,6 +26,7 @@ class Event(enum.Enum):
     start = enum.auto()
     end_normal = enum.auto()
     end_early = enum.auto()
+
 
 class Player:
     def __init__(self, vol, step):
@@ -51,8 +54,8 @@ class Player:
         self.channels = 0
         self.width = 2
 
-        #current song
-        self.cursong = None
+        #currently playing song
+        self.cur_song = song.blank_song
 
         #current count of the
         #chunk that is currently
@@ -72,7 +75,7 @@ class Player:
         #always loop unless we quit
         while self.state != Play_state.end:
             #this call blocks until something is pushed onto the queue
-            self.cursong = self.playq.get(block=True, timeout=None)
+            self.cur_song = self.playq.get(block=True, timeout=None)
 
             #change state to playing
             self.state = Play_state.playing
@@ -81,7 +84,7 @@ class Player:
             self.curq.put_nowait(Event.start)
 
             #grab path
-            fp = self.cursong['path']
+            fp = self.cur_song['path']
 
             #convert input file to pcm data
             wav, _ = (ffmpeg
@@ -91,8 +94,8 @@ class Player:
                       .run(capture_stdout=True, capture_stderr=True))
 
             #grab stream data for the pyaudio stream
-            self.rate = self.cursong['samplerate']
-            self.channels = self.cursong['channels']
+            self.rate = self.cur_song['samplerate']
+            self.channels = self.cur_song['channels']
             self.width = 2
 
             #open a pyaudio stream
@@ -115,8 +118,10 @@ class Player:
             while self.iterator < len(wav_chunks):
                 if self.state in {Play_state.new, Play_state.end}:
                     break
-                #while (self.iterator < len(wav_chunks)) and self.state not in {Play_state.new, Play_state.end}:
-                adjust = audioop.mul(wav_chunks[self.iterator], self.width, (not self.mute) * self.vol / 500)
+
+                vol = self.vol / 500 if not self.mute else 0
+                adjust = audioop.mul(wav_chunks[self.iterator], self.width, vol)
+
                 stream.write(adjust)
                 self.iterator += 1
 
@@ -136,25 +141,25 @@ class Player:
             self.state = Play_state.not_playing
 
 
-    def is_paused(self):
+    def is_paused(self, *args):
         return self.state == Play_state.paused
 
 
-    def is_playing(self):
+    def is_playing(self, *args):
         return self.state == Play_state.playing
 
 
-    def is_not_playing(self):
+    def is_not_playing(self, *args):
         return self.state == Play_state.not_playing
 
 
-    def vol_up(self):
+    def vol_up(self, *args):
         self.vol += self.vol_step
         if self.vol > 100:
             self.vol = 100
 
 
-    def vol_down(self):
+    def vol_down(self, *args):
         self.vol -= self.vol_step
         if self.vol < 0:
             self.vol = 0

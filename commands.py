@@ -1,3 +1,4 @@
+import curses
 import os
 import shlex
 import threading
@@ -31,7 +32,7 @@ class Error_msg:
 class Commands:
     def __init__(self, ui):
         self.ui = ui
-        self.win = self.ui.textwin
+        self.textwin = self.ui.textwin
 
         #typed commands
         self.commands = {
@@ -48,8 +49,9 @@ class Commands:
             'update-single': self.update_single
         }
 
-        self.err = Error_msg(self.ui, 2, self.ui.frame_time, self.win.print_blank, (1,))
+        self.err = Error_msg(self.ui, 2, self.ui.frame_time, self.textwin.print_blank, (1,))
         self.find_list = None
+
 
         #handles input for typed commands
         self.keys = keys.Keys()
@@ -65,13 +67,35 @@ class Commands:
 
 
     def err_print(self, err):
-        self.win.print_blank(1)
-        self.win.print_line(err, y=1)
+        self.textwin.print_blank(1)
+        self.textwin.print_line(err, y=1)
         self.err.set()
+
+
+    def from_command(self, command):
+        curses.curs_set(0)
+        self.textwin.print_blank(0)
+        self.inp = False
+        self.exe(command)
+        self.keys.reset()
+        
+
+    def prepare_command(self, arg=None):
+        """
+        prepare input loop to handle command input
+        when config.COMMAND key is pressed
+        """
+
+        self.textwin.print_blank(0)
+        self.textwin.win.addch(0, 0, ':')
+        curses.curs_set(2)
+
+        self.inp = True
+        self.command_event.set()
 
     def exe(self, inp):
         """
-        executes the actual command from grab_inp
+        executes the actual command from handle_input
         """
         try:
             spl = shlex.split(inp)

@@ -139,6 +139,7 @@ class Musicdb:
         increment playcount for a song by one
         """
         self.exe("UPDATE library SET playcount=playcount+1 WHERE path=?", (song['path'],))
+        song['playcount'] += 1
         self.commit()
 
     def update_song(self, song):

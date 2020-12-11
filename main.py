@@ -24,15 +24,6 @@ def cleanup(stdscr, exit_f=False):
         sys.exit()
 
 
-def mainloop(ui):
-    while not ui.die:
-        #check input queue for any new things to do
-        item = ui.inpq.get()
-
-        #do something based off of type of item
-        item[0](item, ui)
-
-
 def main():
     if os.path.exists(config.SOCKET):
         sys.exit('sqlmp socket already open')

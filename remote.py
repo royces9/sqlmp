@@ -25,9 +25,9 @@ class Remote:
                     data = conn.recv(1024)
                     if data != b' \n\n ':
                         pl, fn = data.decode('utf-8').split('\n\n')
-                        self.ui.inpq.put_nowait((self.from_remote, (pl.split('\n'), fn.split('\n'),)))
+                        self.ui.inp.put_nowait((self.from_remote, (pl.split('\n'), fn.split('\n'),)))
 
-                    js = copy.copy(self.ui.cur_song.dict())
+                    js = copy.copy(self.ui.player.cur_song.dict())
                     js['status'] = format(self.ui.player.state)
                     conn.send(json.dumps(js).encode())
 

@@ -5,27 +5,39 @@ import threading
 import time
 
 import commands
+import inp
 import menu
 import player
 import playlist
-import song
 import threadwin
 import wchar
 
 from loadconf import config
 import debug
 
-class Event(enum.Enum):
-    increment_playcount = enum.auto()
-
-    
 song_info_bar_height = 2
 command_bar_height = 2
 class Player_ui:
     def __init__(self, stdscr, db):
+        #currently highlighted window
+        #left window is 0, right is 1
         self.cur = 0
+
+        #pointer to the ncurses stdscr
         self.stdscr = stdscr
+
+        #music database
         self.db = db
+
+        #flag to decide if we kill the ui
+        self.die = False
+
+        #currently playing playlist
+        self.cur_pl = None
+
+        #amount of time in between drawing in seconds
+        #not really a frame time but w/e
+        self.frame_time = 0.01
 
         #actual music player
         self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
@@ -33,55 +45,29 @@ class Player_ui:
         #the windows of the player
         self.leftwin, self.botwin, self.textwin = self.__init_windows()
 
+        #handles typed commands
+        self.commands = commands.Commands(self)
+        
         #hotkeys from config.py
         self.actions = self.__init_actions()
 
-        #init a blank song
-        self.cur_song = song.blank_song
-
-        #currently playing playlist
-        self.cur_pl = None
-
-        #amount of time in between drawing
-        #not really a frame time but w/e
-        self.frame_time = 0.01
-        
-        #typed commands
-        self.commands = commands.Commands(self)
-        self.command_event = self.commands.command_event
-        self.command_event.set()
-
         #input queue and thread
-        self.inpq = queue.Queue(0)
-        threading.Thread(target=self.__input_loop, daemon=True).start()
+        self.inp = inp.Input(self)
 
         #thread for updating everything visually
         threading.Thread(target=self.__info_print_loop, daemon=True).start()
-
-        #flag to decide if we kill the ui
-        self.die = False
 
         
     @property
     def rightwin(self):
         return self.leftwin.highlighted()
 
-    @property
-    def keys(self):
-        return self.commands.keys
 
-
-    def getkey(self):
-        out = self.stdscr.get_wch()
-        curses.flushinp()
-
-        return out, None
-
-    def curwin(self):
+    def cur_win(self):
         return [self.leftwin, self.rightwin][self.cur]
 
 
-    def set_die(self, args=None):
+    def set_die(self, *args):
         self.die = True
 
 
@@ -98,7 +84,7 @@ class Player_ui:
             [config.PLAYPAUSE, self.player.play_pause],
             [config.QUIT, self.set_die],
             [config.SWITCH, self.switch_view],
-            [config.COMMAND, self.prepare_command],
+            [config.COMMAND, self.commands.prepare_command],
             [config.SELECT, self.select],
             [config.HIGHLIGHT, self.highlight],
             [config.TRANSFER, self.transfer],
@@ -140,72 +126,38 @@ class Player_ui:
     """
     Functions called from key press/events
     """
-    def delete(self, arg=None):
+    def delete(self, *args):
         """
         delete songs from playlists
         """
         if self.cur == 0:
             self.commands.delpl([])
         elif self.cur == 1:
-            cursong = self.rightwin.highlighted()
+            cur_song = self.rightwin.highlighted()
 
-            self.rightwin.data.remove(cursong)
-            self.rightwin.delete(cursong)
+            self.rightwin.data.remove(cur_song)
+            self.rightwin.delete(cur_song)
 
             if not self.rightwin.data:
                 self.switch_view_left()
 
 
-    def down(self, arg=None):
+    def down(self, *args):
         """
         same as up, but down (?)
         """
-        self.curwin().down()
+        self.cur_win().down()
 
 
-    def prepare_command(self, arg=None):
-        """
-        prepare input loop to handle command input
-        when config.COMMAND key is pressed
-        """
-        #command_event.wait() is called from the input thread
-        #in the __inp function, this prevents a race condition where
-        #getkey gets called before the queue can execute prepare_command
-        self.textwin.print_blank(0)
-        self.textwin.win.addch(0, 0, ':')
-        curses.curs_set(2)
-
-        self.commands.inp = True
-        self.command_event.set()
-
-
-    def handle_input(self, key):
-        if key in self.keys:
-            if self.keys[key]():
-                return self.keys.get_string()
-        else:
-            self.keys.add(key)
-
-        self.__print_typing()
-
-    def __print_typing(self):
-        tmp = self.keys.get_string()
-        self.textwin.print_blank(x=1, y=0)
-        self.textwin.win.addnstr(0, 1, wchar.set_width(tmp, self.textwin.w - 1), self.textwin.w - 1)
-        wid, _ = wchar.wcswidth(tmp[:self.keys.index])
-        if wid + 1 < self.textwin.w:
-            self.textwin.win.move(0, wid + 1)
-
-
-    def highlight(self, arg=None):
+    def highlight(self, *args):
         """
         highlight an entry to do stuff with
         """
-        self.curwin().highlight()
-        self.curwin().down()
+        self.cur_win().highlight()
+        self.cur_win().down()
 
 
-    def jump_cur_play(self, arg=None):
+    def jump_cur_play(self, *args):
         if self.player.is_not_playing():
             return
 
@@ -213,8 +165,8 @@ class Player_ui:
         #are the same
         if self.cur_pl is self.rightwin.data:
             #check that cur_song is in the cur_pl
-            if self.cur_song in self.cur_pl.data:
-                ind = self.rightwin.data.index(self.cur_song)
+            if self.player.cur_song in self.cur_pl.data:
+                ind = self.rightwin.data.index(self.player.cur_song)
                 self.jump_to_ind(ind, len(self.cur_pl.data), self.rightwin)
                 self.switch_view_right()
         else:
@@ -226,18 +178,21 @@ class Player_ui:
             self.jump_to_ind(ind, len(self.leftwin.data), self.leftwin)
 
 
-    def jump_down(self, arg=None):
-        self.curwin().jump_down(self.curwin().h // 2)
+    def jump_down(self, *args):
+        cw = self.cur_win()
+        cw.jump_down(cw.h // 2)
 
 
-    def jump_up(self, arg=None):
-        self.curwin().jump_up(self.curwin().h // 2)
+    def jump_up(self, *args):
+        cw = self.cur_win()
+        cw.jump_up(cw.h // 2)
 
-    def mute(self, arg=None):
+
+    def mute(self, *args):
         self.player.toggle_mute()
 
 
-    def resize(self, arg=None):
+    def resize(self, *args):
         """
         handle resize event
         """
@@ -268,7 +223,7 @@ class Player_ui:
                 win.offset = prev - win.cursor
 
 
-    def select(self, arg=None):
+    def select(self, *args):
         """
         play a song in a playlist
         """
@@ -286,7 +241,7 @@ class Player_ui:
             self.cur_pl.ind = self.rightwin.highlighted_ind()
 
 
-    def switch_view(self, arg=None):
+    def switch_view(self, *args):
         """
         switch focus from left to right, and vice versa
         """
@@ -311,7 +266,7 @@ class Player_ui:
         self.rightwin.cursor_colour = config.CURSOR[0]
 
 
-    def transfer(self, arg=None):
+    def transfer(self, *args):
         """
         move songs around playlists
         """
@@ -322,23 +277,23 @@ class Player_ui:
             return
 
         curpl = self.rightwin.data
-        cursong = self.rightwin.highlighted()
-        if not cursong:
+        cur_song = self.rightwin.highlighted()
+        if not cur_song:
             return
 
         for pl in self.leftwin.highlight_list:
             if pl is not curpl:
-                pl.data.insert(cursong['path'])
+                pl.data.insert(cur_song['path'])
 
         self.rightwin.down()
 
     
-    def up(self, arg=None):
+    def up(self, *args):
         """
         scroll up on the menu
         also update the right window's data if the left window is scrolled up
         """
-        self.curwin().up()
+        self.cur_win().up()
 
 
     """
@@ -351,7 +306,7 @@ class Player_ui:
         self.textwin.refresh()
 
 
-    def __enqueue(self):
+    def __enqueue(self, args=None):
         """
         add a new song onto the player queue
         """
@@ -370,16 +325,12 @@ class Player_ui:
         window.cursor = ind - offset
         window.offset = offset
 
-    def increment_playcount(self, song):
-        self.db.increment_playcount(song)
-        song['playcount'] += 1
-
 
     def __print_cur_playing(self):
         """
         print currently playing song/playlist in bottom window with highlight
         """
-        song = self.cur_song.info()
+        song = self.player.cur_song.info()
 
         if self.player.is_paused():
             song += ' *PAUSED*'
@@ -395,48 +346,15 @@ class Player_ui:
     def mainloop(self):
         while not self.die:
             #check input queue for any new things to do
-            func, args = self.inpq.get()
+            func, args = self.inp.get()
 
             #do something based off of type of item
             func(*args)
 
 
-    def from_command(self, command):
-        curses.curs_set(0)
-        self.textwin.print_blank(0)
-        self.commands.inp = False
-        self.commands.exe(command)
-        self.keys.reset()
-
-    def __input_loop(self):
-        while True:
-            #if a command is running, this blocks
-            #until the command is done
-            self.command_event.wait()
-
-            #grab an event
-            key, item = self.getkey()
-
-            #commands.inp is True if a command is being input
-            #otherwise, check if key is a hotkey
-            if self.commands.inp:
-                #command returns True when enter is pressed
-                command = self.handle_input(key)
-                if command:
-                    self.inpq.put_nowait((self.from_command, (command,)))
-
-            elif key in self.actions:
-                self.inpq.put_nowait((self.actions[key], (None,)))
-                
-                #clear command_event so the top of the loop blocks
-                #to guarantee that commands.inp is set to True
-                if key in config.COMMAND:
-                    self.command_event.clear()
-
-
     def __info_print(self):
         time_str = config.song_length(self.player.cur_time())
-        total_time_str = config.song_length(self.cur_song['length'])
+        total_time_str = config.song_length(self.player.cur_song['length'])
 
         info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
         if self.player.mute:
@@ -447,19 +365,13 @@ class Player_ui:
 
         if not self.player.curempty():
             player_event = self.player.curplay()
-
-            #check if the event is for playback starting or ending
-            if player_event == player.Event.start:
-                #playback started, print information to bottom window
-                self.cur_song = self.player.cursong
-            else:
-                #playback ended
-                #increment its playcount
-                if player_event == player.Event.end_normal:
-                    self.inpq.put_nowait((self.increment_playcount, (self.cur_song,)))
+            
+            #playback ended normally, increment playcount
+            if player_event == player.Event.end_normal:
+                self.inp.put_nowait((self.db.increment_playcount, (self.player.cur_song,)))
 
                 #queue another song
-                self.__enqueue()
+                self.inp.put_nowait((self.__enqueue, (None,)))
 
         self.__print_cur_playing()
 
