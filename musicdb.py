@@ -131,7 +131,6 @@ class Musicdb:
 
 
         self.insert_multi(new_files)
-        return
 
 
     def increment_playcount(self, song):

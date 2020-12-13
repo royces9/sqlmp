@@ -161,8 +161,7 @@ class Player_ui:
         if self.player.is_not_playing():
             return
 
-        #check that cur_pl and the currently selected pl
-        #are the same
+        #check that cur_pl and the currently selected pl are the same
         if self.cur_pl is self.rightwin.data:
             #check that cur_song is in the cur_pl
             if self.player.cur_song in self.cur_pl.data:
@@ -300,10 +299,15 @@ class Player_ui:
     Utility functions
     """
     def draw(self):
-        self.leftwin.disp()
-        self.rightwin.disp()
-        self.botwin.refresh()
-        self.textwin.refresh()
+        if self.leftwin.win.is_wintouched() or self.rightwin.win.is_wintouched():
+            self.leftwin.disp()
+            self.rightwin.disp()
+
+        if self.botwin.win.is_wintouched():
+            self.botwin.refresh()
+
+        if self.textwin.win.is_wintouched():
+            self.textwin.refresh()
 
 
     def __enqueue(self, args=None):
@@ -377,7 +381,7 @@ class Player_ui:
 
 
     def __info_print_loop(self):
-        while True:
+        while not self.die:
             start = time.time()
             self.__info_print()
             self.draw()

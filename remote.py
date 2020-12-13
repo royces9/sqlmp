@@ -10,9 +10,7 @@ class Remote:
         super().__init__()
         self.ui = ui
         self.socket = socket
-        self.thread = threading.Thread(target=self.__socket, daemon=True)
-        self.thread.start()
-
+        threading.Thread(target=self.__socket, daemon=True).start()
 
     def __socket(self):
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:

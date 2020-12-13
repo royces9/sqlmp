@@ -1,9 +1,5 @@
 Things that I want to implement:
 
-Display:
-- Need to find a way to make columns cleaner, it's kinda ugly right now
-- also maybe consider putting bars or something to separate windows
-
 Update:
 - I'm pretty sure db.update() still doesn't work
   - update definitely does not work
@@ -15,9 +11,16 @@ jumping to current playing track
   - O(lg(n)) alg is easy to implement (binary search), but O(1) is possible so go for that
     - probably just put another variable into player_disp that holds the current index (ugly...)
 
+Display:
+- Need to find a way to make columns cleaner, it's kinda ugly right now
+- also maybe consider putting bars or something to separate windows
+  - I don't really care about this that much, still gonna keep it in case I have another change of heart
+
 Bugs:
 - there was a crash after pressing tab randomly, not sure what that is yet
 
 - when entering a command, sometimes the cursor moves to the next line
 
 - start up lags a little or something, first few inputs don't do anything
+
+- resize doesn't instantly resize, idk why, gonna have to work this out
