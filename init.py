@@ -9,7 +9,11 @@ def colours():
     curses.start_color()
     curses.use_default_colors()
 
-    colours = [config.FOCUSED, config.CURSOR, config.HIGHLIGHT_COLOUR, config.NORMAL]
+    colours = [config.FOCUSED,
+               config.CURSOR,
+               config.HIGHLIGHT_COLOUR,
+               config.NORMAL,
+               config.PLAYING_HIGHLIGHT]
 
     for i, c in enumerate(colours, 1):
         if c[0] is None:

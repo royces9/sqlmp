@@ -175,6 +175,7 @@ class Player_ui:
                     break
 
             self.jump_to_ind(ind, len(self.leftwin.data), self.leftwin)
+        self.leftwin.win.touchwin()
 
 
     def jump_down(self, *args):
@@ -251,6 +252,7 @@ class Player_ui:
             self.switch_view_left()
         else:
             self.switch_view_right()
+        self.leftwin.win.touchwin()
 
         
     def switch_view_right(self):
@@ -384,7 +386,9 @@ class Player_ui:
         while not self.die:
             start = time.time()
             self.__info_print()
+
             self.draw()
+            self.colour_cur_playing()
             
             curses.doupdate()
             diff = time.time() - start
@@ -393,3 +397,17 @@ class Player_ui:
                 time.sleep(self.frame_time - diff)
 
             self.commands.err.check()
+
+    def colour_cur_playing(self):
+        if self.player.is_not_playing():
+            return
+
+        if self.cur_pl != self.rightwin.data:
+            return
+
+        if self.player.cur_song not in self.cur_pl.data:
+            return
+
+        newind = self.rightwin.data.index(self.player.cur_song) - self.rightwin.offset
+        self.rightwin.paint(config.PLAYING_HIGHLIGHT[0], newind)
+        self.rightwin.refresh()

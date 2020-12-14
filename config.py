@@ -10,10 +10,10 @@ LIBPATH = os.path.expanduser('~/Music/')
 SOCKET = 'test_sqlmp.sock'
 
 #key bindings
-UP = {'KEY_UP', 'l'}
-DOWN = {'KEY_DOWN', 'k'}
-LEFT = {'KEY_LEFT', 'j'}
-RIGHT = {'KEY_RIGHT', ';'}
+UP = {curses.KEY_UP, 'l'}
+DOWN = {curses.KEY_DOWN, 'k'}
+LEFT = {curses.KEY_LEFT, 'j'}
+RIGHT = {curses.KEY_RIGHT, ';'}
 JUMP_UP = {'\f'} #ctrl-L
 JUMP_DOWN = {'\v'} #ctrl-K
 VOLUP = {']'}
@@ -82,6 +82,7 @@ FOCUSED = [None, 219, 9]
 CURSOR = [curses.A_STANDOUT, 0, 0]
 HIGHLIGHT_COLOUR = [curses.A_REVERSE, 0, 0]
 NORMAL = [curses.A_NORMAL, 0, 0]
+PLAYING_HIGHLIGHT = [None, 161, -1]
 
 
 def set_size(stdscr):

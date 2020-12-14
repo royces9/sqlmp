@@ -176,7 +176,7 @@ class Menu(Window):
         self.paint_highlight(self.highlight_colour, self.offset)
         self.paint_cursor(self.cursor_colour, self.cursor)
 
-        self.win.noutrefresh()
+        self.refresh()
 
 
     def paint_highlight(self, colour, offset):
@@ -185,6 +185,10 @@ class Menu(Window):
             if 0 <= newind < self.w:
                 self.win.chgat(newind, 0, self.w - 1, colour)
 
+
+    def paint(self, colour, cursor):
+        if cursor < self.h:
+            self.win.chgat(cursor, 0, self.w - 1, colour)
 
     def paint_cursor(self, colour, cursor):
         if self.data:
