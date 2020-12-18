@@ -38,7 +38,7 @@ class Player:
         #the length of time (s) each chunk of playback is
         #the play call blocks during this time, so the
         #thread will completely stop
-        self.play_len = 0.1
+        self.play_len = 0.2
 
         #size of chunks in bytes to playback
         self.step = 0

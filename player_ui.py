@@ -18,7 +18,7 @@ import debug
 song_info_bar_height = 2
 command_bar_height = 2
 class Player_ui:
-    def __init__(self, stdscr, db):
+    def __init__(self, stdscr, palette, db):
         #currently highlighted window
         #left window is 0, right is 1
         self.cur = 0
@@ -28,6 +28,9 @@ class Player_ui:
 
         #music database
         self.db = db
+
+        #all the colours and stuff
+        self.palette = palette
 
         #flag to decide if we kill the ui
         self.die = False
@@ -105,7 +108,7 @@ class Player_ui:
         hh, ww, cc = config.set_size(self.stdscr)
 
         win = threadwin.Threadwin(hh, cc - ww, 0, ww)
-
+        """
         data = [menu.Menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
                           form=config.SONG_DISP,
                           cursor_colour=config.CURSOR[0],
@@ -117,6 +120,18 @@ class Player_ui:
                             cursor_colour=config.FOCUSED[0],
                             highlight_colour=config.HIGHLIGHT_COLOUR[0],
                             normal_colour=config.NORMAL[0])
+        """
+        data = [menu.Menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
+                          form=config.SONG_DISP,
+                          cursor_colour=self.palette[1],
+                          highlight_colour=self.palette[2],
+                          normal_colour=self.palette[3])
+                for pl in self.db.list_pl()]
+
+        leftwin = menu.Menu(0, 0, ww, hh, data=data,
+                            cursor_colour=self.palette[0],
+                            highlight_colour=self.palette[2],
+                            normal_colour=self.palette[3])
 
         botwin = menu.Window(0, hh, cc, song_info_bar_height)
         textwin = menu.Window(0, hh + song_info_bar_height, cc, command_bar_height)
@@ -257,14 +272,14 @@ class Player_ui:
         
     def switch_view_right(self):
         self.cur = 1
-        self.rightwin.cursor_colour = config.FOCUSED[0]
-        self.leftwin.cursor_colour = config.CURSOR[0]
+        self.rightwin.cursor_colour = self.palette[0]
+        self.leftwin.cursor_colour = self.palette[1]
 
 
     def switch_view_left(self):
         self.cur = 0
-        self.leftwin.cursor_colour = config.FOCUSED[0]
-        self.rightwin.cursor_colour = config.CURSOR[0]
+        self.leftwin.cursor_colour = self.palette[0]
+        self.rightwin.cursor_colour = self.palette[1]
 
 
     def transfer(self, *args):
@@ -346,7 +361,7 @@ class Player_ui:
         if self.cur_pl:
             self.botwin.print_right_justified(' ' + self.cur_pl.name + ' ')
         
-        self.botwin.win.chgat(0, 0, self.botwin.w, config.FOCUSED[0])
+        self.botwin.win.chgat(0, 0, self.botwin.w, self.palette[0])
 
         
     def mainloop(self):
@@ -409,5 +424,5 @@ class Player_ui:
             return
 
         newind = self.rightwin.data.index(self.player.cur_song) - self.rightwin.offset
-        self.rightwin.paint(config.PLAYING_HIGHLIGHT[0], newind)
+        self.rightwin.paint(self.palette[4], newind)
         self.rightwin.refresh()

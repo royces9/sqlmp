@@ -1,25 +1,32 @@
 import curses
 import sys
 
-import player_ui
+import colours
 
 from loadconf import config
 
-def colours():
+
+def init_colours():
     curses.start_color()
     curses.use_default_colors()
 
-    colours = [config.FOCUSED,
+    config_colours = [config.FOCUSED,
                config.CURSOR,
                config.HIGHLIGHT_COLOUR,
                config.NORMAL,
                config.PLAYING_HIGHLIGHT]
-
-    for i, c in enumerate(colours, 1):
-        if c[0] is None:
-            curses.init_pair(i, c[1], c[2])
-            c[0] = curses.color_pair(i)
-
+ 
+    palette = colours.Palette()
+    j = 1
+    for i, c in enumerate(config_colours, 10):
+        if len(c) > 1:
+            fg, bg = c
+            palette.append(colours.Colour_pair(colours.Colour(*fg, j), colours.Colour(*bg, j + 1), i))
+            j += 2
+        else:
+            palette.append(colours.Default_pair(c[0]))
+        
+    return palette
 
 def ncurses():
     stdscr = curses.initscr()
@@ -33,10 +40,9 @@ def ncurses():
     sys.stdout.flush()
 
     if curses.has_colors():
-        colours()
+        if curses.can_change_color():
+            palette = init_colours()
+        else:
+            colours()
 
-    return stdscr
-
-
-def windows(db, stdscr):
-    return player_ui.Player_ui(stdscr, db)
+    return stdscr, palette

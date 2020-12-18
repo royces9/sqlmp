@@ -185,6 +185,9 @@ class Menu(Window):
             if 0 <= newind < self.w:
                 self.win.chgat(newind, 0, self.w - 1, colour)
 
+                
+    def chgat(x, y, width, colour):
+        pass
 
     def paint(self, colour, cursor):
         if cursor < self.h:

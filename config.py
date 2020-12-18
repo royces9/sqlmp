@@ -78,11 +78,18 @@ SONG_INFO = ['artist', 'title', 'album']
 #0: curses colour, use None if you want a different colour scheme
 #1: fg colour
 #1: bg colour
+"""
 FOCUSED = [None, 219, 9]
 CURSOR = [curses.A_STANDOUT, 0, 0]
-HIGHLIGHT_COLOUR = [curses.A_REVERSE, 0, 0]
+HIGHLIGHT_COLOUR = [None, 196, 0]
 NORMAL = [curses.A_NORMAL, 0, 0]
 PLAYING_HIGHLIGHT = [None, 161, -1]
+"""
+FOCUSED = [(255, 209, 220), (248, 0, 59)]
+CURSOR = [curses.A_STANDOUT]
+HIGHLIGHT_COLOUR = [(255, 158, 181), (255, 91, 130)]
+NORMAL = [curses.A_NORMAL]
+PLAYING_HIGHLIGHT = [(216, 91, 255,), (255, 209, 220)]
 
 
 def set_size(stdscr):

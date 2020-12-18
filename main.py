@@ -6,6 +6,7 @@ import sys
 import debug
 import init
 import musicdb
+import player_ui
 import remote
             
 from loadconf import config
@@ -28,7 +29,7 @@ def main():
     if os.path.exists(config.SOCKET):
         sys.exit('sqlmp socket already open')
     
-    stdscr = init.ncurses()
+    stdscr, palette = init.ncurses()
 
     try:
         db = musicdb.Musicdb(config.DBPATH, config.LIBPATH)
@@ -39,7 +40,7 @@ def main():
         signal.signal(signal.SIGINT, lambda a, b: cleanup(stdscr, True))
 
         #init the ui
-        ui = init.windows(db, stdscr)
+        ui = player_ui.Player_ui(stdscr, palette, db)
 
         #init remote
         remote.Remote(ui, config.SOCKET)
