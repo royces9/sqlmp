@@ -261,12 +261,10 @@ class Commands:
                 return
 
             playlist.Playlist.init_pl(plname, self.ui.db)
-            newpl = menu.Menu(win=self.ui.rightwin.win,
-                              data=playlist.Playlist(name=plname, db=self.ui.db),
-                              form=config.SONG_DISP,
-                              cursor_colour=config.CURSOR[0],
-                              highlight_colour=config.HIGHLIGHT_COLOUR[0],
-                              normal_colour=config.NORMAL[0])
+            newpl = menu.Music_menu(win=self.ui.rightwin.win,
+                                    data=playlist.Playlist(name=plname, db=self.ui.db),
+                                    form=config.SONG_DISP,
+                                    palette=self.ui.palette[0], ui=self)
         else:
             plname = args[0]
             plfile = args[1]

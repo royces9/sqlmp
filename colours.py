@@ -20,21 +20,36 @@ class Colour_pair:
         curses.init_pair(self.enum, fg.enum, bg.enum)
         self.colour = curses.color_pair(self.enum)
 
+
+class Default_colour:
+    def __init__(self, enum):
+        self.enum = enum
+
+        
 class Default_pair:
     def __init__(self, colour):
         self.colour = colour
+        fg_enum, bg_enum = curses.pair_content(curses.pair_number(self.colour))
+        self.fg = Default_colour(fg_enum)
+        self.bg = Default_colour(bg_enum)
+
 
 class Palette:
     def __init__(self):
-        self.colour_pairs = []
+        self.colour_pairs = {}
+
+    def __setitem__(self, ind, item):
+        self.colour_pairs[ind] = item
 
     def __getitem__(self, ind):
         return self.colour_pairs[ind].colour
 
-    def append(self, new):
-        self.colour_pairs.append(new)
-        
+    def find(self, value):
+        for key in self.colour_pairs:
+            if self[key] == value:
+                return key
+        return None
+
     def mix(self, a, b, enum):
-        new = Colour_pair(self.colour_pairs[a].fg, self.colour_pairs[b].bg, enum)
-        self.append(new)
+        self[enum] = Colour_pair(self.colour_pairs[a].fg, self.colour_pairs[b].bg, enum)
     

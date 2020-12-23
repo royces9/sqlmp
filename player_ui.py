@@ -10,6 +10,7 @@ import menu
 import player
 import playlist
 import threadwin
+import window
 import wchar
 
 from loadconf import config
@@ -108,33 +109,18 @@ class Player_ui:
         hh, ww, cc = config.set_size(self.stdscr)
 
         win = threadwin.Threadwin(hh, cc - ww, 0, ww)
-        """
-        data = [menu.Menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
-                          form=config.SONG_DISP,
-                          cursor_colour=config.CURSOR[0],
-                          highlight_colour=config.HIGHLIGHT_COLOUR[0],
-                          normal_colour=config.NORMAL[0])
+        data = [menu.Music_menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
+                                form=config.SONG_DISP,
+                                palette=self.palette[0], ui=self
+                                )
                 for pl in self.db.list_pl()]
 
         leftwin = menu.Menu(0, 0, ww, hh, data=data,
-                            cursor_colour=config.FOCUSED[0],
-                            highlight_colour=config.HIGHLIGHT_COLOUR[0],
-                            normal_colour=config.NORMAL[0])
-        """
-        data = [menu.Menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
-                          form=config.SONG_DISP,
-                          cursor_colour=self.palette[1],
-                          highlight_colour=self.palette[2],
-                          normal_colour=self.palette[3])
-                for pl in self.db.list_pl()]
+                            palette=self.palette[1]
+                            )
 
-        leftwin = menu.Menu(0, 0, ww, hh, data=data,
-                            cursor_colour=self.palette[0],
-                            highlight_colour=self.palette[2],
-                            normal_colour=self.palette[3])
-
-        botwin = menu.Window(0, hh, cc, song_info_bar_height)
-        textwin = menu.Window(0, hh + song_info_bar_height, cc, command_bar_height)
+        botwin = window.Window(0, hh, cc, song_info_bar_height)
+        textwin = window.Window(0, hh + song_info_bar_height, cc, command_bar_height)
         return leftwin, botwin, textwin
 
 
@@ -260,7 +246,7 @@ class Player_ui:
         """
         switch focus from left to right, and vice versa
         """
-        if not self.leftwin.data:
+        if not self.rightwin.data:
             return
 
         if self.cur == 1:
@@ -272,14 +258,14 @@ class Player_ui:
         
     def switch_view_right(self):
         self.cur = 1
-        self.rightwin.cursor_colour = self.palette[0]
-        self.leftwin.cursor_colour = self.palette[1]
+        self.rightwin.palette = self.palette[1]
+        self.leftwin.palette = self.palette[0]
 
 
     def switch_view_left(self):
         self.cur = 0
-        self.leftwin.cursor_colour = self.palette[0]
-        self.rightwin.cursor_colour = self.palette[1]
+        self.leftwin.palette = self.palette[1]
+        self.rightwin.palette = self.palette[0]
 
 
     def transfer(self, *args):
@@ -361,7 +347,7 @@ class Player_ui:
         if self.cur_pl:
             self.botwin.print_right_justified(' ' + self.cur_pl.name + ' ')
         
-        self.botwin.win.chgat(0, 0, self.botwin.w, self.palette[0])
+        self.botwin.win.chgat(0, 0, self.botwin.w, self.palette[1][1])
 
         
     def mainloop(self):
@@ -403,7 +389,6 @@ class Player_ui:
             self.__info_print()
 
             self.draw()
-            self.colour_cur_playing()
             
             curses.doupdate()
             diff = time.time() - start
@@ -412,17 +397,3 @@ class Player_ui:
                 time.sleep(self.frame_time - diff)
 
             self.commands.err.check()
-
-    def colour_cur_playing(self):
-        if self.player.is_not_playing():
-            return
-
-        if self.cur_pl != self.rightwin.data:
-            return
-
-        if self.player.cur_song not in self.cur_pl.data:
-            return
-
-        newind = self.rightwin.data.index(self.player.cur_song) - self.rightwin.offset
-        self.rightwin.paint(self.palette[4], newind)
-        self.rightwin.refresh()
