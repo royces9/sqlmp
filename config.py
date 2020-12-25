@@ -75,16 +75,18 @@ SONG_INFO = ['artist', 'title', 'album']
 
 
 #colours
-#list with three elements
-#0: curses colour, use None if you want a different colour scheme
+#list with two elements containing tuples with RGB values
 #1: fg colour
 #1: bg colour
 
-CURSOR = [curses.A_STANDOUT]
-FOCUSED = [(255, 209, 220), (248, 0, 59)]
-HIGHLIGHT_COLOUR = [(52, 0, 12), (131, 131, 131)]
-NORMAL = [curses.A_NORMAL]
-PLAYING_HIGHLIGHT = [(216, 91, 255,), (255, 209, 220)]
+MAIN_COLOUR=(255, 209, 220)
+MAIN_TEXT=(255, 91, 130)
+
+CURSOR = [MAIN_COLOUR, MAIN_TEXT]
+FOCUSED = [MAIN_COLOUR, (248, 0, 59)]
+HIGHLIGHT_COLOUR = [(0, 0, 0), (131, 131, 131)]
+NORMAL = [MAIN_TEXT, MAIN_COLOUR]
+PLAYING_HIGHLIGHT = [(232, 158, 255), MAIN_COLOUR]
 
 def set_size(stdscr):
     #cur term size

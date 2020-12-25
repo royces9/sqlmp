@@ -157,11 +157,6 @@ class Menu(window.Window):
                 
     def chgat(self, y, x, width, colour):
         self.win.chgat(y, x, self.w - x, self.palette[colour])
-        return
-        c = self.win.inch(x, y) & curses.A_COLOR
-        ind = self.palette.find(c)
-        if ind != None:
-            self.win.chgat(y, x, self.w - x, self.palette[ind | colour])
 
 
     def paint(self):
@@ -217,11 +212,10 @@ class Music_menu(Menu):
         #check that playlist to be displayed has both be true:
         #the currently playing playlist is the currently displayed playlist
         #the currently playing song is in the playlist
-        if self.data == self.ui.cur_pl and self.ui.player.cur_song in self.data:
+        if self.data == self.ui.cur_pl and self.ui.player.cur_song['path'] in self.data:
             cur_song_ind = self.data.index(self.ui.player.cur_song) - self.offset
         else:
             cur_song_ind = -1
-
         if cur_song_ind == self.cursor:
             self.chgat(self.cursor, 0, self.w - 1, 5)
         else:
@@ -239,3 +233,5 @@ class Music_menu(Menu):
                 if newind == self.cursor:
                     colour |= 1
                 self.chgat(newind, 0, self.w - 1, colour)
+
+        self.ui.leftwin.win.touchwin()

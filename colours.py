@@ -1,24 +1,41 @@
 import curses
+import enum
+import functools
+
+import debug
 
 from loadconf import config
 
+
+class Colour_types(enum.IntFlag):
+    normal = 0
+    cursor = 1
+    highlight = 2
+    playing = 4
+
+
 class Colour:
-    def __init__(self, r, g, b, enum):
+    __enum = 3
+    def __init__(self, r, g, b):
         self.r = int(r * 1000 / 255)
         self.g = int(g * 1000 / 255)
         self.b = int(b * 1000 / 255)
-        self.enum = enum
+        self.enum = type(self).__enum
 
-        curses.init_color(self.enum, self.r, self.g, self. b)
+        curses.init_color(type(self).__enum, self.r, self.g, self. b)
+        type(self).__enum += 1
 
 class Colour_pair:
-    def __init__(self, fg, bg, enum):
+    __enum = 2
+
+    def __init__(self, fg, bg):
         self.fg = fg
         self.bg = bg
-        self.enum = enum
 
-        curses.init_pair(self.enum, fg.enum, bg.enum)
-        self.colour = curses.color_pair(self.enum)
+        curses.init_pair(type(self).__enum, fg.enum, bg.enum)
+        self.colour = curses.color_pair(type(self).__enum)
+
+        type(self).__enum += 1
 
 
 class Default_colour:
@@ -29,6 +46,7 @@ class Default_colour:
 class Default_pair:
     def __init__(self, colour):
         self.colour = colour
+
         fg_enum, bg_enum = curses.pair_content(curses.pair_number(self.colour))
         self.fg = Default_colour(fg_enum)
         self.bg = Default_colour(bg_enum)
@@ -50,6 +68,17 @@ class Palette:
                 return key
         return None
 
-    def mix(self, a, b, enum):
-        self[enum] = Colour_pair(self.colour_pairs[a].fg, self.colour_pairs[b].bg, enum)
+    def mix(self, *args):
+        """
+        mix any amount of colours in the palette together
+        the first argument will be the foreground (text) colour
+        the second will be the background colour
+        """
+        if len(args) < 2:
+            return
+        fg = args[0]
+        bg = args[1]
+        enum = functools.reduce(lambda a, b: a | b, args)
+        self[enum] = Colour_pair(self.colour_pairs[fg].fg, self.colour_pairs[bg].bg)
+
     

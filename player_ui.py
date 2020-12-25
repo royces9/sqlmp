@@ -176,6 +176,7 @@ class Player_ui:
                     break
 
             self.jump_to_ind(ind, len(self.leftwin.data), self.leftwin)
+            self.switch_view_left()
         self.leftwin.win.touchwin()
 
 
