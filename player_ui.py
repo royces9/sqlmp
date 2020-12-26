@@ -41,7 +41,7 @@ class Player_ui:
 
         #amount of time in between drawing in seconds
         #not really a frame time but w/e
-        self.frame_time = 0.01
+        self.frame_time = 0.01667
 
         #actual music player
         self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
@@ -154,8 +154,10 @@ class Player_ui:
         """
         highlight an entry to do stuff with
         """
-        self.cur_win().highlight()
-        self.cur_win().down()
+        cw = self.cur_win()
+        cw.highlight()
+        if self.cur == 1:
+            cw.down()
 
 
     def jump_cur_play(self, *args):
@@ -354,10 +356,7 @@ class Player_ui:
     def mainloop(self):
         while not self.die:
             #check input queue for any new things to do
-            func, args = self.inp.get()
-
-            #do something based off of type of item
-            func(*args)
+            self.inp.exe()
 
 
     def __info_print(self):

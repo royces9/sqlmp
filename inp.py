@@ -16,6 +16,13 @@ class Input(queue.Queue):
         
         threading.Thread(target=self.__input_loop, daemon=True).start()
 
+    def exe(self):
+        #check input queue for stuff to do
+        func, args = self.get()
+        
+        #execute item in queue
+        func(*args)
+
     def get_key(self):
         key = self.ui.stdscr.get_wch()
 
