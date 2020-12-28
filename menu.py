@@ -216,13 +216,15 @@ class Music_menu(Menu):
             cur_song_ind = self.data.index(self.ui.player.cur_song) - self.offset
         else:
             cur_song_ind = -1
-        if cur_song_ind == self.cursor:
-            self.chgat(self.cursor, 0, self.w - 1, 5)
-        else:
-            if 0 <= cur_song_ind < self.h:
+
+        if self.data:
+            self.chgat(self.cursor, 0, self.w - 1, 1)                    
+
+        if 0 <= cur_song_ind < self.h:
+            if cur_song_ind == self.cursor:
+                self.chgat(cur_song_ind, 0, self.w - 1, 5)
+            else:
                 self.chgat(cur_song_ind, 0, self.w - 1, 4)
-            if self.data:
-                self.chgat(self.cursor, 0, self.w - 1, 1)
 
         for hl in self.highlight_list:
             newind = self.data.index(hl) - self.offset
