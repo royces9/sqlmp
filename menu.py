@@ -219,7 +219,7 @@ class Music_menu(Menu):
         if cur_song_ind == self.cursor:
             self.chgat(self.cursor, 0, self.w - 1, 5)
         else:
-            if cur_song_ind >= 0:
+            if 0 <= cur_song_ind < self.h:
                 self.chgat(cur_song_ind, 0, self.w - 1, 4)
             if self.data:
                 self.chgat(self.cursor, 0, self.w - 1, 1)
