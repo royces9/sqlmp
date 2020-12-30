@@ -1,8 +1,6 @@
 import ffmpeg
 import os
 
-from loadconf import config
-
 import debug
 
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg', '.opus'}
@@ -33,13 +31,6 @@ class Song:
 
     def dict(self):
         return self.__dict
-
-
-    def info(self):
-        i = [str(self[key]) for key in config.SONG_INFO\
-             if self[key]]
-
-        return ' - '.join(i)
 
 
     @staticmethod
@@ -87,14 +78,15 @@ class Song:
         }
 
 
-blank_song = Song({'title': 'Nothing currently playing',
-              'artist': '',
-              'album': '',
-              'length': 0,
-              'samplerate': 0,
-              'channels': 0,
-              'bitrate': 0,
-              'playcount': 0
+blank_song = Song({'path': '',
+                   'title': 'Nothing currently playing',
+                   'artist': '',
+                   'album': '',
+                   'length': 0,
+                   'samplerate': 0,
+                   'channels': 0,
+                   'bitrate': 0,
+                   'playcount': 0
 })
 
     

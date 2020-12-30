@@ -7,8 +7,8 @@ import keys
 import menu
 import playlist
 import song
-from loadconf import config
 
+import config
 import debug
 
 class Error_msg:

@@ -4,8 +4,7 @@ import functools
 
 import debug
 
-from loadconf import config
-
+import config
 
 class Colour_types(enum.IntFlag):
     normal = 0

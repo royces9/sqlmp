@@ -3,13 +3,14 @@ import os
 import signal
 import sys
 
-import debug
+import loadconf
 import init
 import musicdb
 import player_ui
 import remote
             
-from loadconf import config
+import config
+import debug
 
 def cleanup(stdscr, exit_f=False):
     if os.path.exists(config.SOCKET):

@@ -3,10 +3,9 @@ import sys
 
 import colours
 from colours import Colour_types as ct
+
+import config
 import debug
-
-from loadconf import config
-
 
 def init_palette():
     curses.start_color()

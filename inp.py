@@ -2,10 +2,10 @@ import curses
 import queue
 import threading
 
-import debug
 import wchar
 
-from loadconf import config
+import config
+import debug
 
 class Input(queue.Queue):
     def __init__(self, ui):

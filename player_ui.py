@@ -13,7 +13,7 @@ import threadwin
 import window
 import wchar
 
-from loadconf import config
+import config
 import debug
 
 song_info_bar_height = 2
@@ -340,7 +340,9 @@ class Player_ui:
         """
         print currently playing song/playlist in bottom window with highlight
         """
-        song = self.player.cur_song.info()
+        song = ' - '.join(str(self.player.cur_song[key])
+                          for key in config.SONG_INFO
+                          if self.player.cur_song[key])
 
         if self.player.is_paused():
             song += ' *PAUSED*'
