@@ -52,9 +52,6 @@ class Player_ui:
         #handles typed commands
         self.commands = commands.Commands(self)
         
-        #hotkeys from config.py
-        self.actions = self.__init_actions()
-
         #input queue and thread
         self.inp = inp.Input(self)
 
@@ -75,36 +72,6 @@ class Player_ui:
         self.die = True
 
 
-    def __init_actions(self):
-        actions = {}
-        pairs = [
-            [config.UP, self.up],
-            [config.DOWN, self.down],
-            [config.LEFT, self.player.seek_backward],
-            [config.RIGHT, self.player.seek_forward],
-            [config.VOLUP, self.player.vol_up],
-            [config.VOLDOWN, self.player.vol_down],
-            [config.MUTE, self.mute],
-            [config.PLAYPAUSE, self.player.play_pause],
-            [config.QUIT, self.set_die],
-            [config.SWITCH, self.switch_view],
-            [config.COMMAND, self.commands.prepare_command],
-            [config.SELECT, self.select],
-            [config.HIGHLIGHT, self.highlight],
-            [config.TRANSFER, self.transfer],
-            [config.DELETE, self.delete],
-            [config.CUR_PLAY, self.jump_cur_play],
-            [config.JUMP_UP, self.jump_up],
-            [config.JUMP_DOWN, self.jump_down],
-            [{curses.KEY_RESIZE}, self.resize],
-        ]
-
-        for key, val in pairs:
-            actions.update(dict.fromkeys(key, val))
-
-        return actions
-
-        
     def __init_windows(self):
         hh, ww, cc = config.set_size(self.stdscr)
 

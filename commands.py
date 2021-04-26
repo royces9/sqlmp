@@ -29,6 +29,7 @@ class Error_msg:
     def set(self):
         self.total = 1
 
+        
 class Commands:
     def __init__(self, ui):
         self.ui = ui

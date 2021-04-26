@@ -56,7 +56,7 @@ class Player:
 
         #currently playing song
         self.cur_song = song.blank_song
-
+        
         #current count of the
         #chunk that is currently
         #playing

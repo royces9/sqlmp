@@ -4,13 +4,13 @@ import threadwin
 import song
 import window
 import wchar
+from colours import Colour_types as ct
 
 import debug
 
 
 class Menu(window.Window):
     def __init__(self, x=0, y=0, w=0, h=0, win=None, data=None,
-                 form=lambda ll: ((str(ll), 1, 0),),
                  palette=None
                  ):
         super().__init__(x, y, w, h, win)
@@ -23,7 +23,6 @@ class Menu(window.Window):
         self.offset = 0
 
         self.data = data
-        self.form = form
         self.palette = palette
 
         self.highlight_list = []
@@ -34,6 +33,17 @@ class Menu(window.Window):
         self.win.scrollok(True)
 
 
+    def disp(self):
+        self.win.erase()
+        diff = len(self.data) - self.offset
+        smaller = self.h if diff > self.h else diff
+
+        for ii in range(smaller):
+            self.print_line(str(self.data[ii + self.offset]), ii, 0)
+
+        self.paint()
+        self.refresh()
+        
     def __contains__(self, item):
         return item in self.data
 
@@ -120,19 +130,6 @@ class Menu(window.Window):
         self.paint()
 
 
-    def disp(self):
-        self.win.erase()
-        diff = len(self.data) - self.offset
-        smaller = self.h if diff > self.h else diff
-
-        for ii in range(smaller):
-            formatted_list = self.form(self.data[ii + self.offset])
-            self.print_col(0, ii, formatted_list)
-
-        self.paint()
-        self.refresh()
-
-
     def paint_highlight(self):
         for hl in self.highlight_list:
             newind = self.data.index(hl) - self.offset
@@ -160,23 +157,25 @@ class Menu(window.Window):
 
 
     def paint(self):
-        self.paint_cursor()
-        self.paint_highlight()
+        if not self.data:
+            return
+        else:
+            #paint cursor
+            self.chgat(self.cursor, 0, self.w - 1, 1)
+
+        for hl in self.highlight_list:
+            newind = self.data.index(hl) - self.offset
+            colour = ct.highlight
+            if 0 <= newind < self.h:
+                if newind == self.cursor:
+                    colour |= ct.cursor
+                self.chgat(newind, 0, self.w - 1, colour)
+
+        self.win.touchwin()
 
     def paint_cursor(self):
         if self.data:
             self.chgat(self.cursor, 0, self.w - 1, 1)
-
-
-    def print_col(self, x, y, datas):
-        for string, fraction, flag in datas:
-            width = int(self.w * fraction)
-            s = wchar.set_width(string, width)
-            if flag:
-                s = s.rjust(width)
-            self.win.addnstr(y, x, s, width)
-
-            x += width
 
 
     def insert(self, items):
@@ -203,10 +202,35 @@ class Music_menu(Menu):
                  palette=None, ui=None
                  ):
         super().__init__(x, y, w, h, win, data,
-                         form=form,
                          palette=palette)
+
+        self.form=form
         self.ui = ui
         
+
+    def disp(self):
+        self.win.erase()
+        diff = len(self.data) - self.offset
+        smaller = self.h if diff > self.h else diff
+
+        for ii in range(smaller):
+            formatted_list = self.form(self.data[ii + self.offset])
+            self.print_col(0, ii, formatted_list)
+
+        self.paint()
+        self.refresh()
+
+
+    def print_col(self, x, y, datas):
+        for string, fraction, flag in datas:
+            width = int(self.w * fraction)
+            s = wchar.set_width(string, width)
+            if flag:
+                s = s.rjust(width)
+            self.win.addnstr(y, x, s, width)
+
+            x += width
+
 
     def paint(self):
         #check that playlist to be displayed has both be true:
@@ -218,22 +242,22 @@ class Music_menu(Menu):
             cur_song_ind = -1
 
         if self.data:
-            self.chgat(self.cursor, 0, self.w - 1, 1)                    
+            self.chgat(self.cursor, 0, self.w - 1, ct.cursor)
 
         if 0 <= cur_song_ind < self.h:
             if cur_song_ind == self.cursor:
-                self.chgat(cur_song_ind, 0, self.w - 1, 5)
+                self.chgat(cur_song_ind, 0, self.w - 1, ct.cursor | ct.playing)
             else:
-                self.chgat(cur_song_ind, 0, self.w - 1, 4)
+                self.chgat(cur_song_ind, 0, self.w - 1, ct.playing)
 
         for hl in self.highlight_list:
             newind = self.data.index(hl) - self.offset
-            colour = 2
+            colour = ct.highlight
             if 0 <= newind < self.h:
                 if newind == cur_song_ind:
-                    colour |= 4
+                    colour |= ct.playing
                 if newind == self.cursor:
-                    colour |= 1
+                    colour |= ct.cursor
                 self.chgat(newind, 0, self.w - 1, colour)
 
         self.ui.leftwin.win.touchwin()

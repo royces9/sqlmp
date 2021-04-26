@@ -14,7 +14,40 @@ class Input(queue.Queue):
         self.commands = self.ui.commands
         self.keys = self.commands.keys
         
+        self.actions = self.__init_actions()
         threading.Thread(target=self.__input_loop, daemon=True).start()
+
+        
+    def __init_actions(self):
+        ui = self.ui
+        actions = {}
+        pairs = [
+            [config.UP, ui.up],
+            [config.DOWN, ui.down],
+            [config.LEFT, ui.player.seek_backward],
+            [config.RIGHT, ui.player.seek_forward],
+            [config.VOLUP, ui.player.vol_up],
+            [config.VOLDOWN, ui.player.vol_down],
+            [config.MUTE, ui.mute],
+            [config.PLAYPAUSE, ui.player.play_pause],
+            [config.QUIT, ui.set_die],
+            [config.SWITCH, ui.switch_view],
+            [config.COMMAND, ui.commands.prepare_command],
+            [config.SELECT, ui.select],
+            [config.HIGHLIGHT, ui.highlight],
+            [config.TRANSFER, ui.transfer],
+            [config.DELETE, ui.delete],
+            [config.CUR_PLAY, ui.jump_cur_play],
+            [config.JUMP_UP, ui.jump_up],
+            [config.JUMP_DOWN, ui.jump_down],
+            [{curses.KEY_RESIZE}, ui.resize],
+        ]
+
+        for key, val in pairs:
+            actions.update(dict.fromkeys(key, val))
+
+        return actions
+        
 
     def exe(self):
         #check input queue for stuff to do
@@ -57,8 +90,8 @@ class Input(queue.Queue):
                 command = self.handle_input(key)
                 if command != None:
                     self.put_nowait((self.commands.from_command, (command,)))
-            elif key in self.ui.actions:
-                self.put_nowait((self.ui.actions[key], (None,)))
-
+            elif key in self.actions:
+                self.put_nowait((self.actions[key], (None,)))
+                
                 if key in config.COMMAND:
                     self.commands.command_event.clear()
