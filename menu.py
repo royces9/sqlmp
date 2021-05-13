@@ -64,9 +64,6 @@ class Menu(window.Window):
         else:
             self.highlight_list.remove(newitem)
 
-        self.paint_highlight()
-
-
     def highlighted(self):
         if self.data:
             return self[self.highlighted_ind()]
@@ -130,28 +127,6 @@ class Menu(window.Window):
         self.paint()
 
 
-    def paint_highlight(self):
-        for hl in self.highlight_list:
-            newind = self.data.index(hl) - self.offset
-            if 0 <= newind < self.h:
-                self.chgat(newind, 0, self.w - 1, 2)
-
-
-    def paint_all(self):
-        cursor_painted = False
-        for hl in self.highlight_list:
-            newind = self.data.index(hl) - self.offset
-            if 0 <= newind < self.h:
-                if newind == self.cursor:
-                    self.chgat(newind, 0, self.w - 1, 3)
-                    cursor_painted = True
-                else:
-                    self.chgat(newind, 0, self.w - 1, 2)
-                
-        if self.data and not cursor_painted:
-            self.chgat(self.cursor, 0, self.w - 1, 1)
-
-                
     def chgat(self, y, x, width, colour):
         self.win.chgat(y, x, self.w - x, self.palette[colour])
 
@@ -161,7 +136,7 @@ class Menu(window.Window):
             return
         else:
             #paint cursor
-            self.chgat(self.cursor, 0, self.w - 1, 1)
+            self.chgat(self.cursor, 0, self.w - 1, ct.cursor)
 
         for hl in self.highlight_list:
             newind = self.data.index(hl) - self.offset

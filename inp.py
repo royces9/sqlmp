@@ -76,6 +76,7 @@ class Input(queue.Queue):
         tmp = self.keys.get_string()
         tw.print_blank(x=1, y=0)
         tw.win.addnstr(0, 1, wchar.set_width(tmp, tw.w - 1), tw.w - 1)
+        tw.win.chgat(0, self.keys.index + 1, 1, curses.A_STANDOUT)
         wid, _ = wchar.wcswidth(tmp[:self.keys.index])
         if wid + 1 < tw.w:
             tw.win.move(0, wid + 1)

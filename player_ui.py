@@ -201,15 +201,17 @@ class Player_ui:
         self.cur_pl = self.rightwin.data
         if self.cur == 1:
             next_song = self.rightwin.highlighted()
+            self.cur_pl.ind = self.rightwin.highlighted_ind()
         elif self.cur == 0:
             next_song = next(self.cur_pl)
+            self.cur_pl.ind = 0
         else:
             next_song = None
             
         if next_song:
             self.player.play(next_song)
             self.cur_pl.remake_gen()
-            self.cur_pl.ind = self.rightwin.highlighted_ind()
+
 
 
     def switch_view(self, *args):
@@ -282,7 +284,6 @@ class Player_ui:
         if self.textwin.win.is_wintouched():
             self.textwin.refresh()
 
-
     def __enqueue(self, args=None):
         """
         add a new song onto the player queue
@@ -350,13 +351,13 @@ class Player_ui:
                 self.inp.put_nowait((self.__enqueue, (None,)))
 
         self.__print_cur_playing()
-
+        
 
     def __info_print_loop(self):
         while not self.die:
             start = time.time()
             self.__info_print()
-
+            
             self.draw()
             
             curses.doupdate()

@@ -18,6 +18,7 @@ Display:
 
 Bugs:
 - there was a crash after pressing tab randomly, not sure what that is yet
+  - maybe related, but a crash after just scrolling and doing stuff, it might be thread related?
 
 - when entering a command, sometimes the cursor moves to the next line
 

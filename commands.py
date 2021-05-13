@@ -89,7 +89,7 @@ class Commands:
 
         self.textwin.print_blank(0)
         self.textwin.win.addch(0, 0, ':')
-        curses.curs_set(2)
+        self.textwin.win.chgat(0, 1, 1, curses.A_STANDOUT)
 
         self.inp = True
         self.command_event.set()

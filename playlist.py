@@ -1,4 +1,5 @@
 import os
+import queue
 import random
 
 import song
@@ -17,15 +18,17 @@ class Playlist:
         self.sort_key = self.get_val('sort')
         self.data = self.get_songs()
 
-        self.sort()
+
         
         self.playmode = self.get_val('playmode')
         self.playmode_list = {'shuffle': self.shuffle,
                               'inorder': self.inorder,
                               'single': self.single}
 
-        self.gen = self.playmode_list[self.playmode]()
-
+        #self.gen = self.playmode_list[self.playmode]()
+        #sort makes self.gen
+        self.order = queue.Queue()
+        self.sort()
 
     def __contains__(self, path):
         return any(filter(lambda x: x['path'] == path, self.data))
@@ -108,47 +111,46 @@ class Playlist:
         self.gen = self.playmode_list[self.playmode]()
 
     def __set_order(self, playmode):
-        order = list(range(len(self.data)))
-        if playmode == 'shuffle':
-            random.shuffle(order)
+        with self.order.mutex:
+            self.order.queue.clear()
             
-        return order
+        l = len(self.data)
+
+        iter_values = list(range(l))
+        
+        if playmode == 'shuffle':
+            random.shuffle(iter_values)
+            for i in iter_values:
+                self.order.put_nowait(self.data[i % l])
+
+        elif playmode == 'inorder':
+            for i in iter_values:
+                #the +1 is so the current song doesn't play twice
+                self.order.put_nowait(self.data[(i + self.ind + 1) % l])
 
 
     def shuffle(self):
-        order = self.__set_order('shuffle')
-        old_len = len(self.data)
+        self.__set_order('shuffle')
 
         while True:
-            if old_len != len(self.data):
-                old_len = len(self.data)
-                order = self.__set_order('shuffle')
-            
-            if self.ind >= len(self.data):
-                self.ind = 0
-                
-            yield self.data[order[self.ind]]
-            self.ind += 1
+            if self.order.empty():
+                self.__set_order('shuffle')
 
+            new_song = self.order.get_nowait()
+            if new_song in self.data:
+                yield new_song
 
-    #TODO: my god this is horrid
-    #this can be improved, but i think that
-    #requires a change in design too, i have
-    #to think about it more
     def inorder(self):
-        order = self.__set_order('inorder')
-        cur_song = self.data[order[self.ind]]
+        self.__set_order('inorder')
 
         while True:
-            if cur_song in self.data:
-                self.ind = self.data.index(cur_song) + 1
-                
-            if self.ind >= len(self.data):
-                self.ind = 0
+            if self.order.empty():
+                self.ind = self.data.index(new_song)
+                self.__set_order('inorder')
 
-            cur_song = self.data[order[self.ind]]
-
-            yield cur_song
+            new_song = self.order.get_nowait()
+            if new_song in self.data:
+                yield new_song
 
 
     def single(self):
@@ -164,6 +166,7 @@ class Playlist:
             key = lambda x: x[self.sort_key]
 
         self.data.sort(key=key)
+        self.remake_gen()
 
 
     def remove(self, song):
