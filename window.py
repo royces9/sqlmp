@@ -4,6 +4,7 @@ import wchar
 class Window:
     def __init__(self, x=0, y=0, w=0, h=0, win=None):
         self.win = win if win else threadwin.Threadwin(h, w, y, x)
+        self.win.keypad(1)
 
     @property
     def x(self):

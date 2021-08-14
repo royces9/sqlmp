@@ -47,11 +47,11 @@ def init_palette():
 
 def ncurses():
     stdscr = curses.initscr()
-
+    
+    curses.savetty()
     curses.noecho()
     curses.cbreak()
     curses.curs_set(0)
-    stdscr.keypad(1)
 
     sys.stdout.write("\x1b]2;sqlmp\x07")
     sys.stdout.flush()

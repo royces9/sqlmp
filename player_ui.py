@@ -26,6 +26,9 @@ class Player_ui:
 
         #pointer to the ncurses stdscr
         self.stdscr = stdscr
+        #y, x = stdscr.getmaxyx()
+        #self.stdscr = curses.newwin(y, x)
+        self.stdscr.keypad(1)
 
         #music database
         self.db = db
@@ -74,7 +77,7 @@ class Player_ui:
 
     def __init_windows(self):
         hh, ww, cc = config.set_size(self.stdscr)
-
+        
         win = threadwin.Threadwin(hh, cc - ww, 0, ww)
         data = [menu.Music_menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
                                 form=config.SONG_DISP,
@@ -83,11 +86,12 @@ class Player_ui:
                 for pl in self.db.list_pl()]
 
         leftwin = menu.Menu(0, 0, ww, hh, data=data,
-                            palette=self.palette[1]
+                            palette=self.palette[1],
                             )
 
         botwin = window.Window(0, hh, cc, song_info_bar_height)
         textwin = window.Window(0, hh + song_info_bar_height, cc, command_bar_height)
+        
         return leftwin, botwin, textwin
 
 
@@ -167,6 +171,9 @@ class Player_ui:
         """
         handle resize event
         """
+        #TODO: this doesn't work exactly right idk why
+        #it probably has something to do with the draw function
+        #being in a separate thread
         hh, ww, cc = config.set_size(self.stdscr)
 
         #x position
@@ -184,8 +191,10 @@ class Player_ui:
         wins = [self.leftwin, self.rightwin, self.botwin, self.textwin]
 
         for win, x, y, w, h in zip(wins, xx, yy, wl, hl):
+            win.win.clear()
             win.win.resize(h, w)
             win.win.mvwin(y, x)
+            win.win.touchwin()
 
         for win in wins[0:2]:
             if win.cursor >= win.h:
@@ -193,6 +202,7 @@ class Player_ui:
                 win.cursor = win.h - 1
                 win.offset = prev - win.cursor
 
+        self.draw()
 
     def select(self, *args):
         """
@@ -283,6 +293,7 @@ class Player_ui:
 
         if self.textwin.win.is_wintouched():
             self.textwin.refresh()
+            
 
     def __enqueue(self, args=None):
         """
@@ -359,11 +370,16 @@ class Player_ui:
             self.__info_print()
             
             self.draw()
-            
             curses.doupdate()
+
             diff = time.time() - start
 
             if diff < self.frame_time:
                 time.sleep(self.frame_time - diff)
 
             self.commands.err.check()
+
+    def __refresh_all(self):
+        self.stdscr.refresh()
+
+        curses.doupdate()

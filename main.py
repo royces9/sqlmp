@@ -12,14 +12,15 @@ import remote
 import config
 import debug
 
-def cleanup(stdscr, exit_f=False):
+def cleanup(exit_f=False):
     if os.path.exists(config.SOCKET):
         os.remove(config.SOCKET)
     
     curses.echo()
     curses.nocbreak()
-    stdscr.keypad(0)
 
+    curses.start_color()
+    curses.resetty()
     curses.endwin()
 
     if exit_f:
@@ -38,7 +39,7 @@ def main():
         debug.print_error('db error:', e)
 
     try:
-        signal.signal(signal.SIGINT, lambda a, b: cleanup(stdscr, True))
+        signal.signal(signal.SIGINT, lambda a, b: cleanup(True))
 
         #init the ui
         ui = player_ui.Player_ui(stdscr, palette, db)
@@ -50,8 +51,8 @@ def main():
         ui.mainloop()
 
         #cleanup curses
-        cleanup(stdscr)
+        cleanup()
 
     except Exception as e:
-        cleanup(stdscr)
+        cleanup()
         debug.print_error('error:', e)
