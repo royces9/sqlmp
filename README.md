@@ -68,6 +68,10 @@ or rename a playlist given as a second argument
 Sort the currently highlighted playlist by `key`
 
 ------
-##### `update-single <tag> <value>`
-Update the currently selected song's `tag` to `value` in the database.
+##### `update-single Opt<<tag> <value>>`
+No arguments: Update the currently selected song's metadata with its corresponding file
+(for when the file is updated externally after it has been updated to the database).
+This does not change the actual file's metadata.
+
+Two arguments: Update the currently selected song's `tag` to `value` in the database.
 This does not change the actual file's metadata.

@@ -366,16 +366,36 @@ class Commands:
         if len(args) < 2:
             self.err_print('Two arguments required')
             return
-            
-        tag = args[0]
-        value = args[1]
-        if tag not in song.tags:
-            self.err_print('Invalid key: ' + key)
+
+        arg_len = len(args)
+
+        if arg_len == 0:
+            #0 args, update song based off the metadata of the file
+            path = self.ui.rightwin.highlighted()['path']
+            newsong = Song.from_path(path)
+
+            self.ui.db.update_song(newsong)
             return
 
-        cursong = self.ui.rightwin.highlighted()
-        cursong[tag] = value
-        self.ui.db.update_song(cursong)
+        elif arg_len == 2:
+            #2 args, update a song's tag with a certain value
+            #this doesn't actually change the audio file, only the entry in the db
+            tag = args[0]
+            value = args[1]
+            if tag not in song.tags:
+                self.err_print('Invalid key: ' + key)
+                return
+
+            cursong = self.ui.rightwin.highlighted()
+            cursong[tag] = value
+            self.ui.db.update_song(cursong)
+            return
+
+        else:
+            self.err_print('Zero or two arguments required')
+            return
+
+
 
 
     def pl_exists(self, name):
