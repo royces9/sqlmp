@@ -52,9 +52,10 @@ class Input(queue.Queue):
     def exe(self):
         #check input queue for stuff to do
         func, args = self.get()
-        
+
         #execute item in queue
         func(*args)
+
 
     def get_key(self):
         key = self.ui.stdscr.get_wch()
@@ -65,8 +66,8 @@ class Input(queue.Queue):
         if key in self.keys:
             if self.keys[key]():
                 return self.keys.get_string()
-        else:
-             self.keys.add(key)
+        elif isinstance(key, str):
+            self.keys.add(key)
 
         self.__print_typing()
 
@@ -74,19 +75,20 @@ class Input(queue.Queue):
         tw = self.ui.textwin
 
         tmp = self.keys.get_string()
-        tw.print_blank(x=1, y=0)
+        tw.print_blank(x=1, y=0) 
         tw.win.addnstr(0, 1, wchar.set_width(tmp, tw.w - 1), tw.w - 1)
-        tw.win.chgat(0, self.keys.index + 1, 1, curses.A_STANDOUT)
         wid, _ = wchar.wcswidth(tmp[:self.keys.index])
-        if wid + 1 < tw.w:
-            tw.win.move(0, wid + 1)
+        wid += 1
+        tw.win.chgat(0, wid, 1, curses.A_STANDOUT)
+
+        if wid < tw.w:
+            tw.win.move(0, wid)
 
     def __input_loop(self):
         while True:
             self.commands.command_event.wait()
 
             key = self.get_key()
-
             if key and self.commands.inp:
                 command = self.handle_input(key)
                 if command != None:
