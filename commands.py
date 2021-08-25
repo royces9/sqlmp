@@ -125,24 +125,30 @@ class Commands:
 
         if not args:
             self.err_print('One argument required')
-            return
+            return -1
 
         if len(args) == 1:
             pl = self.ui.leftwin.highlighted().data
         else:
             ind = self.pl_exists(args[1])
             if ind < 0:
-                return
+                return -1
 
             pl = self.ui.leftwin.data[ind].data
 
         newitem = args[0]
+
+        #TODO:
+        #consider a bunch of different return values for
+        #sqlr to differentiate
         if os.path.isfile(newitem):
             pl.insert(newitem)
         elif os.path.isdir(newitem):
             pl.insert_dir(newitem)
 
         self.ui.rightwin.disp()
+
+        return 0
 
 
     def delpl(self, args):
@@ -265,7 +271,7 @@ class Commands:
             newpl = menu.Music_menu(win=self.ui.rightwin.win,
                                     data=playlist.Playlist(name=plname, db=self.ui.db),
                                     form=config.SONG_DISP,
-                                    palette=self.ui.palette[0], ui=self)
+                                    palette=self.ui.palette[0], ui=self.ui)
         else:
             plname = args[0]
             plfile = args[1]
@@ -394,9 +400,6 @@ class Commands:
         else:
             self.err_print('Zero or two arguments required')
             return
-
-
-
 
     def pl_exists(self, name):
         """

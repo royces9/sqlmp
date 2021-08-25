@@ -82,6 +82,8 @@ class Keys:
         if self.index != 0:
             self.string.pop(self.index - 1)
             self.index -= 1
+        else:
+            return True
 
     def enter(self):
         return True
