@@ -62,6 +62,7 @@ class Input(queue.Queue):
 
         return key
 
+
     def handle_input(self, key):
         if key in self.keys:
             if self.keys[key]():

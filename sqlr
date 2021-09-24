@@ -7,6 +7,8 @@ import sys
 import loadconf
 import config
 
+import debug
+
 """
 how to use:
 $ remote -f $(file) -p $(playlist)
@@ -25,46 +27,67 @@ help_text = '\n'.join([
     '-f             directory, file, or list of files',
     '-p             playlist or a list of playlists',
     '',
-    'Warning:',
+    'Note:',
     '$ remote -f song_1.mp3 -p play_1 -f song_2.mp3 -p play_2',
     'will add both song_1.mp3 and song_2.mp3 to both play_1 and play_2',
     ])
     
 
+class Args:
+    def __init__(self, argv):
 
-def parse_args(argv):
-    if not argv[0].startswith('-'):
-        return '', ''
+        self.arg_tags = []
+        #get each tag and match it with its values
+        for arg in argv:
+            if arg.startswith('-'):
+                self.arg_tags.append(Arg_tag(arg))
+            else:
+                self.arg_tags[-1].append(arg)
 
-    args = []
-    for arg in argv:
-        if arg.startswith('-'):
-            args.append([arg])
+        #sort the list by tag
+        self.arg_tags.sort(key=lambda x: x.tag)
+
+        #combine all like tags
+        ii = 0
+        while ii < (len(self.arg_tags) - 1):
+            if self.arg_tags[ii] == self.arg_tags[ii + 1]:
+                tmp = self.arg_tags.pop(ii + 1)
+                self.arg_tags[ii].values += tmp.values
+            else:
+                ii += 1
+
+    @classmethod
+    def new(cls, argv):
+        if not argv[0].startswith('-'):
+            return None
         else:
-            args[-1].append(arg)
+            return cls(argv)
 
-    pl = []
-    fn = []
+    def __iter__(self):
+        return iter(self.arg_tags)
 
-    #cwd = os.getcwd()
-    for arg in args:
-        if arg[0] == '-p':
-            #playlist
-            pl += [p for p in arg[1:]]
-        elif arg[0] == '-f':
-            #files or dir
-            fn += [os.path.abspath(f) for f in arg[1:]]
-            #fn += ['/'.join([cwd, f]) for f in arg[1:]]
-        else:
-            break
+    def get_value(self, tag):
+        for arg in self.arg_tags:
+            if tag == arg:
+                return arg.values
+        
+class Arg_tag:
+    def __init__(self, tag):
+        self.tag = tag
+        self.values = []
 
-    return pl, fn
+    def __eq__(self, other):
+        return self.tag == other
+    
+    def append(self, value):
+        self.values.append(value)
+    
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] in {'-h', '--help'}:
         print(help_text)
         return
-    
+
     if not os.path.exists(config.SOCKET):
         print('', end='')
         return
@@ -72,17 +95,44 @@ def main():
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
         s.connect(config.SOCKET)
         if len(sys.argv) > 1:
-            pl, fn = parse_args(sys.argv[1:])
-            s.send('\n'.join(pl).encode())
-            s.send(b'\n\n')
-            s.send('\n'.join(fn).encode())
-            #s.send(b'\n')
-            s.recv(1024)
+            args = Args.new(sys.argv[1:])
+            if not args:
+                print('Invalid arguments.')
+                return
+            
+            if '-f' in args:
+                fn = args.get_value('-f')
+                if '-p' in args:
+                    pl = args.get_value('-p')
+                else:
+                    pl = [config.DEFAULT_PLAYLIST]
+
+                s.send(('\n\n'.join(['pl_add', '\n'.join(pl), '\n'.join(fn)]).encode()))
+
+                data = s.recv(1024)
+                split = data.decode('utf-8').split('\n\n\n')
+                for sp in split:
+                    if not sp:
+                        continue
+                    out, p, f = sp.split('\n\n')
+                    if int(out) == 0:
+                        print('Added {} to {}.'.format(f, p,))
+                    else:
+                        print('Error adding {} to {}.'.format(f, p,))
+
+            elif '-c' in args:
+                val = args.get_value('-c')
+
+                if val[0] == 'pause':
+                    s.send(('pause\n\n').encode())
+                elif val[0] == 'play-pause':
+                    s.send(('play-pause\n\n').encode())
 
         else:
             s.send(b' \n\n ')
-            data = s.recv(1024)
+            data = s.recv(4096)
             print(data.decode('utf-8'), end='')
+
 
 if __name__ == '__main__':
     main()

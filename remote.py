@@ -22,14 +22,24 @@ class Remote:
                 with conn:
                     data = conn.recv(1024)
                     if data != b' \n\n ':
-                        pl, fn = data.decode('utf-8').split('\n\n')
-                        self.ui.inp.put_nowait((self.from_remote, (pl.split('\n'), fn.split('\n'),)))
+                        flag, *args = data.decode('utf-8').split('\n\n')
+                        if flag == 'pl_add':
+                            self.ui.inp.put_nowait((self.pl_add, (args[0].split('\n'), args[1].split('\n'),)))
+                        elif flag == 'pause':
+                            self.ui.inp.put_nowait((self.ui.player.pause, (None,)))
+                        elif flag == 'play-pause':
+                            self.ui.inp.put_nowait((self.ui.player.play_pause, (None,)))
 
-                    js = copy.copy(self.ui.player.cur_song.dict())
-                    js['status'] = format(self.ui.player.state)
-                    conn.send(json.dumps(js).encode())
 
-    def from_remote(self, pl, fn):
+                    else:
+                        js = copy.copy(self.ui.player.cur_song.dict())
+                        js['status'] = format(self.ui.player.state)
+                        conn.send(json.dumps(js).encode())
+
+    def pl_add(self, pl, fn):
         for p in pl:
             for f in fn:
-                self.ui.commands.add((f, p))
+                out = self.ui.commands.add((f, p))
+        
+
+        

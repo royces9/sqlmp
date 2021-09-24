@@ -33,6 +33,9 @@ CUR_PLAY = {'i'}
 DEFAULT_VOLUME = 0
 VOL_STEP = 1
 
+#default playlist to add to when no playlist argument is given from sqlr
+DEFAULT_PLAYLIST = "gen_bl"
+
 
 #display
 def song_length(len_s):
