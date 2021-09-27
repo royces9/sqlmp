@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import json
 import os
 import socket
 import sys
@@ -97,41 +98,46 @@ def main():
         if len(sys.argv) > 1:
             args = Args.new(sys.argv[1:])
             if not args:
+                out = {'cmd': ''}
+                s.send(json.dumps(out).encode())
+                s.recv(4096)
                 print('Invalid arguments.')
                 return
+        else:
+            out = {'cmd': ''}
+            s.send(json.dumps(out).encode())
+            data = s.recv(4096)
+            print(data.decode('utf-8'))
+            return
+
+        if '-f' in args:
+            fn = args.get_value('-f')
+            if '-p' in args:
+                pl = args.get_value('-p')
+            else:
+                pl = [config.DEFAULT_PLAYLIST]
+
+            out = {'cmd': 'pl_add', 'playlist': pl, 'file': fn}
+            s.send(json.dumps(out).encode())
+
+            data = s.recv(1024)
+            #do something with this data maybe idk
             
-            if '-f' in args:
-                fn = args.get_value('-f')
-                if '-p' in args:
-                    pl = args.get_value('-p')
-                else:
-                    pl = [config.DEFAULT_PLAYLIST]
+        elif '-c' in args:
+            val = args.get_value('-c')
 
-                s.send(('\n\n'.join(['pl_add', '\n'.join(pl), '\n'.join(fn)]).encode()))
-
-                data = s.recv(1024)
-                split = data.decode('utf-8').split('\n\n\n')
-                for sp in split:
-                    if not sp:
-                        continue
-                    out, p, f = sp.split('\n\n')
-                    if int(out) == 0:
-                        print('Added {} to {}.'.format(f, p,))
-                    else:
-                        print('Error adding {} to {}.'.format(f, p,))
-
-            elif '-c' in args:
-                val = args.get_value('-c')
-
-                if val[0] == 'pause':
-                    s.send(('pause\n\n').encode())
-                elif val[0] == 'play-pause':
-                    s.send(('play-pause\n\n').encode())
+            if val[0] in {'pause', 'play-pause'}:
+                cmd = val[0]
+            else:
+                cmd = ''
+            out = {'cmd': cmd}
+            s.send(json.dumps(out).encode())
 
         else:
-            s.send(b' \n\n ')
+            out = {'cmd': ''}
+            s.send(json.dumps(out).encode())
             data = s.recv(4096)
-            print(data.decode('utf-8'), end='')
+            print(data.decode('utf-8'))
 
 
 if __name__ == '__main__':

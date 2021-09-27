@@ -356,10 +356,10 @@ class Player_ui:
             
             #playback ended normally, increment playcount
             if player_event == player.Event.end_normal:
-                self.inp.put_nowait((self.db.increment_playcount, (self.player.cur_song,)))
+                self.inp.put_nowait((self.db.increment_playcount, self.player.cur_song,))
 
                 #queue another song
-                self.inp.put_nowait((self.__enqueue, (None,)))
+                self.inp.put_nowait((self.__enqueue,))
 
         self.__print_cur_playing()
         

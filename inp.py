@@ -51,7 +51,7 @@ class Input(queue.Queue):
 
     def exe(self):
         #check input queue for stuff to do
-        func, args = self.get()
+        func, *args = self.get()
 
         #execute item in queue
         func(*args)
@@ -93,9 +93,9 @@ class Input(queue.Queue):
             if key and self.commands.inp:
                 command = self.handle_input(key)
                 if command != None:
-                    self.put_nowait((self.commands.from_command, (command,)))
+                    self.put_nowait((self.commands.from_command, command,))
             elif key in self.actions:
-                self.put_nowait((self.actions[key], (None,)))
+                self.put_nowait((self.actions[key],))
                 
                 if key in config.COMMAND:
                     self.commands.command_event.clear()
