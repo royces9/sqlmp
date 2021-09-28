@@ -3,6 +3,7 @@ import json
 import socket
 import threading
 
+import remote_json as rj
 import debug
 
 class Remote:
@@ -20,7 +21,7 @@ class Remote:
             while True:
                 conn, _ = s.accept()
                 with conn:
-                    msg = json.loads(conn.recv(1024))
+                    msg = rj.recv(conn)
                     cmd = msg['cmd']
 
                     if cmd == 'pl_add':
@@ -32,7 +33,7 @@ class Remote:
                     else:
                         js = copy.copy(self.ui.player.cur_song.dict())
                         js['status'] = format(self.ui.player.state)
-                        conn.send(json.dumps(js).encode())
+                        rj.send(conn, js)
 
 
     def pl_add(self, pl, fn):
