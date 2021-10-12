@@ -25,7 +25,7 @@ class Remote:
                     cmd = msg['cmd']
 
                     if cmd == 'pl_add':
-                        self.ui.inp.put_nowait((self.pl_add, (msg['playlist'], msg['file'])))
+                        self.ui.inp.put_nowait((self.pl_add, msg['playlist'], msg['file']))
                     elif cmd == 'pause':
                         self.ui.inp.put_nowait((self.ui.player.pause,))
                     elif cmd == 'play-pause':
