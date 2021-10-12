@@ -108,7 +108,7 @@ def main():
             print_flag = True
         
         elif '-f' in args:
-            fn = args.get_value('-f')
+            fn = [os.path.abspath(f) for f in args.get_value('-f')]
             if '-p' in args:
                 pl = args.get_value('-p')
             else:
