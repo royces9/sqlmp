@@ -61,7 +61,7 @@ class Player_ui:
         #thread for updating everything visually
         threading.Thread(target=self.__info_print_loop, daemon=True).start()
 
-        
+
     @property
     def rightwin(self):
         return self.leftwin.highlighted()

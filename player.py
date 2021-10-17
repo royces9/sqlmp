@@ -89,14 +89,14 @@ class Player:
             #convert input file to pcm data
             wav, _ = (ffmpeg
                       .input(fp)
-                      .output('-', format='s16le', acodec='pcm_s16le')
+                      .output('-', format='s24le', acodec='pcm_s24le')
                       .overwrite_output()
                       .run(capture_stdout=True, capture_stderr=True))
 
             #grab stream data for the pyaudio stream
             self.rate = self.cur_song['samplerate']
             self.channels = self.cur_song['channels']
-            self.width = 2
+            self.width = 3
 
             #open a pyaudio stream
             stream = self.pyaudio.open(
