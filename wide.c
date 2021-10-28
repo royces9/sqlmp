@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE
 #include <wchar.h>
 
 /*
@@ -6,9 +7,8 @@ gcc -fPIC -shared -o wide.so wide.c
 */
 
 
-wchar_t *set_width(wchar_t *s, size_t n) {
+wchar_t *set_width(wchar_t *s, int n) {
 	int wid = wcswidth(s, wcslen(s));
-
 	if(wid > n) {
 		int i = 0;
 		for(int tot = 0; i < n; ++i) {

@@ -28,6 +28,3 @@ def wcswidth(s):
 def set_width(s, n):
     inp = ctypes.c_wchar_p(s)
     return wide.set_width(inp, n)
-
-
-

@@ -187,7 +187,6 @@ class Music_menu(Menu):
         self.win.erase()
         diff = len(self.data) - self.offset
         smaller = self.h if diff > self.h else diff
-
         for ii in range(smaller):
             formatted_list = self.form(self.data[ii + self.offset])
             self.print_col(0, ii, formatted_list)
@@ -203,7 +202,6 @@ class Music_menu(Menu):
             if flag:
                 s = s.rjust(width)
             self.win.addnstr(y, x, s, width)
-
             x += width
 
 

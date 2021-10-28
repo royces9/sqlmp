@@ -90,7 +90,6 @@ class Playlist:
             raise err
 
     def get_songs(self):
-        #dict comprehension in a list comprehension (yikes)
         return [
             song.Song.from_iter(song_i)
             for song_i in self.exe("SELECT * FROM library WHERE path IN\
