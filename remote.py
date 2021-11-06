@@ -32,7 +32,7 @@ class Remote:
                         self.ui.inp.put_nowait((self.ui.player.play_pause,))
                     else:
                         js = copy.copy(self.ui.player.cur_song.dict())
-                        js['status'] = format(self.ui.player.state)
+                        js['status'] = format(self.ui.player.state())
                         rj.send(conn, js)
 
 

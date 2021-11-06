@@ -2,26 +2,16 @@ import enum
 import os
 import sys
 
-import ffmpeg
-
 import song
 
 import debug
 
 import ctypes
-backend=ctypes.CDLL(os.path.dirname(__file__) + '/player_thread/player.so')
+print(os.path.dirname(__file__) + '/backend.so')
+backend=ctypes.CDLL(os.path.dirname(__file__) + '/backend.so')
 backend.player_get_volume.restype = ctypes.c_float
 
-class Play_state(enum.Enum):
-    not_playing = enum.auto()
-    playing = enum.auto()
-    paused = enum.auto()
-    new = enum.auto()
-    end = enum.auto()
 
-    def __format__(self, form):
-        return self.name
-    
 class Event(enum.Enum):
     error=-1
     start=0
@@ -40,6 +30,18 @@ class Player:
 
         #currently playing song
         self.cur_song = song.blank_song
+
+
+    def state(self):
+        st = backend.player_get_status()
+        play_state = ['playing',
+                      'not playing',
+                      'quit',
+                      'paused',
+                      'new',
+                      'end',
+                      ]
+        return play_state[st]
 
 
     def is_paused(self, *args):
