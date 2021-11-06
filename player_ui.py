@@ -48,13 +48,13 @@ class Player_ui:
 
         #actual music player
         self.player = player.Player(config.DEFAULT_VOLUME, config.VOL_STEP)
-
+        
         #the windows of the player
         self.leftwin, self.botwin, self.textwin = self.__init_windows()
 
         #handles typed commands
         self.commands = commands.Commands(self)
-        
+
         #input queue and thread
         self.inp = inp.Input(self)
 
@@ -77,8 +77,9 @@ class Player_ui:
 
     def __init_windows(self):
         hh, ww, cc = config.set_size(self.stdscr)
-        
+
         win = threadwin.Threadwin(hh, cc - ww, 0, ww)
+
         data = [menu.Music_menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
                                 form=config.SONG_DISP,
                                 palette=self.palette[0], ui=self
@@ -90,8 +91,9 @@ class Player_ui:
                             )
 
         botwin = window.Window(0, hh, cc, song_info_bar_height)
+
         textwin = window.Window(0, hh + song_info_bar_height, cc, command_bar_height)
-        
+
         return leftwin, botwin, textwin
 
 
@@ -355,7 +357,7 @@ class Player_ui:
             player_event = self.player.curplay()
             
             #playback ended normally, increment playcount
-            if player_event == player.Event.end_normal:
+            if player_event == player.Event.end_normal.value:
                 self.inp.put_nowait((self.db.increment_playcount, self.player.cur_song,))
 
                 #queue another song

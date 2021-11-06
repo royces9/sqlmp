@@ -213,7 +213,7 @@ class Music_menu(Menu):
             cur_song_ind = self.data.index(self.ui.player.cur_song) - self.offset
         else:
             cur_song_ind = -1
-
+            
         if self.data:
             self.chgat(self.cursor, 0, self.w - 1, ct.cursor)
 
