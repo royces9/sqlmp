@@ -7,8 +7,7 @@ import song
 import debug
 
 import ctypes
-print(os.path.dirname(__file__) + '/backend.so')
-backend=ctypes.CDLL(os.path.dirname(__file__) + '/backend.so')
+backend=ctypes.CDLL(os.path.dirname(__file__) + '/player_thread_callback/backend.so')
 backend.player_get_volume.restype = ctypes.c_float
 
 
@@ -80,7 +79,7 @@ class Player:
 
     def play(self, arg):
         #reset playback before starting new song
-        backend.player_unpause()
+        #backend.player_unpause()
 
         backend.player_set_status(4)
         self.append(arg)
@@ -107,7 +106,7 @@ class Player:
 
     @property
     def mute(self):
-        return not backend.player_isnotmuted()
+        return backend.player_ismuted()
 
     def toggle_mute(self, *args):
         backend.player_toggle_mute()

@@ -7,6 +7,7 @@
 #include <portaudio.h>
 
 #include "player.h"
+#include "lockless_queue.h"
 #include "queue.h"
 
 static struct queue player_queue;
@@ -59,8 +60,7 @@ void scale_frame(float *data, int n) {
 	}
 }
 
-#include <wchar.h>
-#include <string.h>
+
 int player_play(char *path, int channels, double _sample_rate, int seek_delta) {
 	PaError err = paNoError;
 	PaStream *stream;
@@ -80,6 +80,7 @@ int player_play(char *path, int channels, double _sample_rate, int seek_delta) {
 	if(err != paNoError) {
 		Pa_CloseStream(&stream);
 		player_set_status(player_enotplaying);
+		return -2;
 		return player_event_error;
 	}
 	
@@ -88,6 +89,7 @@ int player_play(char *path, int channels, double _sample_rate, int seek_delta) {
 		Pa_StopStream(&stream);
 		Pa_CloseStream(&stream);
 		player_set_status(player_enotplaying);
+		return -3;
 		return player_event_error;
 	}
 	
@@ -106,6 +108,7 @@ int player_play(char *path, int channels, double _sample_rate, int seek_delta) {
 		Pa_StopStream(&stream);
 		Pa_CloseStream(&stream);
 		player_set_status(player_enotplaying);
+		return -4;
 		return player_event_error;
 	}
 	
@@ -123,6 +126,7 @@ int player_play(char *path, int channels, double _sample_rate, int seek_delta) {
 			while(player_get_status() == player_epaused) {
 				err = Pa_WriteStream(stream, empty_buffer, frames_per_buffer);
 				if(err != paNoError) {
+					err = -5;
 					goto loopend;
 				}
 			}
@@ -139,7 +143,7 @@ int player_play(char *path, int channels, double _sample_rate, int seek_delta) {
 		scale_frame(buffer, read * channels);
 		err = Pa_WriteStream(stream, buffer, read);
 		if(err != paNoError) {
-			goto loopend;
+			queue_push(&curq, err);
 		}
 	}
 
@@ -151,7 +155,138 @@ int player_play(char *path, int channels, double _sample_rate, int seek_delta) {
 	Pa_StopStream(&stream);
 	Pa_CloseStream(&stream);
 	
+	if(err < 0) {
+		//if(err != paNoError) {
+		return err;
+		return player_event_error;
+	}
+	
+	switch(st) {
+	case player_enew:
+	case player_eend:
+		player_set_status(player_enotplaying);
+		return player_event_early;
+
+	case player_eplaying:
+	case player_equit:
+		player_set_status(player_enotplaying);
+		return player_event_normal;
+
+	default:
+		player_set_status(player_enotplaying);
+		return player_event_error;
+	}
+
+	return player_event_normal;
+}
+
+/*
+struct callback_data {
+	struct lockless_queue *queue;
+	int channels;
+};
+
+int player_play_callback(char *path, int channels, double _sample_rate, int seek_delta) {
+	sample_rate = _sample_rate;
+	
+	SF_INFO info;
+	info.format = 0;
+	cur_song = sf_open(path, SFM_READ, &info);
+	if(!cur_song) {
+		return -4;
+		return player_event_error;
+	}
+
+	PaError err = paNoError;
+	PaStream *stream;
+
+	player_set_status(player_eplaying);
+	int buffer_size = frames_per_buffer * width * channels;
+	
+	float *empty_buffer = calloc(buffer_size, 1);
+
+	struct lockless_queue queue;
+	err = lockless_queue_init(&queue, 16);
+	if(err) {
+		return -1;
+	}
+	
+	err = Pa_OpenDefaultStream(&stream,
+				   0,
+				   channels,
+				   paFloat32,
+				   sample_rate,
+				   paFramesPerBufferUnspecified,
+				   &__player_callback,
+				   NULL);
+
 	if(err != paNoError) {
+		Pa_CloseStream(&stream);
+		player_set_status(player_enotplaying);
+		return -2;
+		return player_event_error;
+	}
+	
+	err = Pa_StartStream(stream);
+	if(err != paNoError) {
+		Pa_StopStream(&stream);
+		Pa_CloseStream(&stream);
+		player_set_status(player_enotplaying);
+		return -3;
+		return player_event_error;
+	}
+	
+	player_set_iterator(0);
+	seek_delta_c = seek_delta * sample_rate;
+
+	
+	sf_count_t read = 1;
+	enum player_status st;
+	while(read != 0) {
+		st = player_get_status();
+		switch(st){
+		case player_enew:
+		case player_eend:
+		case player_equit:
+			goto loopend;
+
+		case player_epaused:
+			err = Pa_StopStream(stream);
+			if(err != paNoError) {
+				err = -5;
+				goto loopend;
+			}
+			while(player_get_status() == player_epaused) {
+				1;
+			}
+
+			break;
+		default:
+			break;
+		}
+
+		
+		void *tmp = lockless_queue_peek_read(&queue);
+		if(tmp) {
+			free(tmp);
+		}
+		float *buffer = malloc(buffer_size);
+		read = sf_readf_float(cur_song, buffer, frames_per_buffer);
+		scale_frame(buffer, read * channels);
+
+		lockless_queue_push(&queue, buffer);
+	}
+
+ loopend:
+	sf_close(cur_song);
+	cur_song = NULL;
+	free(empty_buffer);
+	Pa_StopStream(&stream);
+	Pa_CloseStream(&stream);
+	
+	if(err < 0) {
+		//if(err != paNoError) {
+		return err;
 		return player_event_error;
 	}
 	
@@ -175,6 +310,30 @@ int player_play(char *path, int channels, double _sample_rate, int seek_delta) {
 }
 
 
+int __player_callback(const void *input,
+		      void *output,
+		      unsigned long frameCount,
+		      const PaStreamCallbackTimeInfo *timeInfo,
+		      PaStreamCallbackFlags statusFlags,
+		      void *userData) {
+
+	struct callback_data *data = (struct callback_data *) userData;
+	
+	float *buffer = lockless_queue_pop(data->queue);
+	int channels = data->channels;
+
+	float *out = output;
+
+
+	for(int i = 0; i < (frameCount * channels); ++i) {
+		out[i] = buffer[i];
+	}
+
+	lockless_queue_done(data->queue);
+	return 0;
+}
+
+*/
 void player_pause(void) {
 	player_set_status(player_epaused);
 }
@@ -389,7 +548,6 @@ struct song_info {
 	int channels;
 };
 
-
 void *player_thread(void *p) {
 	int st;
 	struct song_info *song;
@@ -436,13 +594,3 @@ void player_clear_playq(void) {
 	}
 }
 
-int __player_callback(const void *input,
-		      void *output,
-		      unsigned long frameCount,
-		      const PaStreamCallbackTimeInfo *timeInfo,
-		      PaStreamCallbackFlags statusFlags,
-		      void *userData) {
-	
-
-	return 0;
-}

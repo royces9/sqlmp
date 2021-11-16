@@ -355,7 +355,6 @@ class Player_ui:
 
         if not self.player.curempty():
             player_event = self.player.curplay()
-            
             #playback ended normally, increment playcount
             if player_event == player.Event.end_normal.value:
                 self.inp.put_nowait((self.db.increment_playcount, self.player.cur_song,))
