@@ -22,24 +22,18 @@ enum player_event_code {
 };
 
 
-PaError player_play(char *path, int channels, double _sample_rate, int seek_delta);
+int player_play(char *path, int channels, double _sample_rate, int seek_delta);
 
-PaError player_init(float vol);
-PaError player_del(void);
+int player_init(float vol);
+int player_del(void);
 
 void player_set_status(int st);
 int player_get_status(void);
 
-void player_set_iterator(int val);
-int player_get_iterator(void);
+int player_get_time(void);
 
 void player_seek_forward(int val);
 void player_seek_backward(int val);
-
-void player_seek_forward2(void);
-void player_seek_backward2(void);
-
-int player_get_time(void);
 
 float player_get_volume(void);
 void player_set_volume(float val);
@@ -61,7 +55,6 @@ int player_is_notplaying(void);
 int player_is_paused(void);
 
 
-void *player_thread(void *p);
 int player_get_curq(void);
 int player_is_curq_empty(void);
 void player_put_playq(char *path, double sample_rate, int channels);

@@ -7,7 +7,7 @@ import song
 import debug
 
 import ctypes
-backend=ctypes.CDLL(os.path.dirname(__file__) + '/player_thread_callback/backend.so')
+backend=ctypes.CDLL(os.path.dirname(__file__) + '/backend.so')
 backend.player_get_volume.restype = ctypes.c_float
 
 

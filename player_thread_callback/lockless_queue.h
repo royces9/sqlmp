@@ -21,7 +21,7 @@ struct lockless_queue {
 };
 
 int lockless_queue_init(struct lockless_queue *self, int capacity);
-int lockless_queue_destroy(struct lockless_queue *self, void (*free_data)(void *));
+int lockless_queue_destroy(struct lockless_queue *self, void (*free_data)(struct lockless_queue *));
 
 int lockless_queue_push(struct lockless_queue *self, void *data);
 void *lockless_queue_pop(struct lockless_queue *self);

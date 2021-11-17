@@ -8,8 +8,11 @@ int lockless_queue_init(struct lockless_queue *self, int capacity) {
 
 	self->capacity = capacity;
 	self->sem = malloc(sizeof(*self->sem));
-	if(sem_init(self->sem, 0, self->capacity)) {
+	if(!self->sem) {
 		return -2;
+	}
+	if(sem_init(self->sem, 0, self->capacity)) {
+		return -3;
 	}
 
 	self->read = 0;
@@ -19,7 +22,7 @@ int lockless_queue_init(struct lockless_queue *self, int capacity) {
 }
 
 
-int lockless_queue_destroy(struct lockless_queue *self, void (*free_data)(void *)) {
+int lockless_queue_destroy(struct lockless_queue *self, void (*free_data)(struct lockless_queue *)) {
 	if(free_data) {
 		free_data(self);
 	}

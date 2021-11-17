@@ -16,6 +16,8 @@ all: LDFLAGS += -shared -fPIC
 all: FLAGS += -shared -fPIC
 all: $(TARGET)
 
+shit: test/test.c
+	$(CC) -g -o test.out ../backend.so test/test.c $(LDFLAGS)
 
 
 $(TARGET): $(OFILES)

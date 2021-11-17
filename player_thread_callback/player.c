@@ -19,8 +19,6 @@ static sem_t pause_sem;
 
 static pthread_mutex_t file_lock;
 
-static int seek_delta_c = 0;
-
 static pthread_mutex_t volume_lock;
 static float volume;
 
@@ -36,14 +34,7 @@ static struct queue curq;
 static SNDFILE *cur_song;
 
 
-int player_get_status(void) {
-	return status;
-}
-
-void player_set_status(int st) {
-	status = st;
-}
-
+void free_frame_data(struct lockless_queue *);
 int __player_callback(const void *input,
 		      void *output,
 		      unsigned long frameCount,
@@ -65,8 +56,7 @@ struct frame_data {
 int player_play_callback(char *path, int channels, double _sample_rate, int seek_delta) {
 	int err = paNoError;
 	sample_rate = _sample_rate;
-	seek_delta_c = seek_delta * sample_rate;
-	
+
 	//set status to playing
 	status = ps_playing;
 
@@ -178,17 +168,7 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 	sf_close(cur_song);
 	pthread_mutex_unlock(&file_lock);
 
-	for(int i = 0; i < queue.capacity; ++i) {
-		struct frame_data *tmp = ((struct frame_data **) queue.data)[i];
-		if(tmp) {
-			if(tmp->buffer) {
-				free(tmp->buffer);
-			}
-			free(tmp);
-		}
-	}
-	free(queue.data);
-	free(queue.sem);
+	lockless_queue_destroy(&queue, free_frame_data);
 
 	if(status == ps_end) {
 		status = ps_notplaying;
@@ -220,14 +200,9 @@ int __player_callback(const void *input,
 	
 	if(mute) {
 		memset(out, 0, buffer->frames * channels * sizeof(*buffer->buffer));
-		/*
-		for(int i = 0; i < (buffer->frames * channels); ++i) {
-			out[i] = 0.0f;
-		}
-		*/
 	} else {
 		for(int i = 0; i < (buffer->frames * channels); ++i) {
-			out[i] = buffer->buffer[i]* volume;
+			out[i] = buffer->buffer[i] * volume;
 		}
 	}
 
@@ -242,6 +217,132 @@ int __player_callback(const void *input,
 	}
 
 	return paContinue;
+}
+
+void free_frame_data(struct lockless_queue *self) {
+	for(int i = 0; i < self->capacity; ++i) {
+		struct frame_data *tmp = ((struct frame_data **) self->data)[i];
+		if(tmp) {
+			if(tmp->buffer) {
+				free(tmp->buffer);
+			}
+			free(tmp);
+		}
+	}
+
+}
+struct song_info {
+	char *path;
+	double sample_rate;
+	int channels;
+};
+
+void *player_thread(void *p) {
+	struct song_info *song;
+
+	while(status != ps_end) {
+		song = queue_pop(&playq);
+
+		queue_push(&curq, pe_start);
+		int event = player_play_callback(song->path,
+						 song->channels,
+						 song->sample_rate,
+						 5);
+		free(song);
+		queue_push(&curq, event);
+	}
+
+	return NULL;
+}
+
+
+static pthread_t thread;
+int player_init(float vol) {
+	int err = 0;
+	
+	err = sem_init(&pause_sem, 0, 0);
+	if(err) {
+		return err;
+	}
+
+	err = pthread_mutex_init(&volume_lock, NULL);
+	if(err) {
+		return err;
+	}
+
+	player_set_volume(vol);
+
+	err = pthread_mutex_init(&file_lock, NULL);
+	if(err) {
+		return err;
+	}
+
+
+	status = ps_new;
+	
+	err = Pa_Initialize();
+	if(err) {
+		return err;
+	}
+
+	err = queue_init(&curq, 8);
+	if(err) {
+		return err;
+	}
+
+	err = queue_init(&playq, 8);
+	if(err) {
+		return err;
+	}
+
+	err = pthread_create(&thread, NULL, &player_thread, NULL);
+	if(err) {
+		return err;
+	}
+
+	return err;
+}
+
+int player_del(void) {
+	int err = 0;
+
+	pthread_join(thread, NULL);
+	err = Pa_Terminate();
+
+	queue_destroy(&curq, NULL);
+	queue_destroy(&playq, &free);
+
+	pthread_mutex_destroy(&volume_lock);
+	pthread_mutex_destroy(&file_lock);
+
+	return err;
+}
+
+
+int player_get_curq(void) {
+	return (int) queue_pop(&curq);
+}
+
+int player_is_curq_empty(void) {
+	return queue_is_empty(&curq);
+}
+
+void player_put_playq(char *path, double sample_rate, int channels) {
+	struct song_info *song = malloc(sizeof(*song));
+	song->path = path;
+	song->sample_rate = sample_rate;
+	song->channels = channels;
+
+	queue_push(&playq, song);
+	
+}
+
+void player_clear_playq(void) {
+	struct song_info *song;
+	while(!queue_is_empty(&playq)) {
+		song = queue_pop(&playq);
+		free(song);
+	}
 }
 
 
@@ -280,6 +381,17 @@ int player_is_paused(void) {
 }
 
 
+int player_get_time(void) {
+	int out = 0;
+	if(sample_rate != 0) {
+		pthread_mutex_lock(&file_lock);
+		sf_count_t seek = sf_seek(cur_song, 0, SEEK_CUR);
+		pthread_mutex_unlock(&file_lock);
+		out = seek / sample_rate;
+	}
+	return out;
+}
+
 
 void player_seek_forward(int time) {
 	sf_count_t seek;
@@ -306,29 +418,6 @@ void player_seek_backward(int time) {
 	pthread_mutex_unlock(&file_lock);
 }
 
-void player_seek_forward2(void) {
-	sf_count_t seek;
-	pthread_mutex_lock(&file_lock);
-	if(cur_song) {
-		seek = sf_seek(cur_song, seek_delta_c, SEEK_CUR);
-		if(seek == -1) {
-			seek = sf_seek(cur_song, 0, SEEK_END);
-		}
-	}
-	pthread_mutex_unlock(&file_lock);
-}
-
-void player_seek_backward2(void) {
-	sf_count_t seek;
-	pthread_mutex_lock(&file_lock);
-	if(cur_song) {
-		seek = sf_seek(cur_song, -seek_delta_c, SEEK_CUR);
-		if(seek == -1) {
-			seek = sf_seek(cur_song, 0, SEEK_SET);
-		}
-	}
-	pthread_mutex_unlock(&file_lock);
-}
 
 float player_get_volume(void) {
 	pthread_mutex_lock(&volume_lock);
@@ -371,103 +460,11 @@ void player_unmute(void) {
 void player_toggle_mute(void) {
 	mute = !mute;
 }
-
-
-static pthread_t thread;
-PaError player_init(float vol) {
-	PaError err;
-	
-	sem_init(&pause_sem, 0, 0);
-
-	pthread_mutex_init(&volume_lock, NULL);
-	player_set_volume(vol);
-
-	pthread_mutex_init(&file_lock, NULL);
-
-	status = ps_new;
-	
-	err = Pa_Initialize();
-
-	queue_init(&curq, 16);
-	queue_init(&playq, 16);
-
-	pthread_create(&thread, NULL, &player_thread, NULL);
-
-	return err;
+int player_get_status(void) {
+	return status;
 }
 
-PaError player_del(void) {
-	int err = 0;
-
-	pthread_join(thread, NULL);
-	err = Pa_Terminate();
-
-	queue_destroy(&curq, NULL);
-	queue_destroy(&playq, &free);
-
-	pthread_mutex_destroy(&volume_lock);
-	pthread_mutex_destroy(&file_lock);
-
-	return err;
-}
-
-int player_get_time(void) {
-	int out = 0;
-	if(sample_rate != 0) {
-		pthread_mutex_lock(&file_lock);
-		sf_count_t seek = sf_seek(cur_song, 0, SEEK_CUR);
-		pthread_mutex_unlock(&file_lock);
-		out = seek / sample_rate;
-	}
-	return out;
-}
-
-struct song_info {
-	char *path;
-	double sample_rate;
-	int channels;
-};
-
-void *player_thread(void *p) {
-	struct song_info *song;
-
-	while(status != ps_end) {
-		song = queue_pop(&playq);
-
-		queue_push(&curq, pe_start);
-		int event = player_play_callback(song->path,
-						 song->channels,
-						 song->sample_rate,
-						 5);
-		free(song);
-		queue_push(&curq, event);
-	}
-
-	return NULL;
-}
-
-int player_get_curq(void) {
-	return (int)queue_pop(&curq);
-}
-
-int player_is_curq_empty(void) {
-	return queue_is_empty(&curq);
-}
-
-void player_put_playq(char *path, double sample_rate, int channels) {
-	struct song_info *song = malloc(sizeof(*song));
-	song->path = path;
-	song->sample_rate = sample_rate;
-	song->channels = channels;
-
-	queue_push(&playq, song);
-}
-
-void player_clear_playq(void) {
-	struct song_info *song;
-	while(!queue_is_empty(&playq)) {
-		song = queue_pop(&playq);
-		free(song);
-	}
+void player_set_status(int st) {
+	status = st;
 }
 
