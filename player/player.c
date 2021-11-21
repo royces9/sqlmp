@@ -206,7 +206,7 @@ int __player_callback(const void *input,
 		}
 	}
 
-	lockless_queue_done(data->queue);
+	lockless_queue_peek_done(data->queue);
 
 	if(buffer->frames != frames_per_buffer) {
 		return paComplete;

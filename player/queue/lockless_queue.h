@@ -23,12 +23,22 @@ struct lockless_queue {
 int lockless_queue_init(struct lockless_queue *self, int capacity);
 int lockless_queue_destroy(struct lockless_queue *self, void (*free_data)(struct lockless_queue *));
 
-int lockless_queue_push(struct lockless_queue *self, void *data);
+
+//assumes that something is ready to pop
 void *lockless_queue_pop(struct lockless_queue *self);
+
+//peek the value that is going to be popped
 void *lockless_queue_peek(struct lockless_queue *self);
 
+//push value onto queue, block if no space
+int lockless_queue_push(struct lockless_queue *self, void *data);
+
+//peek the value that is going to be pushed onto
 void *lockless_queue_peek_write(struct lockless_queue *self);
-void lockless_queue_done(struct lockless_queue *self);
+
+//if value is peeked, signal that the value is done being used
+//and can be safely popped
+void lockless_queue_peek_done(struct lockless_queue *self);
 
 int lockless_queue_is_empty(struct lockless_queue *self);
 

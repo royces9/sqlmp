@@ -54,7 +54,7 @@ void *lockless_queue_pop(struct lockless_queue *self) {
 	return out;
 }
 
-void lockless_queue_done(struct lockless_queue *self) {
+void lockless_queue_peek_done(struct lockless_queue *self) {
 	self->read = (self->read + 1) % self->capacity;
 	sem_post(self->sem);
 }
