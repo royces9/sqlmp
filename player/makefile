@@ -7,7 +7,7 @@ CFILES = $(wildcard *.c)
 OFILES = $(addprefix $(OBJD)/, $(CFILES:.c=.o))
 
 TARGET = ../backend.so
-QUEUE = queue/queue.so
+QUEUE = queue/queue.a
 
 OBJD = obj
 

@@ -2,15 +2,16 @@ FLAGS = -MMD -Wall -Wpedantic -shared -fPIC
 LDFLAGS = -lpthread -shared -fPIC
 CC = gcc
 
+
 CFILES = $(wildcard *.c)
 OFILES = $(addprefix $(OBJD)/, $(CFILES:.c=.o))
 
-TARGET = queue.so
+TARGET = queue.a
 
 OBJD = obj
 
 $(TARGET): $(OFILES)
-	$(CC) $^ -o $(TARGET) $(LDFLAGS)
+	ar rcs $@ $^
 
 $(OBJD)/%.o: %.c | $(OBJD)
 	$(CC) $(FLAGS) $(DEBUG_FLAGS) -c $< -o $@
@@ -20,4 +21,4 @@ $(OBJD):
 
 .PHONY: clean
 clean:
-	del $(OBJD)/*.o $(OBJD)/*.d
+	del $(OBJD)/*.o $(OBJD)/*.d $(TARGET)
