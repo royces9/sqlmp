@@ -35,8 +35,8 @@ class Player:
         st = backend.player_get_status()
         play_state = ['playing',
                       'not playing',
-                      'quit',
                       'paused',
+                      'quit',
                       'new',
                       'end',
                       ]
