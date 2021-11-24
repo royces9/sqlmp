@@ -1,5 +1,5 @@
 LDFLAGS = -lrt -lpthread -lasound -lportaudio -lsndfile
-FLAGS = -MMD -Wall -Wpedantic -Iqueue/
+FLAGS = -MMD -Wall -Wpedantic -Iqueue/ -O2
 DEBUG_FLAGS =
 CC = gcc
 
@@ -8,6 +8,7 @@ OFILES = $(addprefix $(OBJD)/, $(CFILES:.c=.o))
 
 TARGET = ../backend.so
 QUEUE = queue/queue.a
+WIDE = ../wide.so
 
 OBJD = obj
 
@@ -16,9 +17,13 @@ debug: DEBUG_FLAGS += -g
 all: LDFLAGS += -shared -fPIC
 all: FLAGS += -shared -fPIC
 all: $(TARGET)
+all: $(WIDE)
 
 shit: test/test.c
 	$(CC) -g -o test.out $(TARGET) test/test.c $(LDFLAGS)
+
+$(WIDE):
+	@$(MAKE) -C ./wide/
 
 $(QUEUE):
 	@$(MAKE) -C ./queue/
@@ -36,5 +41,6 @@ $(OBJD):
 clean:
 	del $(OBJD)/*.o $(OBJD)/*.d
 	@$(MAKE) -C ./queue/ clean
+	@$(MAKE) -C ./wide/ clean
 
 -include $(CFILES:.c=.d)

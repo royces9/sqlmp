@@ -16,3 +16,5 @@ pl_list
 rust/
 test/
 transfer
+*.o
+*.d
