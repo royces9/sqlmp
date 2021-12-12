@@ -5,7 +5,9 @@ Similar to cmus since I like how cmus works
 ### Dependencies:
 ffmpeg-python
 
-PyAudio
+PortAudio
+
+libsndfile
 
 ### Use:
 ##### initlib.py:

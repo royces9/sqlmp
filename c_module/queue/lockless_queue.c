@@ -44,6 +44,22 @@ int lockless_queue_push(struct lockless_queue *self, void *data) {
 	return 0;
 }
 
+int lockless_queue_push_ready(struct lockless_queue *self) {
+	if(sem_wait(self->sem)) {
+		return -1;
+	}
+
+	return 0;
+}	
+
+int lockless_queue_push_nowait(struct lockless_queue *self, void *data) {
+	self->data[self->write] = data;
+	self->write = (self->write + 1) % self->capacity;
+
+	return 0;
+	
+}
+
 
 void *lockless_queue_pop(struct lockless_queue *self) {
 	void *out = self->data[self->read];

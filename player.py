@@ -133,4 +133,4 @@ class Player:
 
         backend.player_init(ctypes.c_float(args[0]/100))
 
-        os.dup2(cp_err, og_err)
+        #os.dup2(cp_err, og_err)

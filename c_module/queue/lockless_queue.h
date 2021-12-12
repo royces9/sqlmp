@@ -33,6 +33,9 @@ void *lockless_queue_peek(struct lockless_queue *self);
 //push value onto queue, block if no space
 int lockless_queue_push(struct lockless_queue *self, void *data);
 
+int lockless_queue_push_ready(struct lockless_queue *self);
+int lockless_queue_push_nowait(struct lockless_queue *self, void *data);
+
 //peek the value that is going to be pushed onto
 void *lockless_queue_peek_write(struct lockless_queue *self);
 

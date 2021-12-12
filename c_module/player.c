@@ -52,7 +52,7 @@ struct frame_data {
 	unsigned long frames;
 };
 
-
+struct lockless_queue *queue_st;
 int player_play_callback(char *path, int channels, double _sample_rate, int seek_delta) {
 	int err = paNoError;
 	sample_rate = _sample_rate;
@@ -71,8 +71,9 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 
 	int buffer_size = frames_per_buffer * width * channels;
 
-	int queue_size = 2;
+	int queue_size = 16;
 	struct lockless_queue queue;
+	queue_st = &queue;
 	err = lockless_queue_init(&queue, queue_size);
 	if(err) {
 		return pe_e_queue_init;
@@ -99,7 +100,7 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 	sf_count_t read = 0;
 
 	//fill queue before starting stream
-	for(int i = 0; i < queue_size - 1; ++i) {
+	for(int i = 0; i < queue_size; ++i) {
 		struct frame_data *data = malloc(sizeof(*data));
 		if(!data) {
 			return pe_e_malloc;
@@ -128,33 +129,22 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 		return pe_e_pa_start;
 	}
 
+	void *buffer = malloc(buffer_size);
 	while(read && (status != ps_end)) {
-		struct frame_data *data = 0;
-		struct frame_data *tmp = lockless_queue_peek_write(&queue);
-		if(tmp) {
-			free(tmp->buffer);
-			tmp->buffer = NULL;
-			data = tmp;
-		} else {
-			data = malloc(sizeof(*data));
-			if(!data) {
-				return pe_e_malloc;
-			}
-		}
-
-		data->buffer = malloc(buffer_size);
-		if(!data->buffer) {
-			return pe_e_malloc;
-		}
-
 		pthread_mutex_lock(&file_lock);
-		read = sf_readf_float(cur_song, data->buffer, frames_per_buffer);
+		read = sf_readf_float(cur_song, buffer, frames_per_buffer);
 		pthread_mutex_unlock(&file_lock);
-
-		data->frames = read;
-
+		
 		if(read) {
-			err = lockless_queue_push(&queue, data);
+			err = lockless_queue_push_ready(&queue);
+			if(err == -1) {
+				return pe_e_queue_push;
+			}
+			
+			struct frame_data *data = lockless_queue_peek_write(&queue);
+			memcpy(data->buffer, buffer, buffer_size);
+
+			err = lockless_queue_push_nowait(&queue, data);
 			if(err == -1) {
 				return pe_e_queue_push;
 			}
@@ -162,6 +152,8 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 
 	}
 
+	free(buffer);
+	
 	Pa_StopStream(stream);
 	Pa_CloseStream(stream);
 	pthread_mutex_lock(&file_lock);
@@ -404,6 +396,8 @@ void player_seek_forward(int time) {
 
 	}
 	pthread_mutex_unlock(&file_lock);
+
+	queue_st->write = (queue_st->read + queue_st->capacity + 1) % queue_st->capacity;
 }
 
 void player_seek_backward(int time) {
@@ -415,6 +409,8 @@ void player_seek_backward(int time) {
 			seek = sf_seek(cur_song, 0, SEEK_SET);
 		}
 	}
+
+	queue_st->write = (queue_st->read + queue_st->capacity + 1) % queue_st->capacity;
 	pthread_mutex_unlock(&file_lock);
 }
 
