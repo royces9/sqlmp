@@ -20,6 +20,8 @@ static sem_t pause_sem;
 static pthread_mutex_t file_lock;
 
 static pthread_mutex_t volume_lock;
+
+//valued from 0.0 to 2.0
 static float volume;
 
 static atomic_int mute = 0;
@@ -171,6 +173,11 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 }
 
 
+float volume_func(float buffer, float volume) {
+	float out = buffer * volume * volume;
+	return out;
+}
+
 int __player_callback(const void *input,
 		      void *output,
 		      unsigned long frameCount,
@@ -194,7 +201,7 @@ int __player_callback(const void *input,
 		memset(out, 0, buffer->frames * channels * sizeof(*buffer->buffer));
 	} else {
 		for(int i = 0; i < (buffer->frames * channels); ++i) {
-			out[i] = buffer->buffer[i] * volume;
+			out[i] = volume_func(buffer->buffer[i], volume);
 		}
 	}
 

@@ -1,5 +1,4 @@
 import curses
-import threadwin
 
 import song
 import window

@@ -1,6 +1,5 @@
 import curses
 import enum
-import queue
 import threading
 import time
 
@@ -295,7 +294,8 @@ class Player_ui:
 
         if self.textwin.win.is_wintouched():
             self.textwin.refresh()
-            
+
+        curses.doupdate()            
 
     def __enqueue(self, args=None):
         """
@@ -371,7 +371,6 @@ class Player_ui:
             self.__info_print()
             
             self.draw()
-            curses.doupdate()
 
             diff = time.time() - start
 
