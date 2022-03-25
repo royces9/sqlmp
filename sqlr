@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import argparse
 import json
 import os
 import socket
@@ -23,112 +24,51 @@ $ sqlr -c pause
 
 allows for basic playback control via sqlr
 
-Warning:
+Note:
 $ remote -f song_1.mp3 -p play_1 -f song_2.mp3 -p play_2
 
 will add both song_1.mp3 and song_2.mp3 to both play_1 and play_2
 """
 
-help_text = '\n'.join([
-    '-h             help',
-    '-f             directory, file, or list of files',
-    '-p             playlist or a list of playlists',
-    '-c [arg]       takes "pause" and "play-pause" as arguments',
-    ])
-    
-
-class Args:
-    def __init__(self, argv):
-        self.arg_tags = []
-        #get each tag and match it with its values
-        for arg in argv[1:]:
-            if arg.startswith('-'):
-                self.arg_tags.append(Arg_tag(arg))
-            else:
-                self.arg_tags[-1].append(arg)
-
-        #sort the list by tag
-        self.arg_tags.sort(key=lambda x: x.tag)
-
-        #combine all like tags
-        ii = 0
-        while ii < (len(self.arg_tags) - 1):
-            if self.arg_tags[ii] == self.arg_tags[ii + 1]:
-                tmp = self.arg_tags.pop(ii + 1)
-                self.arg_tags[ii].values += tmp.values
-            else:
-                ii += 1
-
-    @classmethod
-    def new(cls, argv):
-        if len(argv) < 2:
-            return []
-        if not argv[1].startswith('-'):
-            return []
-
-        return cls(argv)
-
-    def __iter__(self):
-        return iter(self.arg_tags)
-
-    def get_value(self, tag):
-        for arg in self.arg_tags:
-            if tag == arg:
-                return arg.values
-        
-class Arg_tag:
-    def __init__(self, tag):
-        self.tag = tag
-        self.values = []
-
-    def __eq__(self, other):
-        return self.tag == other
-    
-    def append(self, value):
-        self.values.append(value)
-    
 
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] in {'-h', '--help'}:
-        print(help_text)
-        return
-
     if not os.path.exists(config.SOCKET):
         print('', end='')
         return
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', help='directory, file, or list of files',
+                        action='extend', nargs='+')
+    parser.add_argument('-p', help='playlist or list of playlists',
+                        action='extend', nargs='+');
+    parser.add_argument('-c', help='takes "pause" and "play-pause" as arguments',
+                        action='append', nargs='+')
+
+    args = parser.parse_args()
+
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
         s.connect(config.SOCKET)
-        print_flag = False
-
         msg = {'cmd': ''}
-        args = Args.new(sys.argv)
-
-        if not args:
-            print_flag = True
         
-        elif '-f' in args:
-            fn = [os.path.abspath(f) for f in args.get_value('-f')]
-            if '-p' in args:
-                pl = args.get_value('-p')
+        if args.f:
+            fn = [os.path.abspath(f) for f in args.f]
+            if args.p:
+                pl = args.p
             else:
                 pl = [config.DEFAULT_PLAYLIST]
 
             msg = {'cmd': 'pl_add', 'playlist': pl, 'file': fn}
             
-        elif '-c' in args:
-            val = args.get_value('-c')
+        elif args.c:
+            val = args.c[0][0]
 
-            if val and val[0] in {'pause', 'play-pause'}:
-                msg = {'cmd': val[0]}
-
-        elif '-h' in args:
-            print(help_text)                
+            if val in {'pause', 'play-pause'}:
+                msg = {'cmd': val}
 
         rj.send(s, msg)
         data = rj.recv_raw(s)
 
-        if print_flag:
+        if not len(sys.argv) > 1:
             print(data.decode())
 
 
