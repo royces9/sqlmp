@@ -97,11 +97,13 @@ class Player:
 
 
     def seek_forward(self, *args):
-        backend.player_seek_forward(ctypes.c_int(self.seek_delta))
+        if self.is_playing():
+            backend.player_seek_forward(ctypes.c_int(self.seek_delta))
 
 
     def seek_backward(self, *args):
-        backend.player_seek_backward(ctypes.c_int(self.seek_delta))
+        if self.is_playing():
+            backend.player_seek_backward(ctypes.c_int(self.seek_delta))
 
 
     @property
