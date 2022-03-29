@@ -393,6 +393,9 @@ int player_get_time(void) {
 
 
 void player_seek_forward(int time) {
+	if(!player_is_playing())
+		return;
+
 	sf_count_t seek;
 	pthread_mutex_lock(&file_lock);
 	if(cur_song) {
@@ -408,6 +411,9 @@ void player_seek_forward(int time) {
 }
 
 void player_seek_backward(int time) {
+	if(!player_is_playing())
+		return;
+
 	sf_count_t seek;
 	pthread_mutex_lock(&file_lock);
 	if(cur_song) {
