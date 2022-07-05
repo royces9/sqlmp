@@ -7,28 +7,32 @@ import song
 import debug
 
 
+playmodes = ['shuffle', 'inorder', 'single']
+
 class Playlist:
     def __init__(self, name, db):
         self.name = name
         self.db = db
         self.commit = self.db.commit
 
+        self.exe("SELECT id FROM playlists WHERE plname=?;", (self.name,))
+        self.id = self.db.curs.fetchone()[0]
+
         self.ind = 0
 
         self.sort_key = self.get_val('sort')
         self.data = self.get_songs()
-
-
         
         self.playmode = self.get_val('playmode')
-        self.playmode_list = {'shuffle': self.shuffle,
-                              'inorder': self.inorder,
-                              'single': self.single}
+        self.playmode_list = [self.shuffle,
+                              self.inorder,
+                              self.single]
 
         #self.gen = self.playmode_list[self.playmode]()
         #sort makes self.gen
         self.order = queue.Queue()
         self.sort()
+
 
     def __contains__(self, path):
         return any(filter(lambda x: x['path'] == path, self.data))
@@ -51,6 +55,10 @@ class Playlist:
     def __str__(self):
         return self.name
 
+    @property
+    def playmode_str(self):
+        return playmodes[self.playmode]
+
     def index(self, obj):
         return self.data.index(obj)
 
@@ -59,7 +67,7 @@ class Playlist:
         if name in {'library', 'playlists', 'pl_song'}:
             return
         try:
-            db.exe("INSERT INTO playlists VALUES (?, 'artist', 'shuffle');", (name,))
+            db.exe("INSERT INTO playlists (plname, sort, playmode) VALUES (?, 0, 0);", (name,))
             db.commit()
 
         except Exception as err:
@@ -69,7 +77,7 @@ class Playlist:
     def del_pl(name, db):
         try:
             db.exe("DELETE FROM playlists WHERE plname=?;", (name,))
-            db.exe("DELETE FROM pl_song WHERE plname=?;", (name,))
+            #db.exe("DELETE FROM pl_song WHERE plname=?;", (name,))
 
             db.commit()
         except Exception as err:
@@ -92,8 +100,12 @@ class Playlist:
     def get_songs(self):
         return [
             song.Song.from_iter(song_i)
-            for song_i in self.exe("SELECT * FROM library WHERE path IN\
-            (SELECT path FROM pl_song WHERE plname=?);", (self.name,))
+            for song_i in self.exe("SELECT path, title, artist, album, length, samplerate, channels, bitrate, playcount FROM library WHERE id IN (SELECT song_id FROM pl_song WHERE pl_id=?);", (self.id,))
+        ]
+
+        return [
+            song.Song.from_iter(song_i)
+            for song_i in self.exe("SELECT * FROM library INNER JOIN pl_song ON pl_song.song_id=library.id AND pl_song.pl_id=?);", (self.id,))
         ]
 
 
@@ -109,43 +121,46 @@ class Playlist:
     def remake_gen(self):
         self.gen = self.playmode_list[self.playmode]()
 
+
     def __set_order(self, playmode):
         with self.order.mutex:
             self.order.queue.clear()
             
         l = len(self.data)
-
         iter_values = list(range(l))
         
-        if playmode == 'shuffle':
+
+        if playmode == 0:
+            #shuffle
             random.shuffle(iter_values)
             for i in iter_values:
                 self.order.put_nowait(self.data[i % l])
 
-        elif playmode == 'inorder':
+        elif playmode == 1:
+            #inorder
             for i in iter_values:
                 #the +1 is so the current song doesn't play twice
                 self.order.put_nowait(self.data[(i + self.ind + 1) % l])
 
 
     def shuffle(self):
-        self.__set_order('shuffle')
+        self.__set_order(0)
 
         while True:
             if self.order.empty():
-                self.__set_order('shuffle')
+                self.__set_order(0)
 
             new_song = self.order.get_nowait()
             if new_song in self.data:
                 yield new_song
 
     def inorder(self):
-        self.__set_order('inorder')
+        self.__set_order(1)
 
         while True:
             if self.order.empty():
                 self.ind = self.data.index(new_song)
-                self.__set_order('inorder')
+                self.__set_order(1)
 
             new_song = self.order.get_nowait()
             if new_song in self.data:
@@ -159,10 +174,11 @@ class Playlist:
 
 
     def sort(self):
-        if self.sort_key in {'path', 'artist', 'album', 'title'}:
-            key = lambda x: x[self.sort_key].lower()
+        sort_key = song.tags[self.sort_key]
+        if sort_key in {'path', 'artist', 'album', 'title'}:
+            key = lambda x: x[sort_key].lower()
         else:
-            key = lambda x: x[self.sort_key]
+            key = lambda x: x[sort_key]
 
         self.data.sort(key=key)
         self.remake_gen()
@@ -182,9 +198,11 @@ class Playlist:
 
         #add file to library table if it's not already
         self.db.insert_song(path)
+        
+        song_id = self.db.get_song_id(path)
 
         #add file into playlist table
-        self.exe("INSERT INTO pl_song VALUES (?,?);", (path, self.name,))
+        self.exe("INSERT INTO pl_song (song_id, pl_id) VALUES (?,?);", (song_id, self.id,))
 
         self.data += [
             song.Song.from_iter(song_i)
@@ -201,7 +219,7 @@ class Playlist:
         for root, _, files in os.walk(di):
             for ff in files:
                 path = os.path.join(root, ff)
-                out = song.Song.from_path(path)                
+                out = song.Song.from_path(path)
                 if not out:
                     continue
 
@@ -230,7 +248,7 @@ class Playlist:
 
 
     def insert_path_list(self, path_list):
-        self.executemany("INSERT INTO pl_song VALUES (?,?)", ((path,self.name) for path in path_list))
+        self.executemany("INSERT INTO pl_song VALUES (?,?)", ((path, self.name) for path in path_list))
 
         for path in path_list:
             self.data += [
@@ -246,7 +264,7 @@ class Playlist:
         self.sort_key = sort
         self.sort()
 
-        self.exe("UPDATE playlists SET sort=? WHERE plname=?;", (sort, self.name,))
+        self.exe("UPDATE playlists SET sort=? WHERE id=?;", (sort, self.id,))
         self.commit()
 
 
@@ -254,13 +272,12 @@ class Playlist:
         self.playmode = play
         self.gen = self.playmode_list[self.playmode]()
 
-        self.exe("UPDATE playlists SET playmode=? WHERE plname=?;", (play, self.name,))
+        self.exe("UPDATE playlists SET playmode=? WHERE id=?;", (play, self.id,))
         self.commit()
 
 
     def rename(self, newname):
-        self.exe("UPDATE pl_song SET plname=? WHERE plname=?;", (newname, self.name,))
-        self.exe("UPDATE playlists SET plname=? WHERE plname=?;", (newname, self.name,))
+        self.exe("UPDATE playlists SET plname=? WHERE id=?;", (newname, self.id,))
 
         self.name = newname
         self.commit()

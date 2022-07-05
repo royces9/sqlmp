@@ -344,14 +344,15 @@ class Player_ui:
 
     def __info_print(self):
         time_str = config.song_length(self.player.cur_time())
-        total_time_str = config.song_length(self.player.cur_song['length'])
 
+        total_time_str = config.song_length(self.player.cur_song['length'])
+        
         info_str = ' '.join([time_str, '/', total_time_str, '| Vol:', str(self.player.vol)])
         if self.player.mute:
             info_str += ' [M]'
 
         self.botwin.print_line(info_str, y=1)
-        self.botwin.print_right_justified(' ' + self.rightwin.data.playmode + ' ', y=1)
+        self.botwin.print_right_justified(' ' + self.rightwin.data.playmode_str + ' ', y=1)
 
         if not self.player.curempty():
             player_event = self.player.curplay()
@@ -369,8 +370,9 @@ class Player_ui:
         while not self.die:
             start = time.time()
             self.__info_print()
-            
+
             self.draw()
+
 
             diff = time.time() - start
 

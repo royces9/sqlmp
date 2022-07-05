@@ -4,7 +4,7 @@ import curses
 import os
 
 #database path
-DBPATH = os.path.expanduser('newlib.db')
+DBPATH = os.path.expanduser('test.db')
 LIBPATH = os.path.expanduser('~/Music/')
 
 SOCKET = 'test_sqlmp.sock'

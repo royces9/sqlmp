@@ -88,5 +88,3 @@ blank_song = Song({'path': '',
                    'bitrate': 0,
                    'playcount': 0
 })
-
-    

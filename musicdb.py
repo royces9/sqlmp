@@ -33,9 +33,16 @@ class Musicdb:
 
     @staticmethod
     def init_db(db):
-        db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
-        db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
-        db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
+        #db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
+        #db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
+        #db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
+
+
+        db.exe("CREATE TABLE library (id INTEGER PRIMARY KEY, path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
+        db.exe("CREATE TABLE playlists (id INTEGER PRIMARY KEY, plname TEXT, sort INTEGER, playmode INTEGER);")
+        db.exe("CREATE TABLE pl_song (song_id INTEGER, pl_id INTEGER, FOREIGN KEY(song_id) REFERENCES library(id) ON DELETE CASCADE, FOREIGN KEY(pl_id) REFERENCES playlists(id));")
+
+
         db.commit()
 
 
@@ -54,7 +61,7 @@ class Musicdb:
 
 
     def in_table(self, path, table):
-        self.exe("SELECT path FROM ? WHERE path=? LIMIT 1;", (table, path,))
+        self.exe("SELECT id FROM ? WHERE path=? LIMIT 1;", (table, path,))
         return bool(self.curs.fetchone())
 
 
@@ -66,7 +73,7 @@ class Musicdb:
         if not out:
             return
 
-        self.exe("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,?);", tuple(out))
+        self.exe("INSERT INTO library (path, title, artist, album, length, samplerate, channels, bitrate, playcount) VALUES (?,?,?,?,?,?,?,?,?);", tuple(out))
         self.commit()
 
 
@@ -75,7 +82,7 @@ class Musicdb:
             return
 
         self.exe("DELETE FROM library WHERE path=?;", (path,))
-        self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
+        #self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
 
         self.commit()
 
@@ -106,7 +113,7 @@ class Musicdb:
 
 
     def insert_multi(self, li):
-        self.executemany("INSERT INTO library VALUES (?,?,?,?,?,?,?,?,?);", li)
+        self.executemany("INSERT INTO library (path, title, artist, album, length, samplerate, channels, bitrate, playcount) VALUES (?,?,?,?,?,?,?,?,?);", li)
         self.commit()
 
 
@@ -151,3 +158,8 @@ class Musicdb:
         
     def list_pl(self):
         return [pl[0] for pl in self.exe("SELECT plname FROM playlists;")]
+
+
+    def get_song_id(self, path):
+        self.exe("SELECT id FROM library WHERE path=?", (path,))
+        return self.curs.fetchone()

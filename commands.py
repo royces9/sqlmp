@@ -307,9 +307,10 @@ class Commands:
 
         playmode = args[0]
         cur = self.ui.leftwin.highlighted().data
-        if playmode in cur.playmode_list:
-            cur.change_playmode(playmode)
-        else:
+        try:
+            ind = playlist.playmodes.index(playmode)
+            cur.change_playmode(ind)
+        except:
             self.err_print('"{}" is not a valid playback mode'.format(playmode))
 
 
@@ -349,10 +350,11 @@ class Commands:
 
         _key = args[0]
         cur = self.ui.leftwin.highlighted().data
-        if _key in song.tags:
-            cur.change_sort(_key)
+        try:
+            ind = song.tags.index(_key)
+            cur.change_sort(ind)
             self.ui.rightwin.disp()
-        else:
+        except:
             self.err_print('"{}" is not a valid key to sort by'.format(_key))
 
 
