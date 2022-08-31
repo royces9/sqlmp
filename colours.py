@@ -13,6 +13,16 @@ class Colour_types(enum.IntFlag):
     playing = 4
 
 
+global_colour = []
+global_pair = []
+
+def reset_colours():
+    for colour in global_colour:
+        curses.init_color(*colour)
+
+    for pair in global_pair:
+        curses.init_pair(*pair)
+
 class Colour:
     __enum = 3
     def __init__(self, r, g, b):
@@ -21,8 +31,13 @@ class Colour:
         self.b = int(b * 1000 / 255)
         self.enum = type(self).__enum
 
-        curses.init_color(type(self).__enum, self.r, self.g, self. b)
+        self.init_color(type(self).__enum, self.r, self.g, self. b)
         type(self).__enum += 1
+
+    def init_color(self, num, r, g, b):
+        orig_colour = curses.color_content(num)
+        global_colour.append((num, *orig_colour))
+        curses.init_color(num, r, g, b)
 
 class Colour_pair:
     __enum = 2
@@ -31,24 +46,15 @@ class Colour_pair:
         self.fg = fg
         self.bg = bg
 
-        curses.init_pair(type(self).__enum, fg.enum, bg.enum)
+        self.init_pair(type(self).__enum, fg.enum, bg.enum)
         self.colour = curses.color_pair(type(self).__enum)
 
         type(self).__enum += 1
 
-
-class Default_colour:
-    def __init__(self, enum):
-        self.enum = enum
-
-        
-class Default_pair:
-    def __init__(self, colour):
-        self.colour = colour
-
-        fg_enum, bg_enum = curses.pair_content(curses.pair_number(self.colour))
-        self.fg = Default_colour(fg_enum)
-        self.bg = Default_colour(bg_enum)
+    def init_pair(self, num, fg, bg):
+        orig_pair = curses.pair_content(num)
+        global_pair.append((num, *orig_pair))
+        curses.init_pair(num, fg, bg)
 
 
 class Palette:
@@ -79,5 +85,3 @@ class Palette:
         bg = args[1]
         enum = functools.reduce(lambda a, b: a | b, args)
         self[enum] = Colour_pair(self.colour_pairs[fg].fg, self.colour_pairs[bg].bg)
-
-    
