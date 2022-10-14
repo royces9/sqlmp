@@ -3,7 +3,6 @@ import os
 import signal
 import sys
 
-import colours
 import loadconf
 import init
 import musicdb
@@ -20,7 +19,7 @@ def cleanup(exit_f=False):
     curses.echo()
     curses.nocbreak()
 
-    colours.reset_colours()
+    curses.start_color()
     curses.resetty()
     curses.endwin()
 
