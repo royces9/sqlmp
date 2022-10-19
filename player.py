@@ -106,7 +106,7 @@ class Player:
 
     @property
     def mute(self):
-        return backend.player_ismuted()
+        return backend.player_is_muted()
 
     def toggle_mute(self, *args):
         backend.player_toggle_mute()
@@ -133,4 +133,4 @@ class Player:
 
         backend.player_init(ctypes.c_float(args[0]/100))
 
-        #os.dup2(cp_err, og_err)
+        os.dup2(cp_err, og_err)

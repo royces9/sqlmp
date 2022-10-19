@@ -3,7 +3,7 @@
 
 enum player_status {
 	ps_playing,
-	ps_notplaying,
+	ps_not_playing,
 	ps_paused,
 	ps_new,
 	ps_end,
@@ -40,7 +40,7 @@ void player_set_volume(float val);
 
 void player_increment_volume(float val);
 
-int player_ismuted(void);
+int player_is_muted(void);
 
 void player_mute(void);
 void player_unmute(void);
@@ -51,9 +51,9 @@ void player_pause(void);
 void player_unpause(void);
 
 int player_is_playing(void);
-int player_is_notplaying(void);
+int player_is_not_playing(void);
 int player_is_paused(void);
-
+int player_is_end(void);
 
 int player_get_curq(void);
 int player_is_curq_empty(void);

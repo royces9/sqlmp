@@ -34,7 +34,7 @@ static struct queue playq;
 static struct queue curq;
 
 static SNDFILE *cur_song;
-
+static atomic_int cur_song_time = 0;
 
 void free_frame_data(struct lockless_queue *);
 int __player_callback(const void *input,
@@ -52,7 +52,9 @@ struct callback_data {
 struct frame_data {
 	float *buffer;
 	unsigned long frames;
+	int time;
 };
+
 
 struct lockless_queue *queue_st;
 int player_play_callback(char *path, int channels, double _sample_rate, int seek_delta) {
@@ -60,7 +62,7 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 	sample_rate = _sample_rate;
 
 	//set status to playing
-	status = ps_playing;
+	player_set_status(ps_playing);
 
 	SF_INFO info;
 	info.format = 0;
@@ -103,23 +105,26 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 
 	//fill queue before starting stream
 	for(int i = 0; i < queue_size; ++i) {
-		struct frame_data *data = malloc(sizeof(*data));
-		if(!data) {
+		struct frame_data *frame = malloc(sizeof(*frame));
+		if(!frame) {
 			return pe_e_malloc;
 		}
-		data->buffer = malloc(buffer_size);
-		if(!data->buffer) {
+		frame->buffer = malloc(buffer_size);
+		if(!frame->buffer) {
 			return pe_e_malloc;
 		}
 
 		pthread_mutex_lock(&file_lock);
-		read = sf_readf_float(cur_song, data->buffer, frames_per_buffer);
+		read = sf_readf_float(cur_song, frame->buffer, frames_per_buffer);
+		sf_count_t seek = sf_seek(cur_song, 0, SEEK_CUR);
+		frame->time = seek / sample_rate;
+
 		pthread_mutex_unlock(&file_lock);
 
-		data->frames = read;
+		frame->frames = read;
 
 		if(read) {
-			err = lockless_queue_push(&queue, data);
+			err = lockless_queue_push(&queue, frame);
 			if(err == -1) {
 				return  pe_e_queue_push;
 			}
@@ -132,9 +137,11 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 	}
 
 	void *buffer = malloc(buffer_size);
-	while(read && (status != ps_end)) {
+	while(read && !player_is_end()) {
 		pthread_mutex_lock(&file_lock);
 		read = sf_readf_float(cur_song, buffer, frames_per_buffer);
+		sf_count_t seek = sf_seek(cur_song, 0, SEEK_CUR);
+		int time_stamp = seek / sample_rate;
 		pthread_mutex_unlock(&file_lock);
 		
 		if(read) {
@@ -143,29 +150,42 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 				return pe_e_queue_push;
 			}
 			
-			struct frame_data *data = lockless_queue_peek_write(&queue);
-			memcpy(data->buffer, buffer, buffer_size);
-
-			err = lockless_queue_push_nowait(&queue, data);
+			struct frame_data *frame = lockless_queue_peek_write(&queue);
+			memset(frame->buffer, 0, buffer_size);
+			memcpy(frame->buffer, buffer, read * width * channels);
+			frame->time = time_stamp;
+			frame->frames = read;
+			err = lockless_queue_push_nowait(&queue, frame);
 			if(err == -1) {
 				return pe_e_queue_push;
 			}
 		}
-
 	}
 
-	free(buffer);
+	lockless_queue_push_ready(&queue);
+	struct frame_data *frame = lockless_queue_peek_write(&queue);
+	memset(frame->buffer, 0, buffer_size);
+	frame->time = -1;
+	err = lockless_queue_push_nowait(&queue, frame);
+
 	
+	while(Pa_IsStreamActive(stream)) {
+		Pa_Sleep(100);
+	}
+
 	Pa_StopStream(stream);
 	Pa_CloseStream(stream);
+
+	free(buffer);
+
 	pthread_mutex_lock(&file_lock);
 	sf_close(cur_song);
 	pthread_mutex_unlock(&file_lock);
 
 	lockless_queue_destroy(&queue, free_frame_data);
 
-	if(status == ps_end) {
-		status = ps_notplaying;
+	if(player_is_end()) {
+		player_set_status(ps_not_playing);
 		return pe_early;
 	}
 
@@ -187,7 +207,7 @@ int __player_callback(const void *input,
 
 	float *out = output;
 
-	if(status == ps_paused) {
+	if(player_is_paused()) {
 		memset(out, 0, frames_per_buffer * 2 * 4);
 		return paContinue;
 	}
@@ -196,6 +216,13 @@ int __player_callback(const void *input,
 	int channels = data->channels;
 	struct frame_data *buffer = NULL;
 	buffer = lockless_queue_peek(data->queue);
+	
+
+	if(buffer->time < 0) {
+		return paComplete;
+	}
+
+	cur_song_time = buffer->time;
 	
 	if(mute) {
 		memset(out, 0, buffer->frames * channels * sizeof(*buffer->buffer));
@@ -206,12 +233,8 @@ int __player_callback(const void *input,
 	}
 
 	lockless_queue_peek_done(data->queue);
-
-	if(buffer->frames != frames_per_buffer) {
-		return paComplete;
-	}
-
-	if((status == ps_end) || (status == ps_notplaying)) {
+	
+	if(player_is_end() || player_is_not_playing()) {
 		return paComplete;
 	}
 
@@ -230,6 +253,7 @@ void free_frame_data(struct lockless_queue *self) {
 	}
 
 }
+
 struct song_info {
 	char *path;
 	double sample_rate;
@@ -239,7 +263,7 @@ struct song_info {
 void *player_thread(void *p) {
 	struct song_info *song;
 
-	while(status != ps_end) {
+	while(!player_is_end()) {
 		song = queue_pop(&playq);
 
 		queue_push(&curq, pe_start);
@@ -277,7 +301,7 @@ int player_init(float vol) {
 	}
 
 
-	status = ps_new;
+	player_set_status(ps_new);
 	
 	err = Pa_Initialize();
 	if(err) {
@@ -346,23 +370,23 @@ void player_clear_playq(void) {
 
 
 void player_pause(void) {
-	status = ps_paused;
+	player_set_status(ps_paused);
 }
 
 void player_unpause(void) {
-	if(status == ps_paused) {
-		status = ps_playing;
+	if(player_is_paused()) {
+		player_set_status(ps_playing);
 		sem_post(&pause_sem);
 	}
 }
 
 
 void player_play_pause(void) {
-	if(status == ps_paused) {
-		status = ps_playing;
+	if(player_is_paused()) {
+		player_set_status(ps_playing);
 		sem_post(&pause_sem);
-	} else if(status == ps_playing) {
-		status = ps_paused;
+	} else if(player_is_playing()) {
+		player_set_status(ps_paused);
 	}
 }
 
@@ -371,24 +395,20 @@ int player_is_playing(void) {
 }
 
 int player_is_not_playing(void) {
-	return status == ps_notplaying;
+	return status == ps_not_playing;
 }
-
 
 int player_is_paused(void) {
 	return status == ps_paused;
 }
 
+int player_is_end(void) {
+	return status == ps_end;
+}
+
 
 int player_get_time(void) {
-	int out = 0;
-	if(sample_rate != 0) {
-		pthread_mutex_lock(&file_lock);
-		sf_count_t seek = sf_seek(cur_song, 0, SEEK_CUR);
-		pthread_mutex_unlock(&file_lock);
-		out = seek / sample_rate;
-	}
-	return out;
+	return cur_song_time;
 }
 
 
@@ -454,7 +474,7 @@ void player_increment_volume(float val) {
 
 }
 
-int player_ismuted(void) {
+int player_is_muted(void) {
 	return !!mute;
 }
 
@@ -469,6 +489,7 @@ void player_unmute(void) {
 void player_toggle_mute(void) {
 	mute = !mute;
 }
+
 int player_get_status(void) {
 	return status;
 }
