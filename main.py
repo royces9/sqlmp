@@ -20,9 +20,11 @@ def cleanup(exit_f=False):
     curses.echo()
     curses.nocbreak()
 
-    colours.reset_colours()
+
     curses.resetty()
+    colours.reset_colours()
     curses.endwin()
+
 
     if exit_f:
         sys.exit()

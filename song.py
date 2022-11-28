@@ -5,7 +5,7 @@ import debug
 
 ext_list = {'.mp3', '.flac', '.m4a', '.wav', '.ogg', '.opus'}
 
-tags = ['path', 'title', 'artist', 'album', 'length', 'samplerate', 'channels', 'bitrate', 'playcount']
+tags = ['id', 'path', 'title', 'artist', 'album', 'length', 'samplerate', 'channels', 'bitrate', 'playcount']
 
 
 class Song:
@@ -40,17 +40,17 @@ class Song:
         tags_out = ['title', 'artist', 'album']
         if 'tags' in prob['format']:
             tmp = {k.lower(): i for k, i in prob['format']['tags'].items()}
-            tags = [tmp[t] if t in tmp else '' for t in tags_out]
+            t_tags = [tmp[t] if t in tmp else '' for t in tags_out]
         elif 'tags' in prob['streams'][0]:
             tmp = {k.lower(): i for k, i in prob['streams'][0]['tags'].items()}
-            tags = [tmp[t] if t in tmp else '' for t in tags_out]
+            t_tags = [tmp[t] if t in tmp else '' for t in tags_out]
         else:
-            tags = [''] * len(tags_out)
+            t_tags = [''] * len(tags_out)
 
         attr = (a[1](prob['streams'][0][a[0]])
                 for a in [('duration', float), ('sample_rate', int), ('channels', int)])
 
-        return (path,) + tuple(tags, ) + tuple(attr, ) + (int(prob['format']['bit_rate']), ) + (0,)
+        return (0,) + (path,) + tuple(t_tags, ) + tuple(attr, ) + (int(prob['format']['bit_rate']), ) + (0,)
 
 
     @classmethod
@@ -78,7 +78,8 @@ class Song:
         }
 
 
-blank_song = Song({'path': '',
+blank_song = Song({'id': 0,
+                   'path': '',
                    'title': 'Nothing currently playing',
                    'artist': '',
                    'album': '',

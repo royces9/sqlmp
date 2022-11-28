@@ -53,7 +53,8 @@ class Keys:
         """
         delete character at cursor
         """
-        self.string.pop(self.index)
+        if self.index < len(self.string):
+            self.string.pop(self.index)
 
     def ctrl_e(self):
         """

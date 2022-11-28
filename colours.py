@@ -4,8 +4,6 @@ import functools
 
 import debug
 
-import config
-
 class Colour_types(enum.IntFlag):
     normal = 0
     cursor = 1

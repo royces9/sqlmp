@@ -30,7 +30,7 @@ DELETE = {'D'}
 CUR_PLAY = {'i'}
 
 #volume
-DEFAULT_VOLUME = 0
+DEFAULT_VOLUME = 30
 VOL_STEP = 1
 
 #default playlist to add to when no playlist argument is given from sqlr
@@ -58,18 +58,48 @@ def song_format(ll):
     playcount = str(ll['playcount'])
 
     return (
+        artist, title, album,
+        bitrate, length, playcount
+    )
+
+    return (
         (artist, 1/4, False),
         (title, 5/16, False),
         (album, 1/4, False),
         (bitrate, 1/16, True),
         (length, 1/16, True),
-        (playcount, 1/16, True),
+        (playcount, 1/15, True),
     )
+
+import wchar
+def print_col(w, h, addnstr, x, y, datas):
+
+    artist, title, album, bitrate, length, playcount = datas
+    
+    set_width = 7
+    cur_width = w - set_width - 1
+    for string in [playcount, length, bitrate]:
+        s = wchar.set_width(string, set_width).rjust(set_width)
+        addnstr(y, cur_width, s, set_width)
+        cur_width -= set_width
+
+
+    fixed_width = cur_width // 3
+    for string in [artist, title]:
+        s = wchar.set_width(string, fixed_width)
+        addnstr(y, x, s, fixed_width)
+        x += fixed_width
+        cur_width -= fixed_width
+
+    cur_width += 8
+    s = wchar.set_width(album, cur_width)
+    addnstr(y, x, s, cur_width)
+    
 
 
 #how songs are formatted on the right window
 SONG_DISP = song_format
-
+PRINT_COL = print_col
 
 #what info is displayed on the bottom window
 #info like bitrate and length might need to be

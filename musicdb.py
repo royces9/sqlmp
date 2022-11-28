@@ -33,15 +33,9 @@ class Musicdb:
 
     @staticmethod
     def init_db(db):
-        #db.exe("CREATE TABLE library (path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
-        #db.exe("CREATE TABLE playlists (plname TEXT, sort TEXT, playmode TEXT);")
-        #db.exe("CREATE TABLE pl_song (path TEXT, plname TEXT);")
-
-
         db.exe("CREATE TABLE library (id INTEGER PRIMARY KEY, path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
         db.exe("CREATE TABLE playlists (id INTEGER PRIMARY KEY, plname TEXT, sort INTEGER, playmode INTEGER);")
         db.exe("CREATE TABLE pl_song (song_id INTEGER, pl_id INTEGER, FOREIGN KEY(song_id) REFERENCES library(id) ON DELETE CASCADE, FOREIGN KEY(pl_id) REFERENCES playlists(id));")
-
 
         db.commit()
 
@@ -82,7 +76,6 @@ class Musicdb:
             return
 
         self.exe("DELETE FROM library WHERE path=?;", (path,))
-        #self.exe("DELETE FROM pl_song WHERE path=?;", (path,))
 
         self.commit()
 
@@ -162,4 +155,4 @@ class Musicdb:
 
     def get_song_id(self, path):
         self.exe("SELECT id FROM library WHERE path=?", (path,))
-        return self.curs.fetchone()
+        return self.curs.fetchone()[0]

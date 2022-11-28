@@ -13,6 +13,7 @@
 #include "lockless_queue.h"
 #include "queue.h"
 
+
 static atomic_int status;
 
 static sem_t pause_sem;
@@ -60,6 +61,7 @@ struct lockless_queue *queue_st;
 int player_play_callback(char *path, int channels, double _sample_rate, int seek_delta) {
 	int err = paNoError;
 	sample_rate = _sample_rate;
+	cur_song_time = 0;
 
 	//set status to playing
 	player_set_status(ps_playing);
@@ -93,7 +95,9 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 				   channels,
 				   paFloat32,
 				   sample_rate,
-				   frames_per_buffer,
+				   4096,
+				   //paFramesPerBufferUnspecified,
+				   //frames_per_buffer,
 				   &__player_callback,
 				   &data);
 	if(err != paNoError) {
@@ -137,7 +141,7 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 	}
 
 	void *buffer = malloc(buffer_size);
-	while(read && !player_is_end()) {
+	while(read && player_is_playing()) {
 		pthread_mutex_lock(&file_lock);
 		read = sf_readf_float(cur_song, buffer, frames_per_buffer);
 		sf_count_t seek = sf_seek(cur_song, 0, SEEK_CUR);
@@ -162,17 +166,20 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 		}
 	}
 
-	lockless_queue_push_ready(&queue);
-	struct frame_data *frame = lockless_queue_peek_write(&queue);
-	memset(frame->buffer, 0, buffer_size);
-	frame->time = -1;
-	err = lockless_queue_push_nowait(&queue, frame);
 
-	
-	while(Pa_IsStreamActive(stream)) {
-		Pa_Sleep(100);
+	if(player_is_playing()) {
+		lockless_queue_push_ready(&queue);
+		struct frame_data *frame = lockless_queue_peek_write(&queue);
+		memset(frame->buffer, 0, buffer_size);
+		frame->time = -1;
+		err = lockless_queue_push_nowait(&queue, frame);
+
+		while(Pa_IsStreamActive(stream) && player_is_playing()) {
+			Pa_Sleep(100);
+		}
 	}
 
+	//Pa_AbortStream(stream);
 	Pa_StopStream(stream);
 	Pa_CloseStream(stream);
 
@@ -497,4 +504,3 @@ int player_get_status(void) {
 void player_set_status(int st) {
 	status = st;
 }
-

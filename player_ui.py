@@ -81,6 +81,7 @@ class Player_ui:
 
         data = [menu.Music_menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
                                 form=config.SONG_DISP,
+                                print_col=config.PRINT_COL,
                                 palette=self.palette[0], ui=self
                                 )
                 for pl in self.db.list_pl()]

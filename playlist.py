@@ -100,12 +100,7 @@ class Playlist:
     def get_songs(self):
         return [
             song.Song.from_iter(song_i)
-            for song_i in self.exe("SELECT path, title, artist, album, length, samplerate, channels, bitrate, playcount FROM library WHERE id IN (SELECT song_id FROM pl_song WHERE pl_id=?);", (self.id,))
-        ]
-
-        return [
-            song.Song.from_iter(song_i)
-            for song_i in self.exe("SELECT * FROM library INNER JOIN pl_song ON pl_song.song_id=library.id AND pl_song.pl_id=?);", (self.id,))
+            for song_i in self.exe("SELECT * FROM library WHERE id IN (SELECT song_id FROM pl_song WHERE pl_id=?);", (self.id,))
         ]
 
 
@@ -188,7 +183,7 @@ class Playlist:
         if song in self.data:
             self.data.remove(song)
 
-        self.exe("DELETE FROM pl_song WHERE plname=? AND path=?;", (self.name, song['path'],))
+        self.exe("DELETE FROM pl_song WHERE pl_id=? AND song_id=?;", (self.id, song['id'],))
         self.commit()
 
 
@@ -198,9 +193,7 @@ class Playlist:
 
         #add file to library table if it's not already
         self.db.insert_song(path)
-        
         song_id = self.db.get_song_id(path)
-
         #add file into playlist table
         self.exe("INSERT INTO pl_song (song_id, pl_id) VALUES (?,?);", (song_id, self.id,))
 
@@ -233,7 +226,7 @@ class Playlist:
 
         if new_pl:
             self.insert_path_list(new_pl)
-
+        
         self.sort()
 
 
@@ -248,7 +241,9 @@ class Playlist:
 
 
     def insert_path_list(self, path_list):
-        self.executemany("INSERT INTO pl_song VALUES (?,?)", ((path, self.name) for path in path_list))
+        for path in path_list:
+            song_id = self.db.get_song_id(path)
+            self.exe("INSERT INTO pl_song VALUES (?, ?)", (song_id, self.id,))
 
         for path in path_list:
             self.data += [

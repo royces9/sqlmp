@@ -1,13 +1,16 @@
+QUEUE_DIR = ./queue/
+
 LDFLAGS = -lrt -lpthread -lasound -lportaudio -lsndfile
-FLAGS = -MMD -Wall -Wpedantic -Iqueue/ -O2
+FLAGS = -MMD -Wall -Wpedantic -I$(QUEUE_DIR) -O2
 DEBUG_FLAGS =
 CC = gcc
 
 CFILES = $(wildcard *.c)
 OFILES = $(addprefix $(OBJD)/, $(CFILES:.c=.o))
 
+
 TARGET = ../backend.so
-QUEUE = queue/queue.a
+QUEUE = $(QUEUE_DIR)/queue.a
 WIDE = ../wide.so
 
 OBJD = obj
@@ -26,7 +29,7 @@ $(WIDE):
 	@$(MAKE) -C ./wide/
 
 $(QUEUE):
-	@$(MAKE) -C ./queue/
+	@$(MAKE) -C $(QUEUE_DIR)
 
 $(TARGET): $(OFILES) $(QUEUE)
 	$(CC) $^ -o $@ $(LDFLAGS)

@@ -1,6 +1,5 @@
 import curses
 
-import song
 import window
 import wchar
 from colours import Colour_types as ct
@@ -173,14 +172,23 @@ class Menu(window.Window):
 class Music_menu(Menu):
     def __init__(self, x=0, y=0, w=0, h=0, win=None, data=None,
                  form=lambda ll: ((str(ll), 1, 0),),
+                 print_col=None,
                  palette=None, ui=None
                  ):
         super().__init__(x, y, w, h, win, data,
                          palette=palette)
 
         self.form=form
+        
+        if not print_col:
+            self.print_format=self.default_print_col
+        else:
+            self.print_format=print_col
+
         self.ui = ui
         
+    def print_col(self, x, y, datas):
+        self.print_format(self.w, self.h, self.win.addnstr, x, y, datas)
 
     def disp(self):
         self.win.erase()
@@ -188,13 +196,13 @@ class Music_menu(Menu):
         smaller = self.h if diff > self.h else diff
         for ii in range(smaller):
             formatted_list = self.form(self.data[ii + self.offset])
+            
             self.print_col(0, ii, formatted_list)
 
         self.paint()
         self.refresh()
 
-
-    def print_col(self, x, y, datas):
+    def default_print_col(self, w, h, addnstr, x, y, datas):
         for string, fraction, flag in datas:
             width = int(self.w * fraction)
             s = wchar.set_width(string, width)
@@ -203,6 +211,8 @@ class Music_menu(Menu):
             self.win.addnstr(y, x, s, width)
             x += width
 
+        
+        
 
     def paint(self):
         #check that playlist to be displayed has both be true:
@@ -233,3 +243,5 @@ class Music_menu(Menu):
                 self.chgat(newind, 0, self.w - 1, colour)
 
         self.ui.leftwin.win.touchwin()
+
+
