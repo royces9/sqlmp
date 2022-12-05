@@ -47,7 +47,8 @@ def song_length(len_s):
     return ':'.join([str(m), s])
 
 
-def song_format(ll):
+import wchar
+def song_format(w, h, addnstr, x, y, ll):
     title = ll['title']
     album = ll['album']
     artist = ll['artist']
@@ -56,25 +57,6 @@ def song_format(ll):
     length = song_length(ll['length'])
 
     playcount = str(ll['playcount'])
-
-    return (
-        artist, title, album,
-        bitrate, length, playcount
-    )
-
-    return (
-        (artist, 1/4, False),
-        (title, 5/16, False),
-        (album, 1/4, False),
-        (bitrate, 1/16, True),
-        (length, 1/16, True),
-        (playcount, 1/15, True),
-    )
-
-import wchar
-def print_col(w, h, addnstr, x, y, datas):
-
-    artist, title, album, bitrate, length, playcount = datas
     
     set_width = 7
     cur_width = w - set_width - 1
@@ -94,7 +76,7 @@ def print_col(w, h, addnstr, x, y, datas):
     cur_width += 8
     s = wchar.set_width(album, cur_width)
     addnstr(y, x, s, cur_width)
-    
+    return
 
 
 #how songs are formatted on the right window

@@ -171,8 +171,7 @@ class Menu(window.Window):
             
 class Music_menu(Menu):
     def __init__(self, x=0, y=0, w=0, h=0, win=None, data=None,
-                 form=lambda ll: ((str(ll), 1, 0),),
-                 print_col=None,
+                 form=lambda w, h, addnstr, x, y, ll: self.win.addnstr(y, x, ll['title'], w),
                  palette=None, ui=None
                  ):
         super().__init__(x, y, w, h, win, data,
@@ -180,24 +179,14 @@ class Music_menu(Menu):
 
         self.form=form
         
-        if not print_col:
-            self.print_format=self.default_print_col
-        else:
-            self.print_format=print_col
-
         self.ui = ui
-        
-    def print_col(self, x, y, datas):
-        self.print_format(self.w, self.h, self.win.addnstr, x, y, datas)
 
     def disp(self):
         self.win.erase()
         diff = len(self.data) - self.offset
         smaller = self.h if diff > self.h else diff
         for ii in range(smaller):
-            formatted_list = self.form(self.data[ii + self.offset])
-            
-            self.print_col(0, ii, formatted_list)
+            self.form(self.w, self.h, self.win.addnstr, 0, ii, self.data[ii + self.offset])
 
         self.paint()
         self.refresh()
