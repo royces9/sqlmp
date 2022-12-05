@@ -132,5 +132,3 @@ class Player:
             os.dup2(devnull.fileno(), og_err)
 
         backend.player_init(ctypes.c_float(args[0]/100))
-
-        os.dup2(cp_err, og_err)
