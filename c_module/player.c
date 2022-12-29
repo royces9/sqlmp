@@ -175,7 +175,7 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 		err = lockless_queue_push_nowait(&queue, frame);
 
 		while(Pa_IsStreamActive(stream) && player_is_playing()) {
-			Pa_Sleep(100);
+			Pa_Sleep(50);
 		}
 	}
 

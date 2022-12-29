@@ -217,7 +217,7 @@ class Playlist:
                     continue
 
                 if path not in self.db:
-                    new_db.append(tuple(out))
+                    new_db.append(tuple(out)[1:])
                 if path not in self:
                     new_pl.append(path)
 

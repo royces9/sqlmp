@@ -81,7 +81,6 @@ def song_format(w, h, addnstr, x, y, ll):
 
 #how songs are formatted on the right window
 SONG_DISP = song_format
-PRINT_COL = print_col
 
 #what info is displayed on the bottom window
 #info like bitrate and length might need to be

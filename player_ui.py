@@ -362,7 +362,9 @@ class Player_ui:
 
                 #queue another song
                 self.inp.put_nowait((self.__enqueue,))
-
+            elif player_event < 0:
+                self.inp.put_nowait((self.__enqueue,))
+                
         self.__print_cur_playing()
         
 
