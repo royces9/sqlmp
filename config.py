@@ -30,7 +30,7 @@ DELETE = {'D'}
 CUR_PLAY = {'i'}
 
 #volume
-DEFAULT_VOLUME = 0
+DEFAULT_VOLUME = 30
 VOL_STEP = 1
 
 #default playlist to add to when no playlist argument is given from sqlr

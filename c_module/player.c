@@ -16,8 +16,6 @@
 
 static atomic_int status;
 
-static sem_t pause_sem;
-
 static pthread_mutex_t file_lock;
 
 static pthread_mutex_t volume_lock;
@@ -27,15 +25,17 @@ static float volume;
 
 static atomic_int mute = 0;
 
-int const frames_per_buffer = 4096;
 int const width = 4;
 static double sample_rate = 0;
+static int channels = 0;
+static sf_count_t frame_count = 0;
 
 static struct queue playq;
 static struct queue curq;
 
 static SNDFILE *cur_song;
-static atomic_int cur_song_time = 0;
+static atomic_int offset_time = 0;
+static atomic_int stream_time = 0;
 
 void free_frame_data(struct lockless_queue *);
 int __player_callback(const void *input,
@@ -46,22 +46,23 @@ int __player_callback(const void *input,
 		      void *userData);
 
 struct callback_data {
-	struct lockless_queue *queue;
+	float *frames;
+	int frame_count;
 	int channels;
 };
 
 struct frame_data {
+	float *data;
 	float *buffer;
-	unsigned long frames;
-	int time;
 };
 
 
+static atomic_int i_iter = 0;
 struct lockless_queue *queue_st;
-int player_play_callback(char *path, int channels, double _sample_rate, int seek_delta) {
+int player_play_callback(char *path, int _channels, double _sample_rate, int seek_delta) {
 	int err = paNoError;
 	sample_rate = _sample_rate;
-	cur_song_time = 0;
+	channels = _channels;
 
 	//set status to playing
 	player_set_status(ps_playing);
@@ -75,64 +76,30 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 		return pe_e_file;
 	}
 
-	int buffer_size = frames_per_buffer * width * channels;
 
-	int queue_size = 16;
-	struct lockless_queue queue;
-	queue_st = &queue;
-	err = lockless_queue_init(&queue, queue_size);
-	if(err) {
-		return pe_e_queue_init;
-	}
 
 	struct callback_data data;
-	data.queue = &queue;
+	data.frames = malloc(info.frames * width * info.channels);
 	data.channels = channels;
 
+	pthread_mutex_lock(&file_lock);
+	frame_count = sf_readf_float(cur_song, data.frames, info.frames);
+	pthread_mutex_unlock(&file_lock);
+
+	data.frame_count = frame_count;
+
+	i_iter = 0;
 	PaStream *stream;
 	err = Pa_OpenDefaultStream(&stream,
 				   0,
 				   channels,
 				   paFloat32,
 				   sample_rate,
-				   4096,
-				   //paFramesPerBufferUnspecified,
-				   //frames_per_buffer,
+				   paFramesPerBufferUnspecified,
 				   &__player_callback,
 				   &data);
 	if(err != paNoError) {
 		return pe_e_pa_open;
-	}
-
-
-	sf_count_t read = 0;
-
-	//fill queue before starting stream
-	for(int i = 0; i < queue_size; ++i) {
-		struct frame_data *frame = malloc(sizeof(*frame));
-		if(!frame) {
-			return pe_e_malloc;
-		}
-		frame->buffer = malloc(buffer_size);
-		if(!frame->buffer) {
-			return pe_e_malloc;
-		}
-
-		pthread_mutex_lock(&file_lock);
-		read = sf_readf_float(cur_song, frame->buffer, frames_per_buffer);
-		sf_count_t seek = sf_seek(cur_song, 0, SEEK_CUR);
-		frame->time = seek / sample_rate;
-
-		pthread_mutex_unlock(&file_lock);
-
-		frame->frames = read;
-
-		if(read) {
-			err = lockless_queue_push(&queue, frame);
-			if(err == -1) {
-				return  pe_e_queue_push;
-			}
-		}
 	}
 
 	err = Pa_StartStream(stream);
@@ -140,56 +107,19 @@ int player_play_callback(char *path, int channels, double _sample_rate, int seek
 		return pe_e_pa_start;
 	}
 
-	void *buffer = malloc(buffer_size);
-	while(read && player_is_playing()) {
-		pthread_mutex_lock(&file_lock);
-		read = sf_readf_float(cur_song, buffer, frames_per_buffer);
-		sf_count_t seek = sf_seek(cur_song, 0, SEEK_CUR);
-		int time_stamp = seek / sample_rate;
-		pthread_mutex_unlock(&file_lock);
-		
-		if(read) {
-			err = lockless_queue_push_ready(&queue);
-			if(err == -1) {
-				return pe_e_queue_push;
-			}
-			
-			struct frame_data *frame = lockless_queue_peek_write(&queue);
-			memset(frame->buffer, 0, buffer_size);
-			memcpy(frame->buffer, buffer, read * width * channels);
-			frame->time = time_stamp;
-			frame->frames = read;
-			err = lockless_queue_push_nowait(&queue, frame);
-			if(err == -1) {
-				return pe_e_queue_push;
-			}
-		}
+	offset_time = Pa_GetStreamTime(stream);
+	stream_time = offset_time;
+
+	while(Pa_IsStreamActive(stream)) {
+		Pa_Sleep(50);
+		stream_time = Pa_GetStreamTime(stream);
 	}
-
-
-	if(player_is_playing()) {
-		lockless_queue_push_ready(&queue);
-		struct frame_data *frame = lockless_queue_peek_write(&queue);
-		memset(frame->buffer, 0, buffer_size);
-		frame->time = -1;
-		err = lockless_queue_push_nowait(&queue, frame);
-
-		while(Pa_IsStreamActive(stream) && player_is_playing()) {
-			Pa_Sleep(50);
-		}
-	}
-
-	//Pa_AbortStream(stream);
-	Pa_StopStream(stream);
-	Pa_CloseStream(stream);
-
-	free(buffer);
 
 	pthread_mutex_lock(&file_lock);
 	sf_close(cur_song);
 	pthread_mutex_unlock(&file_lock);
 
-	lockless_queue_destroy(&queue, free_frame_data);
+	free(data.frames);
 
 	if(player_is_end()) {
 		player_set_status(ps_not_playing);
@@ -214,37 +144,32 @@ int __player_callback(const void *input,
 
 	float *out = output;
 
+	struct callback_data *data = userData;
+	float *frames = data->frames;
+	int frame_count = data->frame_count;
+	int channels = data->channels;
+
 	if(player_is_paused()) {
-		memset(out, 0, frames_per_buffer * 2 * 4);
+		memset(out, 0, frameCount * 2 * 4);
 		return paContinue;
 	}
 
-	struct callback_data *data = (struct callback_data *) userData;
-	int channels = data->channels;
-	struct frame_data *buffer = NULL;
-	buffer = lockless_queue_peek(data->queue);
-	
-
-	if(buffer->time < 0) {
-		return paComplete;
-	}
-
-	cur_song_time = buffer->time;
-	
 	if(mute) {
-		memset(out, 0, buffer->frames * channels * sizeof(*buffer->buffer));
+		memset(out, 0, frameCount * channels * sizeof(*frames));
+		i_iter += (frameCount * channels);
 	} else {
-		for(int i = 0; i < (buffer->frames * channels); ++i) {
-			out[i] = volume_func(buffer->buffer[i], volume);
+		for(int i = 0; i < (frameCount * channels) && (i_iter < frame_count * channels); ++i, ++i_iter) {
+			out[i] = volume_func(frames[i_iter], volume);
 		}
 	}
 
-	lockless_queue_peek_done(data->queue);
-	
+	if(i_iter >= frame_count * channels) {
+		return paComplete;
+	}
 	if(player_is_end() || player_is_not_playing()) {
 		return paComplete;
 	}
-
+	
 	return paContinue;
 }
 
@@ -290,11 +215,6 @@ static pthread_t thread;
 int player_init(float vol) {
 	int err = 0;
 	
-	err = sem_init(&pause_sem, 0, 0);
-	if(err) {
-		return err;
-	}
-
 	err = pthread_mutex_init(&volume_lock, NULL);
 	if(err) {
 		return err;
@@ -383,17 +303,19 @@ void player_pause(void) {
 void player_unpause(void) {
 	if(player_is_paused()) {
 		player_set_status(ps_playing);
-		sem_post(&pause_sem);
+		offset_time = stream_time - offset_time;
 	}
+
 }
 
 
 void player_play_pause(void) {
 	if(player_is_paused()) {
 		player_set_status(ps_playing);
-		sem_post(&pause_sem);
+		offset_time = stream_time - offset_time;
 	} else if(player_is_playing()) {
 		player_set_status(ps_paused);
+		offset_time = stream_time - offset_time;
 	}
 }
 
@@ -415,7 +337,13 @@ int player_is_end(void) {
 
 
 int player_get_time(void) {
-	return cur_song_time;
+	if(player_is_paused()) {
+		return offset_time;
+	} else if(player_is_playing()) {
+		return stream_time - offset_time;
+	}
+
+	return 0;
 }
 
 
@@ -423,35 +351,28 @@ void player_seek_forward(int time) {
 	if(!player_is_playing())
 		return;
 
-	sf_count_t seek;
-	pthread_mutex_lock(&file_lock);
-	if(cur_song) {
-		seek = sf_seek(cur_song, time * sample_rate, SEEK_CUR);
-		if(seek == -1) {
-			seek = sf_seek(cur_song, 0, SEEK_END);
-		}
-
+	int inc = time * sample_rate * channels;
+	if((i_iter + inc) < (frame_count * channels)) {
+		i_iter += inc;
+		offset_time -= time;
+	} else {
+		i_iter =  frame_count * channels - 1;
+		offset_time = stream_time;
 	}
-	pthread_mutex_unlock(&file_lock);
-
-	queue_st->write = (queue_st->read + queue_st->capacity + 1) % queue_st->capacity;
 }
 
 void player_seek_backward(int time) {
 	if(!player_is_playing())
 		return;
 
-	sf_count_t seek;
-	pthread_mutex_lock(&file_lock);
-	if(cur_song) {
-		seek = sf_seek(cur_song, -time * sample_rate, SEEK_CUR);
-		if(seek == -1) {
-			seek = sf_seek(cur_song, 0, SEEK_SET);
-		}
+	int dec = time * sample_rate * channels;
+	if((i_iter - dec) > 0) {
+		i_iter -= dec;
+		offset_time += time;
+	} else {
+		i_iter = 0;
+		offset_time = stream_time;
 	}
-
-	queue_st->write = (queue_st->read + queue_st->capacity + 1) % queue_st->capacity;
-	pthread_mutex_unlock(&file_lock);
 }
 
 
