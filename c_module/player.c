@@ -130,9 +130,8 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 }
 
 
-float volume_func(float buffer, float volume) {
-	float out = buffer * volume * volume;
-	return out;
+float volume_func(float volume) {
+	return volume * volume;
 }
 
 int __player_callback(const void *input,
@@ -158,8 +157,9 @@ int __player_callback(const void *input,
 		memset(out, 0, frameCount * channels * sizeof(*frames));
 		i_iter += (frameCount * channels);
 	} else {
+		float mult = volume_func(volume);
 		for(int i = 0; i < (frameCount * channels) && (i_iter < frame_count * channels); ++i, ++i_iter) {
-			out[i] = volume_func(frames[i_iter], volume);
+			out[i] = frames[i_iter] * mult;
 		}
 	}
 
