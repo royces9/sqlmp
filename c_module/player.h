@@ -16,6 +16,7 @@ enum player_event_code {
 	pe_e_queue_push,
 	pe_e_pa_open,
 	pe_e_pa_start,
+	pe_e_pa_close,
 	pe_start=0,
 	pe_normal,
 	pe_early,

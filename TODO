@@ -16,6 +16,9 @@ Display:
 - also maybe consider putting bars or something to separate windows
   - I don't really care about this that much, still gonna keep it in case I have another change of heart
 
+Menu_item:
+- need to be consistent with how to use Menu_item and when to wrap or unwrap it
+
 Bugs:
 - there was a crash after pressing tab randomly, not sure what that is yet
   - maybe related, but a crash after just scrolling and doing stuff, it might be thread related?

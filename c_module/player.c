@@ -89,7 +89,26 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 	data.frame_count = frame_count;
 
 	i_iter = 0;
+
 	PaStream *stream;
+	/*
+	PaStreamParameters output_param;
+	output_param.device = Pa_GetDefaultOutputDevice();
+	//output_param.device = 1;
+	output_param.channelCount = channels;
+	output_param.sampleFormat = paFloat32;
+	output_param.suggestedLatency = Pa_GetDeviceInfo(output_param.device)->defaultLowOutputLatency;
+	output_param.hostApiSpecificStreamInfo = NULL;
+	
+	err = Pa_OpenStream(&stream,
+			    NULL,
+			    &output_param,
+			    sample_rate,
+			    paFramesPerBufferUnspecified,
+			    paNoFlag,
+			    &__player_callback,
+			    &data);
+	*/
 	err = Pa_OpenDefaultStream(&stream,
 				   0,
 				   channels,
@@ -98,6 +117,7 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 				   paFramesPerBufferUnspecified,
 				   &__player_callback,
 				   &data);
+
 	if(err != paNoError) {
 		return pe_e_pa_open;
 	}
@@ -113,6 +133,11 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 	while(Pa_IsStreamActive(stream)) {
 		Pa_Sleep(50);
 		stream_time = Pa_GetStreamTime(stream);
+	}
+
+	err = Pa_CloseStream(stream);
+	if (err != paNoError) {
+		return pe_e_pa_close;
 	}
 
 	pthread_mutex_lock(&file_lock);

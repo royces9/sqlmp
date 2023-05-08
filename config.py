@@ -48,12 +48,13 @@ def song_length(len_s):
 
 
 import wchar
+import debug
 def song_format(w, h, addnstr, x, y, ll):
     title = ll['title']
     album = ll['album']
     artist = ll['artist']
     bitrate = str(int(ll['bitrate']/1000))
-
+ 
     length = song_length(ll['length'])
 
     playcount = str(ll['playcount'])

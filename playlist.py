@@ -3,14 +3,24 @@ import queue
 import random
 
 import song
+import menu
 
 import debug
 
 
 playmodes = ['shuffle', 'inorder', 'single']
 
-class Playlist:
-    def __init__(self, name, db):
+class Playlist_item(menu.Menu_item):
+    def __init__(self, data):
+        super().__init__(data)
+        self.play_next = None
+        self.play_prev = None
+
+class Playlist(menu.Music_menu):
+    def __init__(self, name, db, x=0, y=0, w=0, h=0, win=None,
+                 form=lambda w, h, addnstr, x, y, ll: self.win.addnstr(y, x, ll['title'], w),
+                 palette=None, ui=None
+                 ):
         self.name = name
         self.db = db
         self.commit = self.db.commit
@@ -18,11 +28,15 @@ class Playlist:
         self.exe("SELECT id FROM playlists WHERE plname=?;", (self.name,))
         self.id = self.db.curs.fetchone()[0]
 
-        self.ind = 0
-
         self.sort_key = self.get_val('sort')
-        self.data = self.get_songs()
-        
+
+        super().__init__(x, y, w, h, win, data=None,
+                         form=form,
+                         palette=palette, ui=ui)
+         
+        self.data = [Playlist_item(d) for d in self.get_songs()]
+        self.cur_song = None
+
         self.playmode = self.get_val('playmode')
         self.playmode_list = [self.shuffle,
                               self.inorder,
@@ -35,7 +49,7 @@ class Playlist:
 
 
     def __contains__(self, path):
-        return any(filter(lambda x: x['path'] == path, self.data))
+        return any(filter(lambda x: x.data['path'] == path, self.data))
 
 
     def __getitem__(self, ind):
@@ -60,7 +74,11 @@ class Playlist:
         return playmodes[self.playmode]
 
     def index(self, obj):
-        return self.data.index(obj)
+        for i, d.data in enumerate(self.data):
+            if obj == d.data:
+                return i
+
+        return -1
 
     @staticmethod
     def init_pl(name, db):
@@ -77,7 +95,6 @@ class Playlist:
     def del_pl(name, db):
         try:
             db.exe("DELETE FROM playlists WHERE plname=?;", (name,))
-            #db.exe("DELETE FROM pl_song WHERE plname=?;", (name,))
 
             db.commit()
         except Exception as err:
@@ -124,67 +141,82 @@ class Playlist:
         l = len(self.data)
         iter_values = list(range(l))
         
-
         if playmode == 0:
             #shuffle
             random.shuffle(iter_values)
-            for i in iter_values:
-                self.order.put_nowait(self.data[i % l])
+            cur = self.data[iter_values[0]]
+
+            for i in iter_values[1:]:
+                cur.play_next = self.data[i]
+                self.data[i].play_prev = cur
+                cur = self.data[i]
+
+            self.data[iter_values[-1]].play_next = self.data[iter_values[0]]
+            self.data[iter_values[0]].play_prev = self.data[iter_values[i]]
+
 
         elif playmode == 1:
             #inorder
-            for i in iter_values:
-                #the +1 is so the current song doesn't play twice
-                self.order.put_nowait(self.data[(i + self.ind + 1) % l])
+            cur = self.data[0]
+
+            for i in iter_values[1:]:
+                cur.play_next = self.data[i]
+                self.data[i].play_prev = cur
+                cur = self.data[i]
+
+            self.data[-1].play_next = self.data[0]
+            self.data[0].play_prev = self.data[i]
 
 
     def shuffle(self):
         self.__set_order(0)
 
         while True:
-            if self.order.empty():
-                self.__set_order(0)
+            next_song = self.cur_song.play_next
+            self.cur_song = next_song
+            yield self.cur_song.data
 
-            new_song = self.order.get_nowait()
-            if new_song in self.data:
-                yield new_song
-
+            
     def inorder(self):
         self.__set_order(1)
 
         while True:
-            if self.order.empty():
-                self.ind = self.data.index(new_song)
-                self.__set_order(1)
-
-            new_song = self.order.get_nowait()
-            if new_song in self.data:
-                yield new_song
+            next_song = self.cur_song.play_next
+            self.cur_song = next_song
+            yield self.cur_song.data
 
 
     def single(self):
-        same = self.data[self.ind]
         while True:
-            yield same
+            yield self.cur_song.data
 
 
     def sort(self):
         sort_key = song.tags[self.sort_key]
         if sort_key in {'path', 'artist', 'album', 'title'}:
-            key = lambda x: x[sort_key].lower()
+            key = lambda x: x.data[sort_key].lower()
         else:
-            key = lambda x: x[sort_key]
+            key = lambda x: x.data[sort_key]
 
         self.data.sort(key=key)
         self.remake_gen()
 
 
-    def remove(self, song):
+    def delete(self, song):
         if song in self.data:
+            #link up the linked list
+            play_prev = song.play_prev
+            play_next = song.play_next
+            play_prev.play_next = play_next
+            play_next.play_prev = play_prev
+
             self.data.remove(song)
 
-        self.exe("DELETE FROM pl_song WHERE pl_id=? AND song_id=?;", (self.id, song['id'],))
-        self.commit()
+            self.exe("DELETE FROM pl_song WHERE pl_id=? AND song_id=?;", (self.id, song.data['id'],))
+            self.commit()
+
+            if self.highlighted_ind() >= len(self.data):
+                self.up()
 
 
     def insert(self, path):
@@ -198,7 +230,7 @@ class Playlist:
         self.exe("INSERT INTO pl_song (song_id, pl_id) VALUES (?,?);", (song_id, self.id,))
 
         self.data += [
-            song.Song.from_iter(song_i)
+            menu.Menu_item(song.Song.from_iter(song_i))
             for song_i
             in self.exe("SELECT * FROM library WHERE path=?;", (path,))
         ]
@@ -247,7 +279,7 @@ class Playlist:
 
         for path in path_list:
             self.data += [
-                song.Song.from_iter(song_i)
+                menu.Menu_item(song.Song.from_iter(song_i))
                 for song_i
                 in self.exe("SELECT * FROM library WHERE path=?;", (path,))
             ]

@@ -1,5 +1,6 @@
 import curses
 import enum
+import itertools
 import threading
 import time
 
@@ -8,6 +9,7 @@ import inp
 import menu
 import player
 import playlist
+import random
 import threadwin
 import window
 import wchar
@@ -15,13 +17,17 @@ import wchar
 import config
 import debug
 
+class Win(enum.IntEnum):
+    left=0
+    right=1
+
 song_info_bar_height = 2
 command_bar_height = 2
 class Player_ui:
     def __init__(self, stdscr, palette, db):
         #currently highlighted window
         #left window is 0, right is 1
-        self.cur = 0
+        self.cur = Win.left
 
         #pointer to the ncurses stdscr
         self.stdscr = stdscr
@@ -63,7 +69,7 @@ class Player_ui:
 
     @property
     def rightwin(self):
-        return self.leftwin.highlighted()
+        return self.leftwin.highlighted().data
 
 
     def cur_win(self):
@@ -79,10 +85,10 @@ class Player_ui:
 
         win = threadwin.Threadwin(hh, cc - ww, 0, ww)
 
-        data = [menu.Music_menu(win=win, data=playlist.Playlist(name=pl, db=self.db),
-                                form=config.SONG_DISP,
-                                palette=self.palette[0], ui=self
-                                )
+        data = [playlist.Playlist(pl, self.db, win=win,
+                                  form=config.SONG_DISP,
+                                  palette=self.palette[0], ui=self,
+                                  )
                 for pl in self.db.list_pl()]
 
         leftwin = menu.Menu(0, 0, ww, hh, data=data,
@@ -103,12 +109,11 @@ class Player_ui:
         """
         delete songs from playlists
         """
-        if self.cur == 0:
+        if self.cur == Win.left:
             self.commands.delpl([])
-        elif self.cur == 1:
+        else:
             cur_song = self.rightwin.highlighted()
 
-            self.rightwin.data.remove(cur_song)
             self.rightwin.delete(cur_song)
 
             if not self.rightwin.data:
@@ -128,7 +133,7 @@ class Player_ui:
         """
         cw = self.cur_win()
         cw.highlight()
-        if self.cur == 1:
+        if self.cur == Win.right:
             cw.down()
 
 
@@ -136,21 +141,24 @@ class Player_ui:
         if self.player.is_not_playing():
             return
 
-        #check that cur_pl and the currently selected pl are the same
-        if self.cur_pl is self.rightwin.data:
-            #check that cur_song is in the cur_pl
-            if self.player.cur_song in self.cur_pl.data:
-                ind = self.rightwin.data.index(self.player.cur_song)
-                self.jump_to_ind(ind, len(self.cur_pl.data), self.rightwin)
-                self.switch_view_right()
-        else:
+        #if cur_pl isn't the currently selected pl
+        if self.cur_pl is not self.rightwin:
             for i, menu_pl in enumerate(self.leftwin.data):
                 if menu_pl.data is self.cur_pl:
                     ind = i
+                    self.jump_to_ind(ind, len(self.leftwin.data), self.leftwin)
+                    self.switch_view_left()
                     break
 
-            self.jump_to_ind(ind, len(self.leftwin.data), self.leftwin)
-            self.switch_view_left()
+        #check that the song is in cur_pl
+        elif self.player.cur_song['path'] in self.cur_pl:
+            for i, d in enumerate(self.rightwin.data):
+                if d.data is self.player.cur_song:
+                    ind = i
+                    self.jump_to_ind(ind, len(self.cur_pl.data), self.rightwin)
+                    self.switch_view_right()
+                    break
+
         self.leftwin.win.touchwin()
 
 
@@ -209,19 +217,15 @@ class Player_ui:
         """
         play a song in a playlist
         """
-        self.cur_pl = self.rightwin.data
-        if self.cur == 1:
-            next_song = self.rightwin.highlighted()
-            self.cur_pl.ind = self.rightwin.highlighted_ind()
-        elif self.cur == 0:
-            next_song = next(self.cur_pl)
-            self.cur_pl.ind = 0
+        self.cur_pl = self.rightwin
+        if self.cur == Win.right:
+            self.cur_pl.cur_song = self.rightwin.highlighted()
         else:
-            next_song = None
-            
-        if next_song:
-            self.player.play(next_song)
-            self.cur_pl.remake_gen()
+            self.cur_pl.cur_song = random.choice(self.cur_pl.data)
+
+        next_song = self.cur_pl.cur_song.data
+        self.player.play(next_song)
+        self.cur_pl.remake_gen()
 
 
 
@@ -232,7 +236,7 @@ class Player_ui:
         if not self.rightwin.data:
             return
 
-        if self.cur == 1:
+        if self.cur == Win.right:
             self.switch_view_left()
         else:
             self.switch_view_right()
@@ -240,13 +244,13 @@ class Player_ui:
 
         
     def switch_view_right(self):
-        self.cur = 1
+        self.cur = Win.right
         self.rightwin.palette = self.palette[1]
         self.leftwin.palette = self.palette[0]
 
 
     def switch_view_left(self):
-        self.cur = 0
+        self.cur = Win.left
         self.leftwin.palette = self.palette[1]
         self.rightwin.palette = self.palette[0]
 
@@ -255,21 +259,18 @@ class Player_ui:
         """
         move songs around playlists
         """
-        if self.cur != 1:
+        if self.cur != Win.right:
             return
         
-        if not self.leftwin.highlight_list:
-            return
-
-        curpl = self.rightwin.data
+        cur_pl = self.rightwin.data
         cur_song = self.rightwin.highlighted()
         if not cur_song:
             return
 
-        for pl in self.leftwin.highlight_list:
-            if pl is not curpl:
-                pl.data.insert(cur_song['path'])
-
+        for pl in itertools.filterfalse(lambda a: not a.highlighted, self.leftwin):
+            if pl.data is not cur_pl:
+                pl.data.insert(cur_song.data['path'])
+        
         self.rightwin.down()
 
     
@@ -352,8 +353,8 @@ class Player_ui:
             info_str += ' [M]'
 
         self.botwin.print_line(info_str, y=1)
-        self.botwin.print_right_justified(' ' + self.rightwin.data.playmode_str + ' ', y=1)
-
+        self.botwin.print_right_justified(' ' + self.rightwin.playmode_str + ' ', y=1)
+        
         if not self.player.curempty():
             player_event = self.player.curplay()
             #playback ended normally, increment playcount
@@ -371,11 +372,10 @@ class Player_ui:
     def __info_print_loop(self):
         while not self.die:
             start = time.time()
+
             self.__info_print()
-
             self.draw()
-
-
+            
             diff = time.time() - start
 
             if diff < self.frame_time:

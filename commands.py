@@ -205,7 +205,7 @@ class Commands:
 
         with open('/'.join([dest, plname]), 'w+') as fp:
             for d in pl.data:
-                print(d['path'], file=fp)
+                print(d.data['path'], file=fp)
 
 
     def export_all(self, args):
