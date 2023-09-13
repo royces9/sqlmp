@@ -238,7 +238,7 @@ class Commands:
                     self.err_print('Invalid key: ' + key)
                     return
 
-            self.find_list = (ii for ii, item in enumerate(curpl.data) if item[key] == term)
+            self.find_list = (ii for ii, item in enumerate(curpl.data) if item.data[key] == term)
 
         try:
             ind = next(self.find_list)

@@ -16,6 +16,7 @@ class Playlist_item(menu.Menu_item):
         self.play_next = None
         self.play_prev = None
 
+
 class Playlist(menu.Music_menu):
     def __init__(self, name, db, x=0, y=0, w=0, h=0, win=None,
                  form=lambda w, h, addnstr, x, y, ll: self.win.addnstr(y, x, ll['title'], w),
