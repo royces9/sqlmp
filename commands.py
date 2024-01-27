@@ -371,16 +371,12 @@ class Commands:
         args[0]: the tag to change
         args[1]: the new value for the tag
         """
-        if len(args) < 2:
-            self.err_print('Two arguments required')
-            return
-
         arg_len = len(args)
 
         if arg_len == 0:
             #0 args, update song based off the metadata of the file
-            path = self.ui.rightwin.highlighted()['path']
-            newsong = Song.from_path(path)
+            path = self.ui.rightwin.highlighted().data['path']
+            newsong = song.Song.from_path(path)
 
             self.ui.db.update_song(newsong)
             return

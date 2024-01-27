@@ -28,3 +28,5 @@ Bugs:
 - start up lags a little or something, first few inputs don't do anything
 
 - resize doesn't instantly resize, idk why, gonna have to work this out
+
+- after doing update-single, the display doesn't update, display shows corrected information after restart
