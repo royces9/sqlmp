@@ -3,7 +3,7 @@ Pet project using sqlite database backend and curses frontend for a music player
 Similar to cmus since I like how cmus works
 
 ### Dependencies:
-ffmpeg-python
+mutagen
 
 PortAudio
 
