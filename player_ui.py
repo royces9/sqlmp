@@ -111,6 +111,7 @@ class Player_ui:
         """
         if self.cur == Win.left:
             self.commands.delpl([])
+            self.leftwin.win.touchwin()
         else:
             cur_song = self.rightwin.highlighted()
 

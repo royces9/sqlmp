@@ -268,10 +268,11 @@ class Commands:
                 return
 
             playlist.Playlist.init_pl(plname, self.ui.db)
-            newpl = menu.Music_menu(win=self.ui.rightwin.win,
-                                    data=playlist.Playlist(name=plname, db=self.ui.db),
-                                    form=config.SONG_DISP,
-                                    palette=self.ui.palette[0], ui=self.ui)
+            newpl = playlist.Playlist(name=plname, db=self.ui.db,win=self.ui.rightwin.win,
+                                      form=config.SONG_DISP,
+                                      palette=self.ui.palette[0], ui=self.ui,
+                                      )
+
         else:
             plname = args[0]
             plfile = args[1]
@@ -284,18 +285,14 @@ class Commands:
                 return
 
             playlist.init_pl(plname, self.ui.db)
-            newpl = menu.Menu(win=self.ui.rightwin.win,
-                              data=playlist.Playlist(name=plname, db=self.ui.db),
-                              form=config.SONG_DISP,
-                              cursor_colour=config.CURSOR[0],
-                              highlight_colour=config.HIGHLIGHT_COLOUR[0],
-                              normal_colour=config.NORMAL[0])
-
+            newpl = playlist.Playlist(name=plname, db=self.ui.db,win=self.ui.rightwin.win,
+                                      form=config.SONG_DISP,
+                                      palette=self.ui.palette[0], ui=self.ui,
+                                      )
             newpl.insert_from_file(plfile)
 
         self.ui.leftwin.insert(newpl)
         self.ui.leftwin.disp()
-
 
     def playmode(self, args):
         """

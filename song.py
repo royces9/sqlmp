@@ -37,13 +37,8 @@ class Song:
     def grab_tags(path):
         song = mutagen.File(path, easy=True)
 
-        t_tags = [song['title'][0], song['artist'][0], song['album'][0]]
-        attr = [song.info.length, song.info.sample_rate, song.info.channels]
-        bitrate = song.info.bitrate
-
-        return (0,) + (path,) + tuple(t_tags, ) + tuple(attr, ) + (int(bitrate), ) + (0,)
-
-
+        return (0, path, song['title'][0], song['artist'][0], song['album'][0],
+                song.info.length, song.info.sample_rate, song.info.channels, int(song.info.bitrate), 0, )
 
     @classmethod
     def from_path(cls, path):

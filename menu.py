@@ -51,7 +51,7 @@ class Menu(window.Window):
         self.refresh()
         
     def __contains__(self, item):
-        return any(filter(lambda x: x.data == item, self.data))
+        return any(filter(lambda x: x.data == item.data, self.data))
 
 
     def __getitem__(self, ind):
@@ -164,60 +164,3 @@ class Menu(window.Window):
 
         if self.highlighted_ind() >= len(self.data):
             self.up()
-
-            
-class Music_menu(Menu):
-    def __init__(self, x=0, y=0, w=0, h=0, win=None, data=None,
-                 form=lambda w, h, addnstr, x, y, ll: self.win.addnstr(y, x, ll['title'], w),
-                 palette=None, ui=None
-                 ):
-        super().__init__(x, y, w, h, win, data,
-                         palette=palette)
-
-        self.form=form
-        
-        self.ui = ui
-
-    def disp(self):
-        self.win.erase()
-        diff = len(self.data) - self.offset
-        smaller = self.h if diff > self.h else diff
-
-        for ii in range(smaller):
-            self.form(self.w, self.h, self.win.addnstr, 0, ii, self.data[ii + self.offset].data)
-        
-        self.paint()
-        self.refresh()
-
-
-    def paint(self):
-        #check that playlist to be displayed has both be true:
-        #the currently playing playlist is the currently displayed playlist
-        #the currently playing song is in the playlist
-        cur_song_ind = -1
-        if self is self.ui.cur_pl and self.ui.player.cur_song['path'] in self:
-            for i, d in enumerate(self.data):
-                if d.data == self.ui.player.cur_song:
-                    cur_song_ind = i - self.offset
-                    break
-        
-        if self.data:
-            self.chgat(self.cursor, 0, self.w - 1, ct.cursor)
-
-        if 0 <= cur_song_ind < self.h:
-            if cur_song_ind == self.cursor:
-                self.chgat(cur_song_ind, 0, self.w - 1, ct.cursor | ct.playing)
-            else:
-                self.chgat(cur_song_ind, 0, self.w - 1, ct.playing)
-
-
-        for i, d in enumerate(self.data[self.offset:self.offset+self.h]):
-            colour = ct.highlight
-            if d.highlighted:
-                if i == cur_song_ind:
-                    colour |= ct.playing
-                if i == self.cursor:
-                    colour |= ct.cursor
-                self.chgat(i, 0, self.w - 1, colour)
-
-        self.ui.leftwin.win.touchwin()
