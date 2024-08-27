@@ -17,6 +17,7 @@ class Musicdb:
 
         self.conn = sqlite3.connect(self.path)
         self.curs = self.conn.cursor()
+        self.exe("PRAGMA foreign_keys = ON;")
 
         self.commit = self.conn.commit
 
@@ -35,7 +36,7 @@ class Musicdb:
     def init_db(db):
         db.exe("CREATE TABLE library (id INTEGER PRIMARY KEY, path TEXT, title TEXT, artist TEXT, album TEXT, length REAL, samplerate INT, channels INT, bitrate INT, playcount INT);")
         db.exe("CREATE TABLE playlists (id INTEGER PRIMARY KEY, plname TEXT, sort INTEGER, playmode INTEGER);")
-        db.exe("CREATE TABLE pl_song (song_id INTEGER, pl_id INTEGER, FOREIGN KEY(song_id) REFERENCES library(id) ON DELETE CASCADE, FOREIGN KEY(pl_id) REFERENCES playlists(id));")
+        db.exe("CREATE TABLE pl_song (song_id INTEGER, pl_id INTEGER, FOREIGN KEY(song_id) REFERENCES library(id) ON DELETE CASCADE, FOREIGN KEY(pl_id) REFERENCES playlists(id) ON DELETE CASCADE);")
 
         db.commit()
 

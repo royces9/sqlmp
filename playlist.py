@@ -139,7 +139,7 @@ class Playlist(menu.Menu):
         self.gen = self.playmode_list[self.playmode]()
 
 
-    def __set_order(self, playmode):
+    def set_order(self, playmode):
         with self.order.mutex:
             self.order.queue.clear()
             
@@ -169,12 +169,12 @@ class Playlist(menu.Menu):
                 self.data[i].play_prev = cur
                 cur = self.data[i]
 
+
             self.data[-1].play_next = self.data[0]
             self.data[0].play_prev = self.data[i]
 
-
     def shuffle(self):
-        self.__set_order(0)
+        self.set_order(0)
 
         while True:
             next_song = self.cur_song.play_next
@@ -183,11 +183,12 @@ class Playlist(menu.Menu):
 
             
     def inorder(self):
-        self.__set_order(1)
+        self.set_order(1)
 
         while True:
             next_song = self.cur_song.play_next
             self.cur_song = next_song
+
             yield self.cur_song.data
 
 

@@ -111,7 +111,6 @@ class Player_ui:
         """
         if self.cur == Win.left:
             self.commands.delpl([])
-            self.leftwin.win.touchwin()
         else:
             cur_song = self.rightwin.highlighted()
 
@@ -224,10 +223,10 @@ class Player_ui:
         else:
             self.cur_pl.cur_song = random.choice(self.cur_pl.data)
 
-        next_song = self.cur_pl.cur_song.data
-        self.player.play(next_song)
-        self.cur_pl.remake_gen()
+        self.cur_pl.set_order(self.cur_pl.playmode)
+        self.player.play(self.cur_pl.cur_song.data)
 
+        self.cur_pl.remake_gen()
 
 
     def switch_view(self, *args):
