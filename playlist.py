@@ -216,7 +216,6 @@ class Playlist(menu.Menu):
                 play_next = song.play_next
                 play_prev.play_next = play_next
                 play_next.play_prev = play_prev
-                self.cur_song=play_prev
 
             self.data.remove(song)
 
