@@ -387,7 +387,7 @@ class Commands:
                 self.err_print('Invalid key: ' + key)
                 return
 
-            cursong = self.ui.rightwin.highlighted()
+            cursong = self.ui.rightwin.highlighted().data
             cursong[tag] = value
             self.ui.db.update_song(cursong)
             return
