@@ -30,3 +30,5 @@ Bugs:
 - resize doesn't instantly resize, idk why, gonna have to work this out
 
 - after doing update-single, the display doesn't update, display shows corrected information after restart
+
+- the visuals don't update when doing update-pl

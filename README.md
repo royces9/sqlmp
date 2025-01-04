@@ -77,3 +77,12 @@ This does not change the actual file's metadata.
 
 Two arguments: Update the currently selected song's `tag` to `value` in the database.
 This does not change the actual file's metadata.
+
+------
+##### `update-pl Opt<playlist>`
+No arguments: Update the metadata for all files in the currently selected playlist.
+Similar to `update-single`, but for all files in the playlist.
+This does not change the actual file's metadata.
+
+One argument: Update the metadata for all files in `playlist`.
+
