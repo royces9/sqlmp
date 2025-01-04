@@ -91,24 +91,6 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 	i_iter = 0;
 
 	PaStream *stream;
-	/*
-	PaStreamParameters output_param;
-	output_param.device = Pa_GetDefaultOutputDevice();
-	//output_param.device = 1;
-	output_param.channelCount = channels;
-	output_param.sampleFormat = paFloat32;
-	output_param.suggestedLatency = Pa_GetDeviceInfo(output_param.device)->defaultLowOutputLatency;
-	output_param.hostApiSpecificStreamInfo = NULL;
-	
-	err = Pa_OpenStream(&stream,
-			    NULL,
-			    &output_param,
-			    sample_rate,
-			    paFramesPerBufferUnspecified,
-			    paNoFlag,
-			    &__player_callback,
-			    &data);
-	*/
 	err = Pa_OpenDefaultStream(&stream,
 				   0,
 				   channels,
@@ -174,7 +156,7 @@ int __player_callback(const void *input,
 	int channels = data->channels;
 
 	if(player_is_paused()) {
-		memset(out, 0, frameCount * 2 * 4);
+		memset(out, 0, frameCount * channels * sizeof(*out));
 		return paContinue;
 	}
 
@@ -229,7 +211,7 @@ void *player_thread(void *p) {
 						 song->sample_rate,
 						 5);
 		free(song);
-		queue_push(&curq, event);
+		queue_push(&curq, (int *)event);
 	}
 
 	return NULL;

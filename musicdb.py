@@ -68,7 +68,7 @@ class Musicdb:
         if not out:
             return
 
-        self.exe("INSERT INTO library (path, title, artist, album, length, samplerate, channels, bitrate, playcount) VALUES (?,?,?,?,?,?,?,?,?);", tuple(out))
+        self.exe("INSERT INTO library (path, title, artist, album, length, samplerate, channels, bitrate, playcount) VALUES (?,?,?,?,?,?,?,?,?);", tuple(out)[1:])
         self.commit()
 
 

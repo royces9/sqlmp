@@ -47,7 +47,8 @@ class Commands:
             'renamepl': self.renamepl,
             'sort': self.sort,
             'update': self.update,
-            'update-single': self.update_single
+            'update-single': self.update_single,
+            'update-pl': self.update_pl,
         }
 
         self.err = Error_msg(self.ui, 2, self.ui.frame_time, self.textwin.print_blank, (1,))
@@ -395,6 +396,27 @@ class Commands:
         else:
             self.err_print('Zero or two arguments required')
             return
+
+    def update_pl(self, args):
+        arg_len = len(args)
+
+        if arg_len == 0:
+            pl = self.ui.leftwin.highlighted()
+            plname = pl.data.name
+        elif arg_len == 1:
+            plname = args[0]
+
+            ind = self.pl_exists(plname)
+            if ind < 0:
+                self.err_print('Playlist "{}" doesn\'t exist'.format(plname))
+                return
+
+            pl = self.ui.leftwin.data[ind]
+
+        for ss in pl.data.data:
+            newsong = song.Song.from_path(ss.data['path'])
+            self.ui.db.update_song(newsong)
+            
 
     def pl_exists(self, name):
         """

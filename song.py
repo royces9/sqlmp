@@ -37,7 +37,11 @@ class Song:
     def grab_tags(path):
         song = mutagen.File(path, easy=True)
 
-        return (0, path, song['title'][0], song['artist'][0], song['album'][0],
+        title = song['title'][0] if 'title' in song else ''
+        artist = song['artist'][0] if 'artist' in song else ''
+        album = song['album'][0] if 'album' in song else ''
+            
+        return (0, path, title, artist, album,
                 song.info.length, song.info.sample_rate, song.info.channels, int(song.info.bitrate), 0, )
 
     @classmethod
