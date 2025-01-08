@@ -371,13 +371,14 @@ class Commands:
         """
         arg_len = len(args)
 
+        pl = self.ui.leftwin.highlighted()
+
         if arg_len == 0:
             #0 args, update song based off the metadata of the file
             path = self.ui.rightwin.highlighted().data['path']
             newsong = song.Song.from_path(path)
 
             self.ui.db.update_song(newsong)
-            return
 
         elif arg_len == 2:
             #2 args, update a song's tag with a certain value
@@ -391,12 +392,13 @@ class Commands:
             cursong = self.ui.rightwin.highlighted().data
             cursong[tag] = value
             self.ui.db.update_song(cursong)
-            return
 
         else:
             self.err_print('Zero or two arguments required')
-            return
 
+        pl.data.update()
+
+        
     def update_pl(self, args):
         arg_len = len(args)
 
@@ -417,6 +419,7 @@ class Commands:
             newsong = song.Song.from_path(ss.data['path'])
             self.ui.db.update_song(newsong)
             
+        #pl.data.update()
 
     def pl_exists(self, name):
         """

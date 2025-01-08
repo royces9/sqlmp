@@ -328,6 +328,10 @@ class Playlist(menu.Menu):
         self.refresh()
 
 
+    def update(self):
+        self.data = [Playlist_item(d) for d in self.get_songs()]
+        self.sort()
+
     def paint(self):
         #check that playlist to be displayed has both be true:
         #the currently playing playlist is the currently displayed playlist

@@ -25,10 +25,10 @@ Bugs:
 
 - when entering a command, sometimes the cursor moves to the next line
 
-- start up lags a little or something, first few inputs don't do anything
-
 - resize doesn't instantly resize, idk why, gonna have to work this out
 
 - after doing update-single, the display doesn't update, display shows corrected information after restart
-
 - the visuals don't update when doing update-pl
+  - ok so i added update() into Playlists, but this remakes the Playlist.data list, so a lot of shit breaks
+    - finding current playing track breaks for example... (colouring for this also breaks...)
+    - instead of making a new list and replacing it, replace the items in the list??? lmao that sounds stupid
