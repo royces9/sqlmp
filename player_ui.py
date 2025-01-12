@@ -153,7 +153,7 @@ class Player_ui:
         #check that the song is in cur_pl
         elif self.player.cur_song['path'] in self.cur_pl:
             for i, d in enumerate(self.rightwin.data):
-                if d.data is self.player.cur_song:
+                if d.data == self.player.cur_song:
                     ind = i
                     self.jump_to_ind(ind, len(self.cur_pl.data), self.rightwin)
                     self.switch_view_right()
@@ -297,6 +297,10 @@ class Player_ui:
             self.textwin.refresh()
 
         curses.doupdate()            
+
+    def update_pl(self):
+        for pl in self.leftwin.data:
+            pl.data.update()
 
     def __enqueue(self, args=None):
         """

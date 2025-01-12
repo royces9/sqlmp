@@ -39,7 +39,7 @@ class Playlist(menu.Menu):
         self.form = form
         self.ui = ui
 
-        self.data = [Playlist_item(d) for d in self.get_songs()]
+        self.data = self.get_songs()
         self.cur_song = None
 
         self.playmode = self.get_val('playmode')
@@ -121,7 +121,7 @@ class Playlist(menu.Menu):
 
     def get_songs(self):
         return [
-            song.Song.from_iter(song_i)
+            Playlist_item(song.Song.from_iter(song_i))
             for song_i in self.exe("SELECT * FROM library WHERE id IN (SELECT song_id FROM pl_song WHERE pl_id=?);", (self.id,))
         ]
 
@@ -146,6 +146,7 @@ class Playlist(menu.Menu):
         l = len(self.data)
         iter_values = list(range(l))
         
+        i = 0
         if playmode == 0:
             #shuffle
             random.shuffle(iter_values)
@@ -329,7 +330,7 @@ class Playlist(menu.Menu):
 
 
     def update(self):
-        self.data = [Playlist_item(d) for d in self.get_songs()]
+        self.data = self.get_songs()
         self.sort()
 
     def paint(self):

@@ -396,7 +396,7 @@ class Commands:
         else:
             self.err_print('Zero or two arguments required')
 
-        pl.data.update()
+        self.ui.update_pl()
 
         
     def update_pl(self, args):
@@ -419,7 +419,8 @@ class Commands:
             newsong = song.Song.from_path(ss.data['path'])
             self.ui.db.update_song(newsong)
             
-        #pl.data.update()
+        self.ui.update_pl()
+
 
     def pl_exists(self, name):
         """

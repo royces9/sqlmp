@@ -29,6 +29,9 @@ class Song:
         return self.__dict['title']
 
 
+    def __eq__(self, item):
+        return self.__dict == item.__dict
+
     def dict(self):
         return self.__dict
 
