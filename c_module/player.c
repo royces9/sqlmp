@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -25,6 +26,8 @@ static float volume;
 
 static atomic_int mute = 0;
 
+static float norm_vol = 1.0;
+
 int const width = 4;
 static double sample_rate = 0;
 static int channels = 0;
@@ -49,6 +52,7 @@ struct callback_data {
 	float *frames;
 	int frame_count;
 	int channels;
+	float norm;
 };
 
 struct frame_data {
@@ -87,6 +91,12 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 	pthread_mutex_unlock(&file_lock);
 
 	data.frame_count = frame_count;
+
+	float avg = 0;
+	for (int i = 0; i < frame_count; ++i) {
+		avg = avg + (fabsf(data.frames[i]) - avg) / (i + 1);
+	}
+	data.norm = avg;
 
 	i_iter = 0;
 
@@ -155,6 +165,8 @@ int __player_callback(const void *input,
 	int frame_count = data->frame_count;
 	int channels = data->channels;
 
+	float norm = data->norm;
+
 	if(player_is_paused()) {
 		memset(out, 0, frameCount * channels * sizeof(*out));
 		return paContinue;
@@ -164,7 +176,9 @@ int __player_callback(const void *input,
 		memset(out, 0, frameCount * channels * sizeof(*frames));
 		i_iter += (frameCount * channels);
 	} else {
-		float mult = volume_func(volume);
+		float norm_mult = norm_vol / norm;
+		float mult = volume_func(volume) * norm_mult;
+
 		for(int i = 0; i < (frameCount * channels) && (i_iter < frame_count * channels); ++i, ++i_iter) {
 			out[i] = frames[i_iter] * mult;
 		}
