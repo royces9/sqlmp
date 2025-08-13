@@ -26,7 +26,7 @@ static float volume;
 
 static atomic_int mute = 0;
 
-static float norm_vol = 1.0;
+static float norm_vol = 1;
 
 int const width = 4;
 static double sample_rate = 0;
@@ -81,7 +81,6 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 	}
 
 
-
 	struct callback_data data;
 	data.frames = malloc(info.frames * width * info.channels);
 	data.channels = channels;
@@ -93,10 +92,27 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 	data.frame_count = frame_count;
 
 	float avg = 0;
+	float peak = 0;
+	/*
 	for (int i = 0; i < frame_count; ++i) {
-		avg = avg + (fabsf(data.frames[i]) - avg) / (i + 1);
+		float cur = fabsf(data.frames[i]);
+		avg = avg + (cur - avg) / (i + 1);
+		if(cur > peak) {
+			peak = cur;
+		}
 	}
 	data.norm = avg;
+	*/
+	for(int i = 0; i < frame_count; ++i) {
+		float cur = fabsf(data.frames[i]);
+		cur *= cur;
+		avg = avg + (cur - avg) / (i + 1);
+		if(cur > peak) {
+			peak = cur;
+		}
+	}
+
+	data.norm = sqrt(avg);
 
 	i_iter = 0;
 
