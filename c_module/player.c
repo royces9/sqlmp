@@ -105,14 +105,22 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 	*/
 	for(int i = 0; i < frame_count; ++i) {
 		float cur = fabsf(data.frames[i]);
-		cur *= cur;
-		avg = avg + (cur - avg) / (i + 1);
+		avg += (cur*cur - avg) / (i + 1);
 		if(cur > peak) {
 			peak = cur;
 		}
 	}
+	avg = sqrt(avg);
+	float peak_ratio = peak / avg;
+	int peak_setting = 15;
+	if(peak_ratio < peak_setting) {
+		data.norm = avg;		
+	} else {
+		int n = 10;
+		data.norm = (n * avg + peak) / (n + 1);
+	}
 
-	data.norm = sqrt(avg);
+
 
 	i_iter = 0;
 
