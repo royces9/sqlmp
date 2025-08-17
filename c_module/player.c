@@ -110,6 +110,7 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 			peak = cur;
 		}
 	}
+
 	avg = sqrt(avg);
 	float peak_ratio = peak / avg;
 	int peak_setting = 15;
@@ -119,7 +120,6 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 		int n = 10;
 		data.norm = (n * avg + peak) / (n + 1);
 	}
-
 
 
 	i_iter = 0;
