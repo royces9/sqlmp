@@ -93,16 +93,6 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 
 	float avg = 0;
 	float peak = 0;
-	/*
-	for (int i = 0; i < frame_count; ++i) {
-		float cur = fabsf(data.frames[i]);
-		avg = avg + (cur - avg) / (i + 1);
-		if(cur > peak) {
-			peak = cur;
-		}
-	}
-	data.norm = avg;
-	*/
 	for(int i = 0; i < frame_count; ++i) {
 		float cur = fabsf(data.frames[i]);
 		avg += (cur*cur - avg) / (i + 1);
@@ -111,16 +101,21 @@ int player_play_callback(char *path, int _channels, double _sample_rate, int see
 		}
 	}
 
+	//idk what this does but it seems to work?
+	data.norm = sqrt(peak / avg);
+
+	/*
 	avg = sqrt(avg);
-	float peak_ratio = peak / avg;
-	int peak_setting = 15;
+	float peak_ratio = sqrt(peak) / avg;
+	int peak_setting = 30;
+
 	if(peak_ratio < peak_setting) {
 		data.norm = avg;		
 	} else {
-		int n = 10;
-		data.norm = (n * avg + peak) / (n + 1);
+		int n = 5;
+		data.norm = 1 / peak_ratio;
 	}
-
+	*/
 
 	i_iter = 0;
 
@@ -200,7 +195,7 @@ int __player_callback(const void *input,
 		memset(out, 0, frameCount * channels * sizeof(*frames));
 		i_iter += (frameCount * channels);
 	} else {
-		float norm_mult = norm_vol / norm;
+		float norm_mult = norm_vol * norm;
 		float mult = volume_func(volume) * norm_mult;
 
 		for(int i = 0; i < (frameCount * channels) && (i_iter < frame_count * channels); ++i, ++i_iter) {
