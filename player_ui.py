@@ -91,9 +91,8 @@ class Player_ui:
                                   )
                 for pl in self.db.list_pl()]
 
-        leftwin = menu.Menu(0, 0, ww, hh, data=data,
-                            palette=self.palette[1],
-                            )
+        leftwin = playlist.Playlist_list(0, 0, ww, hh, data=data,
+                                         palette=self.palette[1], ui=self)
 
         botwin = window.Window(0, hh, cc, song_info_bar_height)
 

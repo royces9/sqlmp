@@ -35,7 +35,7 @@ class Playlist(menu.Menu):
 
         super().__init__(x, y, w, h, win, data=None,
                          palette=palette)
-         
+        
         self.form = form
         self.ui = ui
 
@@ -343,22 +343,40 @@ class Playlist(menu.Menu):
                 if d.data == self.ui.player.cur_song:
                     cur_song_ind = i - self.offset
                     break
-        if self.data:
-            self.chgat(self.cursor, 0, self.w - 1, ct.cursor)
-
-        if 0 <= cur_song_ind < self.h:
-            if cur_song_ind == self.cursor:
-                self.chgat(cur_song_ind, 0, self.w - 1, ct.cursor | ct.playing)
-            else:
-                self.chgat(cur_song_ind, 0, self.w - 1, ct.playing)
 
         for i, d in enumerate(self.data[self.offset:self.offset+self.h]):
-            colour = ct.highlight
+            colour = ct.normal
             if d.highlighted:
-                if i == cur_song_ind:
-                    colour |= ct.playing
-                if i == self.cursor:
-                    colour |= ct.cursor
-                self.chgat(i, 0, self.w - 1, colour)
+                colour = ct.highlight
+            if i == cur_song_ind:
+                colour |= ct.playing
+            if i == self.cursor:
+                colour |= ct.cursor
+            self.chgat(i, 0, self.w - 1, colour)
+
 
         self.ui.leftwin.win.touchwin() 
+
+class Playlist_list(menu.Menu):
+    def __init__(self, x=0, y=0, w=0, h=0, win=None, data=None,
+                 palette=None, ui=None
+                 ):
+        super().__init__(x=x, y=y, w=w, h=h, win=win, data=data,
+                         palette=palette)
+        self.ui = ui
+
+    def paint(self):
+        if not self.data:
+            return
+
+        for i, d in enumerate(self.data[self.offset:self.offset+self.h]):
+            colour = ct.normal
+            if d.data is self.ui.cur_pl:
+                colour |= ct.playing
+            if d.highlighted:
+                colour = ct.highlight
+            if i == self.cursor:
+                colour |= ct.cursor
+            self.chgat(i, 0, self.w - 1, colour)
+
+        self.win.touchwin()

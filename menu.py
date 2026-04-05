@@ -137,16 +137,14 @@ class Menu(window.Window):
     def paint(self):
         if not self.data:
             return
-        else:
-            #paint cursor
-            self.chgat(self.cursor, 0, self.w - 1, ct.cursor)
 
         for i, d in enumerate(self.data[self.offset:self.offset+self.h]):
+            colour = ct.normal
             if d.highlighted:
                 colour = ct.highlight
-                if i == self.cursor:
-                    colour |= ct.cursor
-                self.chgat(i, 0, self.w - 1, colour)
+            if i == self.cursor:
+                colour |= ct.cursor
+            self.chgat(i, 0, self.w - 1, colour)
 
         self.win.touchwin()
 
