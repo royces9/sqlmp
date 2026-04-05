@@ -371,10 +371,10 @@ class Playlist_list(menu.Menu):
 
         for i, d in enumerate(self.data[self.offset:self.offset+self.h]):
             colour = ct.normal
-            if d.data is self.ui.cur_pl:
-                colour |= ct.playing
             if d.highlighted:
                 colour = ct.highlight
+            if d.data is self.ui.cur_pl:
+                colour |= ct.playing
             if i == self.cursor:
                 colour |= ct.cursor
             self.chgat(i, 0, self.w - 1, colour)
